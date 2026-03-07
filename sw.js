@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nova-v1.0.2';
+const CACHE_NAME = 'nova-v1.0.3';
 const URLS_TO_CACHE = [
     './',
     './index.html',
@@ -25,6 +25,11 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+    // Only cache GET requests
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then(response => {

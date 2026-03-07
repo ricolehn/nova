@@ -2664,17 +2664,27 @@ window.uploadChurchLogo = async () => {
             method: 'POST',
             body: formData
         });
+
+        let errorText = null;
         if (!response.ok) {
-            throw new Error(await response.text());
+            try {
+                const data = await response.json();
+                errorText = data.error || JSON.stringify(data);
+            } catch (e) {
+                errorText = await response.text();
+            }
+            throw new Error(errorText || `HTTP ${response.status}`);
         }
+
         const cacheBust = `?v=${Date.now()}`;
-        document.querySelectorAll("header img[src^='assets/church-logo.svg']").forEach((img) => {
+        document.querySelectorAll("img[src*='church-logo.svg']").forEach((img) => {
             img.src = `assets/church-logo.svg${cacheBust}`;
         });
         fileInput.value = '';
         showToast('Logo aktualisiert');
     } catch (err) {
         console.error('Fehler beim Logo-Upload:', err);
+        alert(`Logo konnte nicht aktualisiert werden: ${err.message}`);
         showToast('Logo konnte nicht aktualisiert werden', 'error');
     }
 };

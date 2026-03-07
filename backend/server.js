@@ -120,6 +120,9 @@ const logoAssetRateLimit = rateLimit({
 });
 app.get('/assets/church-logo.svg', logoAssetRateLimit, (req, res, next) => {
   const logoFilePath = selectChurchLogoFilePath(churchLogoFile, bundledChurchLogoFile);
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(logoFilePath, (error) => {
     if (error) next(error);
   });
@@ -404,10 +407,11 @@ app.put('/api/admin/users/:uid/admin', verifyToken, verifySuperAdmin, async (req
 app.post('/api/admin/logo', verifyToken, verifySuperAdmin, (req, res) => {
   logoUpload.single('logo')(req, res, async (uploadError) => {
     if (uploadError) {
+      console.error('Multer error:', uploadError);
       if (uploadError instanceof multer.MulterError && uploadError.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ error: 'Logo file too large (max 5MB)' });
       }
-      return res.status(400).json({ error: 'Invalid logo upload' });
+      return res.status(400).json({ error: 'Invalid logo upload: ' + uploadError.message });
     }
 
     try {
@@ -420,24 +424,27 @@ app.post('/api/admin/logo', verifyToken, verifySuperAdmin, (req, res) => {
       const mimeType = (req.file.mimetype || '').toLowerCase();
 
       if (!hasSvgExtension(originalName)) {
-        return res.status(400).json({ error: 'Only SVG files are allowed' });
+        console.error('SVG Validation Failed (hasSvgExtension):', originalName);
+        return res.status(400).json({ error: 'Only SVG files are allowed (Invalid extension)' });
       }
       // For extensionless files, rely on MIME type when the browser provides one.
       // Files with .svg extension are still validated via isSafeSvg content checks below.
       if (!ext && mimeType && mimeType !== 'image/svg+xml') {
-        return res.status(400).json({ error: 'Only SVG files are allowed' });
+        console.error('SVG Validation Failed (MIME type mismatch):', originalName, mimeType);
+        return res.status(400).json({ error: 'Only SVG files are allowed (Invalid MIME type)' });
       }
 
       const content = req.file.buffer.toString('utf8');
       if (!isSafeSvg(content)) {
-        return res.status(400).json({ error: 'Invalid SVG file' });
+        console.error('SVG Validation Failed (isSafeSvg):', originalName);
+        return res.status(400).json({ error: 'Invalid SVG file (Contains invalid tags or scripts)' });
       }
 
       await fs.promises.writeFile(churchLogoFile, content, 'utf8');
       res.json({ success: true });
     } catch (error) {
       console.error('Failed to update logo:', error);
-      res.status(500).json({ error: 'Failed to update logo' });
+      res.status(500).json({ error: 'Failed to update logo: ' + error.message });
     }
   });
 });
