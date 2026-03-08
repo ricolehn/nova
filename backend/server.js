@@ -15,8 +15,24 @@ const app = express();
 const dataDir = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
+// Verify the data directory is writable (important for Docker volume mounts)
+try {
+  fs.accessSync(dataDir, fs.constants.W_OK);
+} catch {
+  console.error(`Data directory is not writable: ${dataDir}. Check volume mount permissions.`);
+}
+
 const configFile = path.join(dataDir, 'config.json');
-const bundledChurchLogoFile = path.join(__dirname, '..', 'assets', 'church-logo.svg');
+
+// Frontend directory: use FRONTEND_DIR env var, or fall back to ../html (Docker), then .. (dev)
+const frontendDirEnv = process.env.FRONTEND_DIR;
+const resolvedFrontendDir = frontendDirEnv
+  ? path.resolve(frontendDirEnv)
+  : fs.existsSync(path.join(__dirname, '..', 'html'))
+    ? path.join(__dirname, '..', 'html')
+    : path.join(__dirname, '..');
+
+const bundledChurchLogoFile = path.join(resolvedFrontendDir, 'assets', 'church-logo.svg');
 const churchLogoFile = path.join(dataDir, 'church-logo.svg');
 
 let appConfig = null;
@@ -111,7 +127,8 @@ export const config = {
 });
 
 // Serve specific frontend static files (Avoid serving the entire /app directory for security)
-const frontendDir = path.join(__dirname, '..');
+const frontendDir = resolvedFrontendDir;
+console.log(`Serving frontend from: ${frontendDir}`);
 const logoAssetRateLimit = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
@@ -444,7 +461,11 @@ app.post('/api/admin/logo', verifyToken, verifySuperAdmin, (req, res) => {
       res.json({ success: true });
     } catch (error) {
       console.error('Failed to update logo:', error);
-      res.status(500).json({ error: 'Failed to update logo: ' + error.message });
+      let msg = error.message || 'Unknown error';
+      if (error.code === 'EACCES' || error.code === 'EPERM') {
+        msg = 'Permission denied writing to data directory. Check Docker volume mount permissions.';
+      }
+      res.status(500).json({ error: 'Failed to update logo: ' + msg });
     }
   });
 });

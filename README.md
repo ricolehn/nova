@@ -8,7 +8,7 @@ Nova is distributed as an all-in-one Docker image. It includes both the frontend
 
 ### Quick Start (Docker)
 
-To run Nova, pull the latest image and start a container. It is highly recommended to map the `/app/data` path to a persistent storage pool or volume, as this is where your configuration and uploaded receipts will be saved.
+To run Nova, pull the latest image and start a container. It is highly recommended to map the `/app/data` path to a persistent storage pool or volume, as this is where your configuration, uploaded receipts, and the custom logo will be saved.
 
 ```bash
 docker pull ghcr.io/<owner>/<repo>:latest
@@ -22,6 +22,24 @@ docker run -d \
 ```
 
 *Replace `/path/to/your/storage` with a directory on your host machine to ensure your data survives container restarts.*
+
+> **Unraid / Permission Note:** The container runs as the `node` user (UID 1000). Make sure the host directory mapped to `/app/data` is writable by UID 1000, e.g. `chown -R 1000:1000 /path/to/your/storage`.
+
+### Optional: Frontend Volume Mapping
+
+The frontend files are served from `/app/html` inside the container. If you want to customize the frontend (e.g. replace `index.html` or static assets), you can optionally map this path as well:
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -v /path/to/your/storage:/app/data \
+  -v /path/to/your/frontend:/app/html \
+  --name nova-app \
+  --restart unless-stopped \
+  ghcr.io/<owner>/<repo>:latest
+```
+
+*When mapping `/app/html`, copy the original frontend files from the container first, then apply your changes.*
 
 ## Setup Wizard
 

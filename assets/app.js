@@ -93,7 +93,12 @@ function isSuperAdminUser() {
 }
 
 async function fetchWithAuth(url, options = {}) {
-    const token = await auth.currentUser.getIdToken();
+    let token;
+    try {
+        token = await auth.currentUser.getIdToken();
+    } catch (tokenError) {
+        throw new Error('Authentifizierung fehlgeschlagen. Bitte erneut anmelden. (' + (tokenError.code || tokenError.message || 'Unbekannter Fehler') + ')');
+    }
     const headers = {
         ...(options.headers || {}),
         'Authorization': `Bearer ${token}`
@@ -2683,8 +2688,9 @@ window.uploadChurchLogo = async () => {
         fileInput.value = '';
         showToast('Logo aktualisiert');
     } catch (err) {
-        console.error('Fehler beim Logo-Upload:', err);
-        alert(`Logo konnte nicht aktualisiert werden: ${err.message}`);
+        const errMsg = err.message || err.code || 'Unbekannter Fehler';
+        console.error('Fehler beim Logo-Upload:', errMsg, err);
+        alert(`Logo konnte nicht aktualisiert werden: ${errMsg}`);
         showToast('Logo konnte nicht aktualisiert werden', 'error');
     }
 };
