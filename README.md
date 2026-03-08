@@ -23,7 +23,7 @@ docker run -d \
 
 *Replace `/path/to/your/storage` with a directory on your host machine to ensure your data survives container restarts.*
 
-> **Unraid / Permission Note:** The container runs as the bundled `node` user (UID 1000). Make sure every host directory mapped into `/app/data` or `/app/html` is writable by UID 1000, e.g. `chown -R 1000:1000 /path/to/your/storage /path/to/your/frontend`.
+> **Unraid / Permission Note:** Nova starts as root only long enough to prepare bind-mounted `/app/data` and `/app/html` directories for the bundled `node` user (UID 1000), then drops back to `node` before starting the app. If your storage backend blocks ownership changes, make sure every mapped host directory is writable by UID 1000, e.g. `chown -R 1000:1000 /path/to/your/storage /path/to/your/frontend`.
 
 ### Optional: Frontend Volume Mapping
 
@@ -39,7 +39,7 @@ docker run -d \
   ghcr.io/<owner>/<repo>:latest
 ```
 
-*When mapping `/app/html`, Nova automatically copies the bundled frontend files from the image into that directory on the first start if the directory is empty. After that, your mapped files stay in place and you can customize them on disk.*
+*When mapping `/app/html`, Nova automatically copies the bundled frontend files from the image into that directory on the first start if `index.html` is missing. After that, your mapped files stay in place and you can customize them on disk.*
 
 > **Custom logo storage:** The admin SVG upload is persisted in `/app/data/church-logo.svg`, not in `/app/html/assets/church-logo.svg`. The app serves `/assets/church-logo.svg` dynamically so the uploaded logo keeps working even when `/app/html` is mapped.
 

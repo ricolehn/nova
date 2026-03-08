@@ -25,9 +25,6 @@ RUN mkdir -p /app/data /app/html-seed && \
 COPY --chown=node:node docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Switch to the bundled node user (UID 1000) to match the documented host volume permissions
-USER node
-
 EXPOSE 3000
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
