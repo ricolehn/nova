@@ -10,19 +10,23 @@ WORKDIR /app
 # Copy the backend code
 COPY backend/ ./backend/
 
-# Copy the frontend code into /app/html so it can be volume-mapped
-COPY assets/ ./html/assets/
-COPY index.html ./html/
-COPY manifest.json ./html/
-COPY sw.js ./html/
-COPY setup.html ./html/
+# Copy the frontend code into /app/frontend so it can be used to populate /app/html
+COPY assets/ ./frontend/assets/
+COPY index.html ./frontend/
+COPY manifest.json ./frontend/
+COPY sw.js ./frontend/
+COPY setup.html ./frontend/
 
-# Create the data directory
-RUN mkdir -p /app/data && chown -R node:node /app/data /app/html
+# Create the data and html directories
+RUN mkdir -p /app/data /app/html && chown -R node:node /app/data /app/html /app/frontend
+
+COPY docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Use a non-root user
 USER node
 
 EXPOSE 3000
 
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "backend/server.js"]
