@@ -27,7 +27,7 @@ docker run -d \
 
 ### Optional: Frontend Volume Mapping
 
-The frontend files are served from `/app/html` inside the container. If you want to customize the frontend (e.g. replace `index.html` or static assets), you can optionally map this path as well:
+The frontend files are bundled directly in `/app/html` inside the container. If you want to customize the frontend (e.g. replace `index.html` or static assets), you can optionally map this path as well:
 
 ```bash
 docker run -d \
@@ -39,7 +39,7 @@ docker run -d \
   ghcr.io/<owner>/<repo>:latest
 ```
 
-*When mapping `/app/html`, Nova automatically copies the bundled frontend files into that directory on the first start if the directory is empty. After that, your mapped files stay in place and you can customize them on disk.*
+*When mapping `/app/html`, Nova automatically copies the bundled frontend files from the image into that directory on the first start if the directory is empty. After that, your mapped files stay in place and you can customize them on disk.*
 
 > **Custom logo storage:** The admin SVG upload is persisted in `/app/data/church-logo.svg`, not in `/app/html/assets/church-logo.svg`. The app serves `/assets/church-logo.svg` dynamically so the uploaded logo keeps working even when `/app/html` is mapped.
 

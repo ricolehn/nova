@@ -21,7 +21,7 @@ ensure_writable_dir "/app/html" "Frontend"
 # Check if the mapped directory is empty by looking for index.html
 if [ ! -f "/app/html/index.html" ]; then
     echo "First run detected. Populating /app/html with frontend files..."
-    cp -R /app/frontend/. /app/html/
+    cp -R /app/html-seed/. /app/html/
     echo "Files copied successfully."
 else
     echo "Existing frontend files detected in /app/html. Skipping copy."

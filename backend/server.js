@@ -8,13 +8,14 @@ const nodemailer = require('nodemailer');
 const { rateLimit } = require('express-rate-limit');
 const { isSafeSvg, hasSvgExtension } = require('./svgValidation');
 const { selectChurchLogoFilePath } = require('./logoStorage');
+const { resolveDataDirectory, resolveFrontendDirectory } = require('./pathConfig');
 const { resolveTrustProxySetting } = require('./trustProxy');
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting());
 
 // Set up persistent data directory
-const dataDir = path.join(__dirname, '..', 'data');
+const dataDir = resolveDataDirectory();
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 // Verify the data directory is writable (important for Docker volume mounts)
@@ -26,17 +27,6 @@ try {
 
 const configFile = path.join(dataDir, 'config.json');
 
-// Frontend directory: use FRONTEND_DIR env var, or fall back to ../html (Docker), then .. (dev)
-function resolveFrontendDirectory() {
-  if (process.env.FRONTEND_DIR) {
-    return path.resolve(process.env.FRONTEND_DIR);
-  }
-  const htmlDir = path.join(__dirname, '..', 'html');
-  if (fs.existsSync(htmlDir)) {
-    return htmlDir;
-  }
-  return path.join(__dirname, '..');
-}
 const resolvedFrontendDir = resolveFrontendDirectory();
 
 const bundledChurchLogoFile = path.join(resolvedFrontendDir, 'assets', 'church-logo.svg');

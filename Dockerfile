@@ -10,15 +10,16 @@ WORKDIR /app
 # Copy the backend code
 COPY --chown=node:node backend/ ./backend/
 
-# Copy the frontend code into /app/frontend so it can be used to populate /app/html
-COPY --chown=node:node assets/ ./frontend/assets/
-COPY --chown=node:node index.html ./frontend/
-COPY --chown=node:node manifest.json ./frontend/
-COPY --chown=node:node sw.js ./frontend/
-COPY --chown=node:node setup.html ./frontend/
+# Copy the frontend code into /app/html and keep a bundled seed copy for empty bind mounts
+COPY --chown=node:node assets/ ./html/assets/
+COPY --chown=node:node index.html ./html/
+COPY --chown=node:node manifest.json ./html/
+COPY --chown=node:node sw.js ./html/
+COPY --chown=node:node setup.html ./html/
 
 # Create the directories and assign ownership to the bundled node user (UID 1000)
-RUN mkdir -p /app/data /app/html /app/frontend && \
+RUN mkdir -p /app/data /app/html-seed && \
+    cp -R /app/html/. /app/html-seed/ && \
     chown -R node:node /app
 
 COPY --chown=node:node docker-entrypoint.sh /app/
