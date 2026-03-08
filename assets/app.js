@@ -2672,11 +2672,19 @@ window.uploadChurchLogo = async () => {
 
         let errorText = null;
         if (!response.ok) {
+            // Clone the response before reading it, so we can fall back to text if json fails
+            const responseClone = response.clone();
             try {
                 const data = await response.json();
-                errorText = data.error || JSON.stringify(data);
+                if (data && data.error) {
+                    errorText = data.error;
+                } else if (data && Object.keys(data).length > 0) {
+                    errorText = JSON.stringify(data);
+                } else {
+                    throw new Error("Empty JSON");
+                }
             } catch (e) {
-                errorText = await response.text();
+                errorText = await responseClone.text();
             }
             throw new Error(errorText || `HTTP ${response.status}`);
         }
