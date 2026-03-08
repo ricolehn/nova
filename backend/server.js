@@ -8,8 +8,10 @@ const nodemailer = require('nodemailer');
 const { rateLimit } = require('express-rate-limit');
 const { isSafeSvg, hasSvgExtension } = require('./svgValidation');
 const { selectChurchLogoFilePath } = require('./logoStorage');
+const { resolveTrustProxySetting } = require('./trustProxy');
 
 const app = express();
+app.set('trust proxy', resolveTrustProxySetting());
 
 // Set up persistent data directory
 const dataDir = path.join(__dirname, '..', 'data');

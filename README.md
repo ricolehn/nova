@@ -23,7 +23,7 @@ docker run -d \
 
 *Replace `/path/to/your/storage` with a directory on your host machine to ensure your data survives container restarts.*
 
-> **Unraid / Permission Note:** The container runs as the `node` user (UID 1000). Make sure the host directory mapped to `/app/data` is writable by UID 1000, e.g. `chown -R 1000:1000 /path/to/your/storage`.
+> **Unraid / Permission Note:** The container runs as the bundled `node` user (UID 1000). Make sure every host directory mapped into `/app/data` or `/app/html` is writable by UID 1000, e.g. `chown -R 1000:1000 /path/to/your/storage /path/to/your/frontend`.
 
 ### Optional: Frontend Volume Mapping
 
@@ -39,7 +39,11 @@ docker run -d \
   ghcr.io/<owner>/<repo>:latest
 ```
 
-*When mapping `/app/html`, copy the original frontend files from the container first, then apply your changes.*
+*When mapping `/app/html`, Nova automatically copies the bundled frontend files into that directory on the first start if the directory is empty. After that, your mapped files stay in place and you can customize them on disk.*
+
+> **Custom logo storage:** The admin SVG upload is persisted in `/app/data/church-logo.svg`, not in `/app/html/assets/church-logo.svg`. The app serves `/assets/church-logo.svg` dynamically so the uploaded logo keeps working even when `/app/html` is mapped.
+
+> **Reverse proxy note:** Nova trusts local/private reverse proxies by default so the bundled rate limiting works cleanly behind Docker reverse proxies. If your proxy setup is different, you can override Express' proxy handling with the `TRUST_PROXY` environment variable.
 
 ## Setup Wizard
 
