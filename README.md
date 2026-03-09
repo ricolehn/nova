@@ -1,6 +1,22 @@
-# Nova
+<div align="center">
+  <img src="assets/icon.png" width="120" alt="Nova Logo" />
+  <h1>Nova</h1>
+  <p>
+    <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPLv3" /></a>
+    <a href="https://ghcr.io/ricouhd/nova"><img src="https://img.shields.io/docker/pulls/ricouhd/nova" alt="Docker Pulls" /></a>
+  </p>
+</div>
 
 JuBa-Kasse (Nova) is a web-based financial management application for small groups, clubs, or flatshares. It provides features to track income, expenses, donations, and individual members' contributions. The app consists of a frontend written in HTML/JS and a Node.js backend for handling file uploads, email notifications, and configuration.
+
+## Features
+
+- **Admin/User Views:** Distinct interfaces tailored for administrators and standard users.
+- **Request Management (with approvals):** Users can submit requests (payments, status changes, expenses) which admins can review and approve or reject.
+- **Person Management:** Track and manage members' statuses (e.g., Vollverdiener, Geringverdiener, etc.).
+- **Payments & Standing Orders:** Record recurring and one-time payments efficiently.
+- **Donations:** Separate tracking for general donations.
+- **Expenses:** Log expenses with optional receipt uploads.
 
 ## Running the Application
 
@@ -11,14 +27,14 @@ Nova is distributed as an all-in-one Docker image. It includes both the frontend
 To run Nova, pull the latest image and start a container. It is highly recommended to map the `/app/data` path to a persistent storage pool or volume, as this is where your configuration, uploaded receipts, and the custom logo will be saved.
 
 ```bash
-docker pull ghcr.io/<owner>/<repo>:latest
+docker pull ghcr.io/ricouhd/nova:latest
 
 docker run -d \
   -p 3000:3000 \
   -v /path/to/your/storage:/app/data \
   --name nova-app \
   --restart unless-stopped \
-  ghcr.io/<owner>/<repo>:latest
+  ghcr.io/ricouhd/nova:latest
 ```
 
 *Replace `/path/to/your/storage` with a directory on your host machine to ensure your data survives container restarts.*
@@ -36,7 +52,7 @@ docker run -d \
   -v /path/to/your/frontend:/app/html \
   --name nova-app \
   --restart unless-stopped \
-  ghcr.io/<owner>/<repo>:latest
+  ghcr.io/ricouhd/nova:latest
 ```
 
 *When mapping `/app/html`, Nova automatically copies the bundled frontend files from the image into that directory on the first start if `index.html` is missing. After that, your mapped files stay in place and you can customize them on disk.*
@@ -44,6 +60,9 @@ docker run -d \
 > **Custom logo storage:** The admin SVG upload is persisted in `/app/data/church-logo.svg`, not in `/app/html/assets/church-logo.svg`. The app serves `/assets/church-logo.svg` dynamically so the uploaded logo keeps working even when `/app/html` is mapped.
 
 > **Reverse proxy note:** Nova trusts local/private reverse proxies by default so the bundled rate limiting works cleanly behind Docker reverse proxies. If your proxy setup is different, you can override Express' proxy handling with the `TRUST_PROXY` environment variable.
+
+<details>
+<summary><b>Setup Wizard</b></summary>
 
 ## Setup Wizard
 
@@ -55,6 +74,7 @@ When you first access the application at `http://localhost:3000` (or your mapped
 4. **SMTP Details (Optional):** Credentials for a mail server to send automated status and request notifications.
 
 Once configured, the app will save this data to `/app/data/config.json` and start the main application seamlessly.
+</details>
 
 ## First User Setup (Super-Admin)
 
@@ -69,6 +89,9 @@ The super-admin can then:
 - edit recorded payments afterwards,
 - update `assets/church-logo.svg` (church icon),
 - update Firebase and SMTP configuration directly from the advanced settings UI.
+
+<details>
+<summary><b>Firebase Database Rules</b></summary>
 
 ## Firebase Database Rules
 
@@ -132,6 +155,7 @@ To secure your application, apply the following rules in your Firebase Realtime 
   }
 }
 ```
+</details>
 
 ## License
 
