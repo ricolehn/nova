@@ -2,8 +2,8 @@ name: Docker Image
 
 on:
   release:
-    types: [published] # Prevents the workflow from running twice
-  workflow_dispatch:
+    types: [published]
+  workflow_dispatch: # Allows you to manually trigger a build from the GitHub Actions tab
 
 env:
   REGISTRY: ghcr.io
@@ -11,7 +11,8 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    # This prevents the job from running at all if it's a pre-release
+    # This single line acts as an impenetrable gate. 
+    # It stops the build entirely if the release is checked as a "pre-release".
     if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false
     permissions:
       contents: read
@@ -41,13 +42,14 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            # Floating 'latest' tag (since pre-releases are skipped, this is always safe)
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            # 1. Definitively applies the 'latest' tag every time this runs.
+            # (Because the job aborts on pre-releases, this is 100% safe).
+            type=raw,value=latest
             
-            # The exact version from the Git tag (e.g., v1.4.0)
+            # 2. Applies the exact version from your Git release tag (e.g., v1.5.0)
             type=ref,event=tag
             
-            # Short commit SHA
+            # 3. Applies the short commit SHA for precise tracking
             type=sha
 
       - name: Build and push image
