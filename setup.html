@@ -215,7 +215,7 @@
         if (smtpHost) {
             smtp = {
                 host: smtpHost,
-                port: parseInt(document.getElementById('smtpPort').value || '465', 10) || 465,
+                port: parseInt(document.getElementById('smtpPort').value || '465', 10),
                 secure: document.getElementById('smtpSecure').checked,
                 user: document.getElementById('smtpUser').value.trim(),
                 pass: document.getElementById('smtpPass').value.trim()
