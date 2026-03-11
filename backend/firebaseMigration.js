@@ -33,6 +33,14 @@ function unwrapFirebaseExportRoot(data) {
     return nested;
   }
 
+  // Recurse to handle arbitrary depth (like a project ID wrapper)
+  const unwrapped = unwrapFirebaseExportRoot(nested);
+  if (unwrapped && typeof unwrapped === 'object' && !Array.isArray(unwrapped)) {
+    if (Object.keys(unwrapped).some((key) => EXPECTED_MIGRATION_KEYS.has(key))) {
+      return unwrapped;
+    }
+  }
+
   return data;
 }
 

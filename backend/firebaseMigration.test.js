@@ -18,6 +18,24 @@ test('unwrapFirebaseExportRoot unwraps single Firebase export wrapper node', () 
   assert.deepEqual(unwrapFirebaseExportRoot(wrapped), wrapped['juba-kasse-default-rtdb-europe-west1']);
 });
 
+test('unwrapFirebaseExportRoot unwraps doubly nested Firebase export wrapper nodes', () => {
+  const doublyWrapped = {
+    'juba-kasse-default-rtdb': {
+      'project-123': {
+        expenses: [{ id: '1', amount: 10 }],
+        people: {
+          '1753650720871': {
+            id: '1753650720871',
+            name: 'Denis Chaban'
+          }
+        }
+      }
+    }
+  };
+
+  assert.deepEqual(unwrapFirebaseExportRoot(doublyWrapped), doublyWrapped['juba-kasse-default-rtdb']['project-123']);
+});
+
 test('unwrapFirebaseExportRoot leaves already-flat migration payloads unchanged', () => {
   const flat = {
     expenses: [{ id: '1', amount: 10 }],
