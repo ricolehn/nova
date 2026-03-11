@@ -10,13 +10,6 @@ const { isSafeSvg, hasSvgExtension } = require('./svgValidation');
 const { selectChurchLogoFilePath } = require('./logoStorage');
 const { resolveDataDirectory, resolveFrontendDirectory } = require('./pathConfig');
 const { resolveTrustProxySetting } = require('./trustProxy');
-const {
-  createPocketBaseClient,
-  getDefaultPocketBaseMigrationConfig,
-  normalizePocketBaseMigrationConfig,
-  runFirebaseToPocketBaseMigration,
-  validatePocketBaseMigrationConfig
-} = require('./firebasePocketBaseMigration');
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting());
@@ -265,13 +258,7 @@ app.post('/api/setup', (req, res) => {
     return res.status(403).json({ error: 'Setup already complete.' });
   }
 
-  const {
-    appName,
-    firebaseConfig,
-    serviceAccount,
-    smtp,
-    pocketbaseMigration
-  } = req.body;
+  const { appName, firebaseConfig, serviceAccount, smtp } = req.body;
 
   if (!appName || !firebaseConfig || !serviceAccount) {
     return res.status(400).json({ error: 'Missing required configuration data.' });
@@ -281,8 +268,7 @@ app.post('/api/setup', (req, res) => {
     appName,
     firebaseConfig,
     serviceAccount,
-    smtp: smtp || null,
-    pocketbaseMigration: normalizePocketBaseMigrationConfig(pocketbaseMigration)
+    smtp: smtp || null
   };
 
   try {
@@ -365,20 +351,13 @@ app.get('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
     appName: appConfig.appName,
     firebaseConfig: appConfig.firebaseConfig || {},
     serviceAccount: appConfig.serviceAccount || {},
-    smtp: appConfig.smtp || null,
-    pocketbaseMigration: normalizePocketBaseMigrationConfig(appConfig.pocketbaseMigration)
+    smtp: appConfig.smtp || null
   });
 });
 
 app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, res) => {
   try {
-    const {
-      appName,
-      firebaseConfig,
-      serviceAccount,
-      smtp,
-      pocketbaseMigration
-    } = req.body || {};
+    const { appName, firebaseConfig, serviceAccount, smtp } = req.body || {};
     if (!appName || !firebaseConfig || !serviceAccount) {
       return res.status(400).json({ error: 'Missing required config fields' });
     }
@@ -387,8 +366,7 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
       appName,
       firebaseConfig,
       serviceAccount,
-      smtp: smtp || null,
-      pocketbaseMigration: normalizePocketBaseMigrationConfig(pocketbaseMigration)
+      smtp: smtp || null
     };
 
     fs.writeFileSync(configFile, JSON.stringify(newConfig, null, 2), 'utf8');
@@ -412,38 +390,6 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
   } catch (error) {
     console.error('Failed to update system config:', error);
     res.status(500).json({ error: 'Failed to update system config' });
-  }
-});
-
-app.post('/api/admin/migrate/firebase-to-pocketbase', verifyToken, verifySuperAdmin, async (req, res) => {
-  try {
-    const config = normalizePocketBaseMigrationConfig(
-      req.body?.pocketbaseMigration || appConfig?.pocketbaseMigration || getDefaultPocketBaseMigrationConfig()
-    );
-    const validation = validatePocketBaseMigrationConfig(config);
-    if (!validation.isValid) {
-      return res.status(400).json({
-        error: `PocketBase migration config is incomplete: ${validation.missingFields.join(', ')}`
-      });
-    }
-
-    const pocketBaseClient = await createPocketBaseClient(config);
-    const summary = await runFirebaseToPocketBaseMigration({
-      firebaseDatabase: admin.database(),
-      pocketBaseClient,
-      pocketBaseConfig: config,
-      dryRun: req.body?.dryRun === true
-    });
-
-    res.json({
-      success: true,
-      summary
-    });
-  } catch (error) {
-    console.error('Failed to migrate Firebase data to PocketBase:', error);
-    res.status(500).json({
-      error: error?.message || 'Failed to migrate Firebase data to PocketBase'
-    });
   }
 });
 
