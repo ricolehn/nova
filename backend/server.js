@@ -57,6 +57,7 @@ let appConfig = null;
 let setupMode = true;
 let transporter = null;
 let runtimeReady = Promise.resolve();
+const authCookieName = 'nova_auth';
 
 function buildSmtpTransport(smtp) {
   if (!smtp) return null;
@@ -175,6 +176,36 @@ const logoAssetRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
+const pageRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 240,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+const setupRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+const dbRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 180,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+const protectedActionRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false
+});
 app.get('/assets/church-logo.svg', logoAssetRateLimit, (req, res, next) => {
   const logoFilePath = selectChurchLogoFilePath(churchLogoFile, bundledChurchLogoFile);
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -187,8 +218,8 @@ app.get('/assets/church-logo.svg', logoAssetRateLimit, (req, res, next) => {
 app.use('/assets', express.static(path.join(frontendDir, 'assets')));
 app.get('/sw.js', (req, res) => res.sendFile(path.join(frontendDir, 'sw.js')));
 app.get('/manifest.json', (req, res) => res.sendFile(path.join(frontendDir, 'manifest.json')));
-app.get('/setup.html', (req, res) => res.sendFile(path.join(frontendDir, 'setup.html')));
-app.get('*', (req, res, next) => {
+app.get('/setup.html', pageRateLimit, (req, res) => res.sendFile(path.join(frontendDir, 'setup.html')));
+app.get('*', pageRateLimit, (req, res, next) => {
   if (req.method === 'GET' && !req.path.startsWith('/api/') && !req.path.startsWith('/data/')) {
     return res.sendFile(path.join(frontendDir, 'index.html'));
   }
@@ -219,7 +250,8 @@ const storage = multer.diskStorage({
         if (matchingFiles.length > 0) {
           const counters = matchingFiles.map((entry) => {
             const parts = entry.replace(ext, '').split('-');
-            return parseInt(parts[parts.length - 1], 10) || 0;
+            const lastPart = parts[parts.length - 1];
+            return /^\\d+$/.test(lastPart) ? parseInt(lastPart, 10) : 0;
           });
           counter = Math.max(...counters) + 1;
         }
@@ -244,7 +276,31 @@ app.use('/api/admin', adminRateLimit);
 
 function extractBearerToken(req) {
   const header = req.headers.authorization || '';
-  return header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : null;
+  if (header.startsWith('Bearer ')) {
+    return header.slice('Bearer '.length).trim();
+  }
+
+  const cookieHeader = req.headers.cookie || '';
+  const cookie = cookieHeader
+    .split(';')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(`${authCookieName}=`));
+
+  return cookie ? decodeURIComponent(cookie.slice(authCookieName.length + 1)) : null;
+}
+
+function setAuthCookie(res, token) {
+  const attributes = [
+    `${authCookieName}=${encodeURIComponent(token)}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax'
+  ];
+  res.setHeader('Set-Cookie', attributes.join('; '));
+}
+
+function clearAuthCookie(res) {
+  res.setHeader('Set-Cookie', `${authCookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
 }
 
 async function verifyToken(req, res, next) {
@@ -313,7 +369,7 @@ async function saveOptionalLogo(logoSvg) {
   await fs.promises.writeFile(churchLogoFile, logoSvg, 'utf8');
 }
 
-app.post('/api/setup', async (req, res) => {
+app.post('/api/setup', setupRateLimit, async (req, res) => {
   if (!setupMode) {
     return res.status(403).json({ error: 'Setup already complete.' });
   }
@@ -336,7 +392,7 @@ app.post('/api/setup', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authRateLimit, async (req, res) => {
   if (setupMode) {
     return res.status(503).json({ error: 'App is in setup mode. Please complete setup first.' });
   }
@@ -355,13 +411,14 @@ app.post('/api/auth/login', async (req, res) => {
 
   try {
     const auth = await loginUser(email, password);
+    setAuthCookie(res, auth.token);
     res.json(auth);
   } catch (error) {
     res.status(401).json({ error: error.message || 'Login failed.' });
   }
 });
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', authRateLimit, async (req, res) => {
   if (setupMode) {
     return res.status(503).json({ error: 'App is in setup mode. Please complete setup first.' });
   }
@@ -386,17 +443,23 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(403).json({ error: 'Ungültiger Registrierungscode.' });
     }
     const auth = await registerUser({ email, password });
+    setAuthCookie(res, auth.token);
     res.json(auth);
   } catch (error) {
     res.status(error.status || 400).json({ error: error.message || 'Registration failed.' });
   }
 });
 
-app.get('/api/auth/me', verifyToken, (req, res) => {
-  res.json({ user: req.user });
+app.get('/api/auth/me', authRateLimit, verifyToken, (req, res) => {
+  res.json({ user: req.user, token: req.authToken });
 });
 
-app.post('/api/auth/password', verifyToken, async (req, res) => {
+app.post('/api/auth/logout', authRateLimit, (req, res) => {
+  clearAuthCookie(res);
+  res.json({ success: true });
+});
+
+app.post('/api/auth/password', authRateLimit, verifyToken, async (req, res) => {
   const password = String(req.body?.password || '');
   if (!password || password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
@@ -680,7 +743,7 @@ async function verifyOptionalUser(req) {
   }
 }
 
-app.get('/api/db', async (req, res) => {
+app.get('/api/db', dbRateLimit, async (req, res) => {
   if (setupMode) {
     return res.status(503).json({ error: 'App is in setup mode. Please complete setup first.' });
   }
@@ -702,7 +765,7 @@ app.get('/api/db', async (req, res) => {
   }
 });
 
-app.put('/api/db', verifyToken, async (req, res) => {
+app.put('/api/db', dbRateLimit, verifyToken, async (req, res) => {
   try {
     await writeLogicalPath(req.body?.path, req.body?.value, req.user, 'set');
     res.json({ success: true });
@@ -711,7 +774,7 @@ app.put('/api/db', verifyToken, async (req, res) => {
   }
 });
 
-app.patch('/api/db', verifyToken, async (req, res) => {
+app.patch('/api/db', dbRateLimit, verifyToken, async (req, res) => {
   try {
     await writeLogicalPath(req.body?.path, req.body?.value, req.user, 'patch');
     res.json({ success: true });
@@ -720,7 +783,7 @@ app.patch('/api/db', verifyToken, async (req, res) => {
   }
 });
 
-app.delete('/api/db', verifyToken, async (req, res) => {
+app.delete('/api/db', dbRateLimit, verifyToken, async (req, res) => {
   try {
     await removeLogicalPath(req.body?.path, req.user);
     res.json({ success: true });
@@ -729,7 +792,7 @@ app.delete('/api/db', verifyToken, async (req, res) => {
   }
 });
 
-app.post('/api/db/transaction', verifyToken, async (req, res) => {
+app.post('/api/db/transaction', dbRateLimit, verifyToken, async (req, res) => {
   try {
     const targetPath = normalizeDataPath(req.body?.path);
     const [root, id] = targetPath.split('/');
@@ -889,12 +952,12 @@ app.post('/api/admin/logo', verifyToken, verifySuperAdmin, (req, res) => {
   });
 });
 
-app.post('/api/upload', verifyToken, upload.single('receipt'), (req, res) => {
+app.post('/api/upload', protectedActionRateLimit, verifyToken, upload.single('receipt'), (req, res) => {
   if (!req.file) return res.status(400).send('No file uploaded.');
   res.json({ filename: req.file.filename });
 });
 
-app.get('/api/receipts/:filename', verifyToken, (req, res) => {
+app.get('/api/receipts/:filename', protectedActionRateLimit, verifyToken, (req, res) => {
   const filePath = path.join(uploadDir, req.params.filename);
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
@@ -903,7 +966,7 @@ app.get('/api/receipts/:filename', verifyToken, (req, res) => {
   }
 });
 
-app.post('/api/send-email', verifyToken, async (req, res) => {
+app.post('/api/send-email', protectedActionRateLimit, verifyToken, async (req, res) => {
   try {
     const { to, subject, text, html } = req.body;
     if (!to || !subject) {
@@ -929,7 +992,7 @@ app.post('/api/send-email', verifyToken, async (req, res) => {
   }
 });
 
-app.post('/api/notify-admins', verifyToken, async (req, res) => {
+app.post('/api/notify-admins', protectedActionRateLimit, verifyToken, async (req, res) => {
   try {
     const { reqType, personName } = req.body;
     if (!reqType || !personName) {

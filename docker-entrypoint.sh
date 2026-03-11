@@ -97,8 +97,19 @@ start_pocketbase() {
 }
 
 wait_for_pocketbase() {
+    pocketbase_port="$pocketbase_http"
+    case "$pocketbase_port" in
+        *:*) pocketbase_port="${pocketbase_port##*:}" ;;
+    esac
+    case "$pocketbase_port" in
+        ''|*[!0-9]*)
+            echo "Error: Invalid PocketBase HTTP binding '$pocketbase_http'." >&2
+            exit 1
+            ;;
+    esac
+
     attempts=0
-    until run_shell_as_runtime_user 'wget -qO- "http://127.0.0.1:${1}/api/health" >/dev/null 2>&1' "$(echo "$pocketbase_http" | awk -F: '{print $NF}')"; do
+    until run_shell_as_runtime_user 'wget -qO- "http://127.0.0.1:${1}/api/health" >/dev/null 2>&1' "$pocketbase_port"; do
         attempts=$((attempts + 1))
         if [ "$attempts" -ge 50 ]; then
             echo "Error: PocketBase did not become ready in time." >&2

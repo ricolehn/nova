@@ -1,9 +1,10 @@
 const authState = {
   currentUser: null,
-  token: localStorage.getItem('nova-auth-token') || null,
+  token: null,
   listeners: new Set(),
   ready: null
 };
+const MAX_TRANSACTION_ATTEMPTS = 3;
 
 function clone(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
@@ -45,11 +46,6 @@ function wrapUser(user) {
 function saveAuth(token, user) {
   authState.token = token || null;
   authState.currentUser = wrapUser(user);
-  if (authState.token) {
-    localStorage.setItem('nova-auth-token', authState.token);
-  } else {
-    localStorage.removeItem('nova-auth-token');
-  }
   notifyAuthListeners();
 }
 
@@ -74,18 +70,13 @@ async function apiFetch(url, options = {}) {
 }
 
 async function restoreAuthState() {
-  if (!authState.token) {
-    authState.currentUser = null;
-    return;
-  }
-
   try {
     const data = await apiFetch('/api/auth/me');
+    authState.token = data.token || null;
     authState.currentUser = wrapUser(data.user);
   } catch {
     authState.token = null;
     authState.currentUser = null;
-    localStorage.removeItem('nova-auth-token');
   }
 }
 
@@ -164,7 +155,7 @@ export async function remove(reference) {
 }
 
 export async function runTransaction(reference, updater) {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < MAX_TRANSACTION_ATTEMPTS; attempt += 1) {
     const current = await readRaw(reference);
     const nextValue = updater(clone(current?.value));
     try {
@@ -182,7 +173,7 @@ export async function runTransaction(reference, updater) {
         snapshot: makeSnapshot(result?.value)
       };
     } catch (error) {
-      if (error.message !== 'Conflict' || attempt === 2) {
+      if (error.message !== 'Conflict' || attempt === MAX_TRANSACTION_ATTEMPTS - 1) {
         throw error;
       }
     }
@@ -227,6 +218,11 @@ export async function createUserWithEmailAndPassword(auth, email, password, extr
 }
 
 export async function signOut() {
+  try {
+    await apiFetch('/api/auth/logout', { method: 'POST' });
+  } catch {
+    // Ignore logout transport errors and still clear local state.
+  }
   saveAuth(null, null);
 }
 
