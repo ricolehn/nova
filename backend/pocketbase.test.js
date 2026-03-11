@@ -4,7 +4,14 @@ const {
   normalizeDataPath,
   decodeTokenPayload,
   sanitizeSelfUserWrite,
-  generatePocketBaseCredentials
+  generatePocketBaseCredentials,
+  normalizeRecordListInput,
+  stripNormalizedPersonData,
+  buildPersonRecordPayload,
+  buildPaymentRecordPayload,
+  buildStatusHistoryRecordPayload,
+  buildExpenseRecordPayload,
+  hydratePersonRecord
 } = require('./pocketbase');
 
 test('normalizeDataPath trims duplicate separators', () => {
@@ -41,4 +48,110 @@ test('generatePocketBaseCredentials returns docker-local defaults', () => {
   assert.equal(credentials.url, 'http://127.0.0.1:8090');
   assert.match(credentials.adminEmail, /^nova-.*@local\.invalid$/);
   assert.ok(credentials.adminPassword.length >= 20);
+});
+
+test('normalizeRecordListInput accepts arrays and object maps', () => {
+  assert.deepEqual(normalizeRecordListInput([{ id: 'a' }]), [{ id: 'a' }]);
+  assert.deepEqual(normalizeRecordListInput({ first: { id: 'a' }, second: { id: 'b' } }), [{ id: 'a' }, { id: 'b' }]);
+  assert.deepEqual(normalizeRecordListInput(null), []);
+});
+
+test('stripNormalizedPersonData removes nested payment and status history arrays', () => {
+  const person = {
+    id: 'person-1',
+    name: 'Ada',
+    status: 'active',
+    payments: [{ amount: '10.50' }, { amount: 4.5 }],
+    statusHistory: [{ status: 'active', startDate: '2024-01-01' }]
+  };
+
+  assert.deepEqual(stripNormalizedPersonData(person), {
+    id: 'person-1',
+    name: 'Ada',
+    status: 'active',
+    totalPaid: 15
+  });
+});
+
+test('build normalized PocketBase payloads expose relational scalar columns', () => {
+  const personPayload = buildPersonRecordPayload('person-1', {
+    uid: 'user-1',
+    name: 'Ada',
+    status: 'active',
+    memberSince: '2024-01-01',
+    originalMemberSince: '2024-01-01',
+    payments: [{ id: 'pay-1', amount: '10.50', date: '2024-02-01', description: 'Fee' }]
+  });
+  const paymentPayload = buildPaymentRecordPayload('person-1', { id: 'pay-1', amount: '10.50', date: '2024-02-01', description: 'Fee' });
+  const statusPayload = buildStatusHistoryRecordPayload('person-1', { status: 'active', startDate: '2024-01-01' });
+  const expensePayload = buildExpenseRecordPayload({ id: 'expense-1', amount: '7.25', date: '2024-03-01', issuer: 'Store', description: 'Paper', receipt: 'r.png' });
+
+  assert.equal(personPayload.personKey, 'person-1');
+  assert.equal(personPayload.uid, 'user-1');
+  assert.equal(personPayload.status, 'active');
+  assert.equal(personPayload.totalPaid, 10.5);
+  assert.deepEqual(personPayload.data, {
+    uid: 'user-1',
+    name: 'Ada',
+    status: 'active',
+    memberSince: '2024-01-01',
+    originalMemberSince: '2024-01-01',
+    totalPaid: 10.5
+  });
+
+  assert.equal(paymentPayload.personKey, 'person-1');
+  assert.equal(paymentPayload.amount, 10.5);
+  assert.equal(paymentPayload.date, '2024-02-01');
+  assert.ok(paymentPayload.paymentKey);
+
+  assert.equal(statusPayload.personKey, 'person-1');
+  assert.equal(statusPayload.status, 'active');
+  assert.equal(statusPayload.startDate, '2024-01-01');
+  assert.ok(statusPayload.historyKey);
+
+  assert.equal(expensePayload.amount, 7.25);
+  assert.equal(expensePayload.receipt, 'r.png');
+  assert.ok(expensePayload.expenseKey);
+});
+
+test('hydratePersonRecord rebuilds normalized child collections into legacy API shape', () => {
+  const record = {
+    personKey: 'person-1',
+    uid: 'user-1',
+    name: 'Ada',
+    status: 'active',
+    memberSince: '2024-01-01',
+    originalMemberSince: '2024-01-01',
+    data: {
+      id: 'person-1',
+      standingOrders: [{ id: 'so-1' }]
+    }
+  };
+  const payments = [
+    buildPaymentRecordPayload('person-1', { id: 'pay-2', amount: '4.50', date: '2024-03-01', description: 'Late fee' }),
+    buildPaymentRecordPayload('person-1', { id: 'pay-1', amount: '10.50', date: '2024-02-01', description: 'Fee' })
+  ];
+  const statusHistory = [
+    buildStatusHistoryRecordPayload('person-1', { status: 'paused', startDate: '2024-02-01' }),
+    buildStatusHistoryRecordPayload('person-1', { status: 'active', startDate: '2024-01-01' })
+  ];
+
+  assert.deepEqual(hydratePersonRecord(record, payments, statusHistory), {
+    id: 'person-1',
+    uid: 'user-1',
+    name: 'Ada',
+    status: 'active',
+    memberSince: '2024-01-01',
+    originalMemberSince: '2024-01-01',
+    standingOrders: [{ id: 'so-1' }],
+    payments: [
+      { id: 'pay-1', amount: '10.50', date: '2024-02-01', description: 'Fee' },
+      { id: 'pay-2', amount: '4.50', date: '2024-03-01', description: 'Late fee' }
+    ],
+    statusHistory: [
+      { status: 'active', startDate: '2024-01-01' },
+      { status: 'paused', startDate: '2024-02-01' }
+    ],
+    totalPaid: 15
+  });
 });

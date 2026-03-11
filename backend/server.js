@@ -31,6 +31,8 @@ const {
   getPeopleRecord,
   upsertPeopleRecord,
   removePeopleRecord,
+  listExpenseRecords,
+  syncExpenseRecords,
   listRequestRecords,
   getRequestRecord,
   upsertRequestRecord
@@ -526,6 +528,13 @@ async function readLogicalPath(targetPath, query, user) {
       error.status = 403;
       throw error;
     }
+    if (root === 'expenses') {
+      const records = await listExpenseRecords(appConfig);
+      return {
+        value: objectFromRecords(records, 'expenseKey', (record) => record.data),
+        version: null
+      };
+    }
     const record = await getStateRecord(appConfig, root);
     return { value: record?.value || {}, version: record?.updated || null };
   }
@@ -642,6 +651,10 @@ async function writeLogicalPath(targetPath, value, user, method = 'set') {
 
   if ((root === 'donations' || root === 'expenses') && !id) {
     if (!user.admin) throw Object.assign(new Error('Admin access required'), { status: 403 });
+    if (root === 'expenses') {
+      await syncExpenseRecords(appConfig, value || {});
+      return;
+    }
     await upsertStateValue(appConfig, root, value || {});
     return;
   }
