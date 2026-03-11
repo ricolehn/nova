@@ -233,7 +233,7 @@ function unwrapFirebaseExportRoot(data) {
 }
 
 async function fetchFirebaseMigrationData({ firebaseConfig, serviceAccount }) {
-  const appName = `nova-migration-${crypto.randomUUID()}`;
+  const appName = `firebase-migration-${crypto.randomUUID()}`;
   const firebaseApp = admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: firebaseConfig.databaseURL
@@ -243,7 +243,8 @@ async function fetchFirebaseMigrationData({ firebaseConfig, serviceAccount }) {
     const snapshot = await admin.database(firebaseApp).ref('/').get();
     return unwrapFirebaseExportRoot(snapshot.val() || {});
   } catch (error) {
-    const wrappedError = new Error(`Firebase-Daten konnten nicht gelesen werden: ${error.message}`);
+    const details = [error.code, error.name, error.message].filter(Boolean).join(' | ');
+    const wrappedError = new Error(`Firebase-Daten konnten nicht gelesen werden: ${details || 'Unbekannter Firebase-Fehler'}`);
     wrappedError.status = 502;
     throw wrappedError;
   } finally {
