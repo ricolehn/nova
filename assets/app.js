@@ -2601,12 +2601,6 @@ async function loadAdvancedSystemConfig() {
         document.getElementById('super-admin-smtp-secure').checked = !!data.smtp?.secure;
         document.getElementById('super-admin-smtp-user').value = data.smtp?.user || '';
         document.getElementById('super-admin-smtp-pass').value = data.smtp?.pass || '';
-        document.getElementById('super-admin-pocketbase-url').value = data.pocketbaseMigration?.url || '';
-        document.getElementById('super-admin-pocketbase-admin-email').value = data.pocketbaseMigration?.adminEmail || '';
-        document.getElementById('super-admin-pocketbase-admin-password').value = data.pocketbaseMigration?.adminPassword || '';
-        document.getElementById('super-admin-pocketbase-mappings').value = JSON.stringify(data.pocketbaseMigration?.mappings || [], null, 2);
-        const migrationResult = document.getElementById('super-admin-pocketbase-migration-result');
-        if (migrationResult) migrationResult.textContent = '';
         advancedConfigLoaded = true;
     } catch (err) {
         console.error('Fehler beim Laden der erweiterten Konfiguration:', err);
@@ -2626,13 +2620,7 @@ window.saveAdvancedSystemConfig = async () => {
             appName,
             firebaseConfig: JSON.parse(document.getElementById('super-admin-firebase-config').value || '{}'),
             serviceAccount: JSON.parse(document.getElementById('super-admin-service-account').value || '{}'),
-            smtp: null,
-            pocketbaseMigration: {
-                url: document.getElementById('super-admin-pocketbase-url').value.trim(),
-                adminEmail: document.getElementById('super-admin-pocketbase-admin-email').value.trim(),
-                adminPassword: document.getElementById('super-admin-pocketbase-admin-password').value,
-                mappings: JSON.parse(document.getElementById('super-admin-pocketbase-mappings').value || '[]')
-            }
+            smtp: null
         };
 
         const smtpHost = document.getElementById('super-admin-smtp-host').value.trim();
@@ -2662,42 +2650,6 @@ window.saveAdvancedSystemConfig = async () => {
     } catch (err) {
         console.error('Fehler beim Speichern der erweiterten Konfiguration:', err);
         alert(`Erweiterte Konfiguration konnte nicht gespeichert werden: ${err.message || 'Unbekannter Fehler'}`);
-    }
-};
-
-window.runPocketBaseMigration = async (dryRun = false) => {
-    if (!isSuperAdminUser()) return;
-    try {
-        const response = await fetchWithAuth(`${config.apiBaseUrl}/admin/migrate/firebase-to-pocketbase`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                dryRun,
-                pocketbaseMigration: {
-                    url: document.getElementById('super-admin-pocketbase-url').value.trim(),
-                    adminEmail: document.getElementById('super-admin-pocketbase-admin-email').value.trim(),
-                    adminPassword: document.getElementById('super-admin-pocketbase-admin-password').value,
-                    mappings: JSON.parse(document.getElementById('super-admin-pocketbase-mappings').value || '[]')
-                }
-            })
-        });
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-        const result = await response.json();
-        const target = document.getElementById('super-admin-pocketbase-migration-result');
-        if (target) {
-            target.textContent = JSON.stringify(result.summary || {}, null, 2);
-        }
-        showToast(dryRun ? 'PocketBase Dry-Run abgeschlossen' : 'PocketBase Migration abgeschlossen');
-    } catch (err) {
-        console.error('Fehler bei der PocketBase Migration:', err);
-        const target = document.getElementById('super-admin-pocketbase-migration-result');
-        if (target) {
-            target.textContent = err.message || 'Unbekannter Fehler';
-        }
-        alert(`PocketBase Migration fehlgeschlagen: ${err.message || 'Unbekannter Fehler'}`);
-        showToast('PocketBase Migration fehlgeschlagen', 'error');
     }
 };
 
