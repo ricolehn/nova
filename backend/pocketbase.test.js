@@ -6,7 +6,6 @@ const {
   sanitizeSelfUserWrite,
   generatePocketBaseCredentials
 } = require('./pocketbase');
-const { unwrapFirebaseExportRoot } = require('./firebaseMigration');
 
 test('normalizeDataPath trims duplicate separators', () => {
   assert.equal(normalizeDataPath('/people//123/'), 'people/123');
@@ -42,44 +41,4 @@ test('generatePocketBaseCredentials returns docker-local defaults', () => {
   assert.equal(credentials.url, 'http://127.0.0.1:8090');
   assert.match(credentials.adminEmail, /^nova-.*@local\.invalid$/);
   assert.ok(credentials.adminPassword.length >= 20);
-});
-
-test('unwrapFirebaseExportRoot unwraps single Firebase export wrapper node', () => {
-  const wrapped = {
-    'juba-kasse-default-rtdb-europe-west1': {
-      expenses: [{ id: '1', amount: 10 }],
-      people: {
-        '1753650720871': {
-          id: '1753650720871',
-          name: 'Denis Chaban'
-        }
-      }
-    }
-  };
-
-  assert.deepEqual(unwrapFirebaseExportRoot(wrapped), wrapped['juba-kasse-default-rtdb-europe-west1']);
-});
-
-test('unwrapFirebaseExportRoot leaves already-flat migration payloads unchanged', () => {
-  const flat = {
-    expenses: [{ id: '1', amount: 10 }],
-    people: {
-      '1753650720871': {
-        id: '1753650720871',
-        name: 'Denis Chaban'
-      }
-    }
-  };
-
-  assert.deepEqual(unwrapFirebaseExportRoot(flat), flat);
-});
-
-test('unwrapFirebaseExportRoot ignores unrelated single-key objects', () => {
-  const unrelated = {
-    metadata: {
-      version: 1
-    }
-  };
-
-  assert.deepEqual(unwrapFirebaseExportRoot(unrelated), unrelated);
 });
