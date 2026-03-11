@@ -10,6 +10,11 @@ const { selectChurchLogoFilePath } = require('./logoStorage');
 const { resolveDataDirectory, resolveFrontendDirectory } = require('./pathConfig');
 const { resolveTrustProxySetting } = require('./trustProxy');
 const {
+  resolveFirebaseMigrationCredentials,
+  fetchFirebaseMigrationData,
+  migrateFirebaseData
+} = require('./firebaseMigration');
+const {
   DEFAULT_SETTINGS,
   DEFAULT_SYSTEM_STATE,
   generatePocketBaseCredentials,
@@ -918,6 +923,37 @@ app.put('/api/admin/users/:uid/admin', verifyToken, verifySuperAdmin, async (req
   } catch (error) {
     console.error('Failed to update admin role:', error);
     res.status(500).json({ error: 'Failed to update admin role' });
+  }
+});
+
+app.post('/api/admin/migrate-firebase', verifyToken, verifySuperAdmin, async (req, res) => {
+  try {
+    const credentials = resolveFirebaseMigrationCredentials({
+      legacyConfig: req.body?.legacyConfig,
+      firebaseConfig: req.body?.firebaseConfig,
+      serviceAccount: req.body?.serviceAccount
+    });
+
+    const data = await fetchFirebaseMigrationData(credentials);
+    const summary = await migrateFirebaseData({
+      appConfig,
+      data,
+      upsertStateValue,
+      upsertPeopleRecord,
+      upsertRequestRecord,
+      syncExpenseRecords,
+      getUserRecord,
+      updateUserRecord
+    });
+
+    res.json({
+      success: true,
+      summary,
+      message: 'Firebase-Migration erfolgreich abgeschlossen.'
+    });
+  } catch (error) {
+    console.error('Failed to migrate Firebase data:', error);
+    res.status(error.status || 500).json({ error: error.message || 'Firebase-Migration fehlgeschlagen.' });
   }
 });
 

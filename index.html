@@ -204,6 +204,26 @@
                         <button class="btn btn-primary btn-block" onclick="uploadChurchLogo()">Logo hochladen</button>
                     </div>
 
+                    <div class="form-group" style="margin-bottom: 30px; border: 2px dashed var(--danger); border-radius: 12px; padding: 15px; background: var(--surface-alt);">
+                        <div style="font-weight:800; margin-bottom:10px; font-size: 1.05rem; color: var(--danger);">🔥 Firebase Daten-Migration (Addon)</div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:15px;">
+                            Für die alte Firebase-Installation wurden in <code>/app/data/config.json</code> die Blöcke <code>firebaseConfig</code> und <code>serviceAccount</code> gespeichert. Dieses Add-on verbindet sich einmalig mit der alten Realtime Database und kopiert die Daten in die aktuelle PocketBase-Instanz. Passwörter aus Firebase Auth werden dabei nicht übernommen.
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="firebase-migration-legacy-config">Alte config.json oder firebaseConfig</label>
+                            <textarea id="firebase-migration-legacy-config" class="form-input" style="min-height: 170px; font-family: monospace;" placeholder='{\n  "appName": "Nova",\n  "firebaseConfig": {\n    "apiKey": "...",\n    "authDomain": "...",\n    "databaseURL": "...",\n    "projectId": "...",\n    "storageBucket": "...",\n    "messagingSenderId": "...",\n    "appId": "..."\n  },\n  "serviceAccount": { ... }\n}'></textarea>
+                            <div class="help-text">Sie können die komplette alte <code>config.json</code>, nur das JSON aus <code>firebaseConfig</code> oder das alte <code>const firebaseConfig = { ... };</code>-Snippet einfügen.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="firebase-migration-service-account">Service Account JSON (optional, falls nicht schon oben enthalten)</label>
+                            <textarea id="firebase-migration-service-account" class="form-input" style="min-height: 170px; font-family: monospace;" placeholder='{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key": "...",\n  "client_email": "..."\n}'></textarea>
+                        </div>
+
+                        <button class="btn btn-danger btn-block" onclick="migrateFirebaseData()">Firebase → PocketBase migrieren</button>
+                    </div>
+
                     <!-- System Config -->
                     <div class="form-group" style="margin-bottom: 15px; border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--surface-alt);">
                         <div style="font-weight:800; margin-bottom:15px; font-size: 1.05rem;">System-Konfiguration</div>

@@ -94,7 +94,15 @@ The super-admin can then:
 - promote/demote other users to regular admins (supervisors),
 - edit recorded payments afterwards,
 - update `assets/church-logo.svg` (church icon),
-- update the app name and SMTP configuration directly from the advanced settings UI.
+- update the app name and SMTP configuration directly from the advanced settings UI,
+- use the temporary Firebase migration add-on to read the old Realtime Database directly into PocketBase.
+
+The migration add-on accepts either the full legacy `/app/data/config.json` from the Firebase-based setup or the two old config blocks separately:
+
+- `firebaseConfig`
+- `serviceAccount`
+
+It migrates the legacy database roots (`settings`, `system`, `donations`, `expenses`, `people`, `requests`, `users`) into the current PocketBase-backed structure. Existing PocketBase user profiles are updated when the same UID already exists there; Firebase Auth passwords are not transferred.
 
 <details>
 <summary><b>PocketBase access model</b></summary>

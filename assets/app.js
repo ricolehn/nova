@@ -2649,6 +2649,52 @@ window.saveAdvancedSystemConfig = async () => {
     }
 };
 
+window.migrateFirebaseData = async () => {
+    if (!isSuperAdminUser()) return;
+
+    const legacyConfig = document.getElementById('firebase-migration-legacy-config')?.value.trim() || '';
+    const serviceAccount = document.getElementById('firebase-migration-service-account')?.value.trim() || '';
+
+    if (!legacyConfig && !serviceAccount) {
+        alert('Bitte die alte config.json oder mindestens Firebase-Konfiguration und Service-Account einfügen.');
+        return;
+    }
+
+    if (!confirm('Sind Sie sicher, dass Sie die Firebase-Daten jetzt in PocketBase migrieren möchten? Existierende Daten können überschrieben werden.')) {
+        return;
+    }
+
+    try {
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/admin/migrate-firebase`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                legacyConfig,
+                serviceAccount
+            })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.error || 'Unbekannter Fehler');
+        }
+
+        const summary = payload.summary || {};
+        alert(
+            'Migration erfolgreich abgeschlossen.\n\n' +
+            `Mitglieder: ${summary.peopleMigrated || 0}\n` +
+            `Anfragen: ${summary.requestsMigrated || 0}\n` +
+            `Ausgaben: ${summary.expensesMigrated || 0}\n` +
+            `Benutzer aktualisiert: ${summary.usersUpdated || 0}\n` +
+            `Benutzer übersprungen: ${summary.usersSkipped || 0}`
+        );
+        window.location.reload();
+    } catch (err) {
+        console.error('Fehler bei der Firebase-Migration:', err);
+        alert(`Firebase-Migration fehlgeschlagen: ${err.message || 'Unbekannter Fehler'}`);
+    }
+};
+
 window.uploadChurchLogo = async () => {
     if (!isSuperAdminUser()) return;
     const fileInput = document.getElementById('super-admin-logo-file');
