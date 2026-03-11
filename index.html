@@ -204,6 +204,17 @@
                         <button class="btn btn-primary btn-block" onclick="uploadChurchLogo()">Logo hochladen</button>
                     </div>
 
+                    <!-- TEMPORARY FIREBASE MIGRATION TOOL -->
+                    <div class="form-group" style="margin-bottom: 30px; border: 2px dashed var(--danger); border-radius: 12px; padding: 15px; background: var(--surface-alt);">
+                        <div style="font-weight:800; margin-bottom:10px; font-size: 1.05rem; color: var(--danger);">🔥 Firebase Daten-Migration (Temporär)</div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:15px;">
+                            Laden Sie hier den JSON-Export Ihrer alten Firebase Realtime Database hoch. Die Daten werden automatisch in die neue PocketBase Datenbank migriert. <strong>Achtung: Existierende Daten könnten überschrieben werden!</strong>
+                        </div>
+                        <label class="form-label" for="firebase-migration-file" style="margin-bottom: 6px;">Firebase JSON Export (.json)</label>
+                        <input type="file" id="firebase-migration-file" class="form-input" accept=".json,application/json" style="margin-bottom: 10px;">
+                        <button class="btn btn-danger btn-block" onclick="uploadFirebaseMigration()">Daten migrieren</button>
+                    </div>
+
                     <!-- System Config -->
                     <div class="form-group" style="margin-bottom: 15px; border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--surface-alt);">
                         <div style="font-weight:800; margin-bottom:15px; font-size: 1.05rem;">System-Konfiguration</div>

@@ -265,6 +265,10 @@ const logoUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }
 });
+const migrationUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit for JSON exports
+});
 
 const adminRateLimit = rateLimit({
   windowMs: 60 * 1000,
@@ -906,6 +910,69 @@ app.put('/api/admin/users/:uid/admin', verifyToken, verifySuperAdmin, async (req
     console.error('Failed to update admin role:', error);
     res.status(500).json({ error: 'Failed to update admin role' });
   }
+});
+
+app.post('/api/admin/migrate-firebase', verifyToken, verifySuperAdmin, (req, res) => {
+  migrationUpload.single('migration')(req, res, async (uploadError) => {
+    if (uploadError) {
+      console.error('Migration upload error:', uploadError);
+      return res.status(400).json({ error: 'Upload fehlgeschlagen: ' + uploadError.message });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Keine Datei hochgeladen.' });
+    }
+
+    try {
+      const fileContent = req.file.buffer.toString('utf8');
+      const data = JSON.parse(fileContent);
+
+      // Migrate state root nodes
+      const stateKeys = ['settings', 'system', 'donations', 'expenses'];
+      for (const key of stateKeys) {
+        if (data[key]) {
+          await upsertStateValue(appConfig, key, data[key]);
+        }
+      }
+
+      // Migrate people
+      if (data.people && typeof data.people === 'object') {
+        for (const [personKey, personData] of Object.entries(data.people)) {
+          await upsertPeopleRecord(appConfig, personKey, personData);
+        }
+      }
+
+      // Migrate requests
+      if (data.requests && typeof data.requests === 'object') {
+        for (const [requestKey, requestData] of Object.entries(data.requests)) {
+          await upsertRequestRecord(appConfig, requestKey, requestData);
+        }
+      }
+
+      // Migrate users (if present, mostly to retain profile data and admin status, passwords must be reset)
+      if (data.users && typeof data.users === 'object') {
+        for (const [uid, userData] of Object.entries(data.users)) {
+          try {
+            const existing = await getUserRecord(appConfig, uid);
+            if (existing) {
+              await updateUserRecord(appConfig, uid, userData);
+            }
+          } catch (e) {
+             // User doesn't exist in PB Auth yet.
+             // Without Firebase Auth export, we can't easily recreate auth accounts here without passwords.
+             // We'll skip creating completely new auth records here to avoid password complexity,
+             // as users need to re-register with the invite code anyway.
+             console.log(`Skipping user profile migration for ${uid} as they have no PocketBase auth record yet.`);
+          }
+        }
+      }
+
+      res.json({ success: true, message: 'Migration erfolgreich abgeschlossen.' });
+    } catch (err) {
+      console.error('Migration error:', err);
+      res.status(500).json({ error: 'Fehler bei der Migration: ' + err.message });
+    }
+  });
 });
 
 app.post('/api/admin/logo', verifyToken, verifySuperAdmin, (req, res) => {

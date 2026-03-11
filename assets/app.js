@@ -2649,6 +2649,53 @@ window.saveAdvancedSystemConfig = async () => {
     }
 };
 
+window.uploadFirebaseMigration = async () => {
+    const fileInput = document.getElementById('firebase-migration-file');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert('Bitte wählen Sie zuerst eine JSON-Datei aus.');
+        return;
+    }
+
+    if (!confirm('Sind Sie sicher, dass Sie diese Daten migrieren möchten? Existierende Daten können überschrieben werden.')) {
+        return;
+    }
+
+    const token = await ensureToken();
+    if (!token) return;
+
+    try {
+        const formData = new FormData();
+        formData.append('migration', file);
+
+        const response = await fetch(`${config.apiBaseUrl}/admin/migrate-firebase`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        const resClone = response.clone();
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            const text = await resClone.text();
+            throw new Error(text || 'Unbekannter Serverfehler beim Parsen der Antwort.');
+        }
+
+        if (response.ok) {
+            alert('Migration erfolgreich! Seite wird neu geladen...');
+            window.location.reload();
+        } else {
+            alert('Fehler bei der Migration: ' + (data.error || 'Unbekannter Fehler'));
+        }
+    } catch (err) {
+        console.error('Migration error:', err);
+        alert('Fehler bei der Migration: ' + err.message);
+    }
+};
+
 window.uploadChurchLogo = async () => {
     if (!isSuperAdminUser()) return;
     const fileInput = document.getElementById('super-admin-logo-file');
