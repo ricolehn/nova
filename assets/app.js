@@ -778,6 +778,8 @@ function checkAndExecuteStandingOrders(person) {
     const today = new Date();
     today.setHours(23,59,59,999); // Use end of day to avoid timezone lag (UTC vs Local)
 
+    // ⚡ Bolt: Build a Set for O(1) payment ID lookups, avoiding O(N) array scans inside the loop
+    const existingPaymentIds = new Set(payments.map(p => p.id));
     const updatedStandingOrders = [];
 
     for (const so of standingOrders) {
@@ -824,9 +826,8 @@ function checkAndExecuteStandingOrders(person) {
             const dateStr = nextDueDate.toISOString().split('T')[0];
             const paymentId = `auto_${currentSO.id}_${dateStr}`;
 
-            const exists = payments.some(p => p.id === paymentId);
-
-            if (!exists) {
+            // ⚡ Bolt: O(1) lookup instead of O(N) payments.some(...)
+            if (!existingPaymentIds.has(paymentId)) {
                 payments.push({
                     id: paymentId,
                     amount: parseFloat(currentSO.amount),
@@ -834,6 +835,7 @@ function checkAndExecuteStandingOrders(person) {
                     description: (currentSO.note || 'Dauerauftrag') + ' (Auto)',
                     isAuto: true
                 });
+                existingPaymentIds.add(paymentId); // Update Set with new ID
                 modified = true;
                 soModified = true;
             }
@@ -1185,7 +1187,9 @@ function renderUnlinkedUsers() {
     const target = document.getElementById('unlinkedUsers');
     if (!target) return;
 
-    const unlinked = users.filter(u => !people.some(p => p.uid === u.uid));
+    // ⚡ Bolt: Use a Set for O(1) lookups instead of O(N*M) nested loops
+    const linkedUids = new Set(people.filter(p => p.uid).map(p => p.uid));
+    const unlinked = users.filter(u => !linkedUids.has(u.uid));
     const availablePeople = people.filter(p => !p.uid);
 
     if (unlinked.length === 0) {
