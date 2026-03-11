@@ -9,6 +9,7 @@ const { isSafeSvg, hasSvgExtension } = require('./svgValidation');
 const { selectChurchLogoFilePath } = require('./logoStorage');
 const { resolveDataDirectory, resolveFrontendDirectory } = require('./pathConfig');
 const { resolveTrustProxySetting } = require('./trustProxy');
+const { unwrapFirebaseExportRoot } = require('./firebaseMigration');
 const {
   DEFAULT_SETTINGS,
   DEFAULT_SYSTEM_STATE,
@@ -925,7 +926,7 @@ app.post('/api/admin/migrate-firebase', verifyToken, verifySuperAdmin, (req, res
 
     try {
       const fileContent = req.file.buffer.toString('utf8');
-      const data = JSON.parse(fileContent);
+      const data = unwrapFirebaseExportRoot(JSON.parse(fileContent));
 
       // Migrate state root nodes
       const stateKeys = ['settings', 'system', 'donations', 'expenses'];
