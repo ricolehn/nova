@@ -61,7 +61,7 @@ test('stripNormalizedPersonData removes nested payment and status history arrays
     id: 'person-1',
     name: 'Ada',
     status: 'active',
-    payments: [{ amount: '10.50' }, { amount: 4.5 }],
+    payments: [{ amount: '10.50' }, { amount: '4.50' }],
     statusHistory: [{ status: 'active', startDate: '2024-01-01' }]
   };
 
@@ -128,6 +128,7 @@ test('hydratePersonRecord rebuilds normalized child collections into legacy API 
     }
   };
   const payments = [
+    buildPaymentRecordPayload('person-1', { id: 'pay-3', amount: '1.00', date: '2024-02-01', description: 'Adjustment' }),
     buildPaymentRecordPayload('person-1', { id: 'pay-2', amount: '4.50', date: '2024-03-01', description: 'Late fee' }),
     buildPaymentRecordPayload('person-1', { id: 'pay-1', amount: '10.50', date: '2024-02-01', description: 'Fee' })
   ];
@@ -146,12 +147,13 @@ test('hydratePersonRecord rebuilds normalized child collections into legacy API 
     standingOrders: [{ id: 'so-1' }],
     payments: [
       { id: 'pay-1', amount: '10.50', date: '2024-02-01', description: 'Fee' },
+      { id: 'pay-3', amount: '1.00', date: '2024-02-01', description: 'Adjustment' },
       { id: 'pay-2', amount: '4.50', date: '2024-03-01', description: 'Late fee' }
     ],
     statusHistory: [
       { status: 'active', startDate: '2024-01-01' },
       { status: 'paused', startDate: '2024-02-01' }
     ],
-    totalPaid: 15
+    totalPaid: 16
   });
 });

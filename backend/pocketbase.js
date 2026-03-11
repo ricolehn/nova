@@ -19,6 +19,8 @@ const DEFAULT_SYSTEM_STATE = {
   superAdminUid: null
 };
 
+const MIGRATION_BATCH_SIZE = 10;
+
 const DEFAULT_COLLECTION_SPECS = [
   {
     name: 'people',
@@ -487,11 +489,27 @@ function calculateTotalPaid(payments) {
   }, 0);
 }
 
+function stableSerialize(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map((entry) => stableSerialize(entry)).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
 function buildStableChildKey(prefix, ownerKey, itemKey, index, value) {
   const stableSource = itemKey !== undefined && itemKey !== null && itemKey !== ''
     ? String(itemKey)
-    : JSON.stringify([ownerKey, index, value]);
-  return crypto.createHash('sha256').update(`${prefix}:${ownerKey}:${stableSource}`).digest('hex').slice(0, 24);
+    : stableSerialize([ownerKey, index, value]);
+  return crypto.createHash('sha256').update(`${prefix}:${ownerKey}:${stableSource}`).digest('hex').slice(0, 32);
+}
+
+async function runInBatches(items, batchSize, worker) {
+  for (let index = 0; index < items.length; index += batchSize) {
+    await Promise.all(items.slice(index, index + batchSize).map((item) => worker(item)));
+  }
 }
 
 function stripNormalizedPersonData(value) {
@@ -589,14 +607,23 @@ function mergeExpenseData(existingRecords, legacyItems) {
   return [...merged.values()];
 }
 
+function getChildRecordIdentity(record) {
+  return toOptionalText(
+    record?.data?.id
+    || record?.paymentKey
+    || record?.historyKey
+    || record?.expenseKey
+    || stableSerialize(record?.data || record || {})
+  );
+}
+
 function toSortedChildValues(records, sortField) {
   return [...records]
     .sort((left, right) => {
       const leftValue = toOptionalText(left?.[sortField]);
       const rightValue = toOptionalText(right?.[sortField]);
       if (leftValue === rightValue) {
-        return toOptionalText(left?.id || left?.paymentKey || left?.historyKey || left?.expenseKey)
-          .localeCompare(toOptionalText(right?.id || right?.paymentKey || right?.historyKey || right?.expenseKey));
+        return getChildRecordIdentity(left).localeCompare(getChildRecordIdentity(right));
       }
       return leftValue.localeCompare(rightValue);
     })
@@ -679,10 +706,16 @@ async function syncPeopleChildRecords(appConfig, personKey, value) {
 
 async function migrateLegacyPeopleData(appConfig) {
   const records = await listAllRecords('people', '', appConfig);
-  for (const record of records) {
+  const [allPayments, allStatusHistory] = await Promise.all([
+    listAllRecords('payments', '', appConfig),
+    listAllRecords('status_history', '', appConfig)
+  ]);
+  const paymentsByPersonKey = groupRecordsBy(allPayments, 'personKey');
+  const historyByPersonKey = groupRecordsBy(allStatusHistory, 'personKey');
+  await runInBatches(records, MIGRATION_BATCH_SIZE, async (record) => {
     const value = record?.data && typeof record.data === 'object' ? record.data : {};
-    const existingPayments = await listAllRecords('payments', pbFilterEquals('personKey', record.personKey), appConfig);
-    const existingStatusHistory = await listAllRecords('status_history', pbFilterEquals('personKey', record.personKey), appConfig);
+    const existingPayments = paymentsByPersonKey[record.personKey] || [];
+    const existingStatusHistory = historyByPersonKey[record.personKey] || [];
     const mergedPayments = mergeChildData(
       record.personKey,
       existingPayments,
@@ -702,17 +735,19 @@ async function migrateLegacyPeopleData(appConfig) {
       payments: mergedPayments,
       statusHistory: mergedStatusHistory
     };
-    const hasLegacyArrays = Array.isArray(value.payments) || Array.isArray(value.statusHistory);
+    const hasLegacyArrays = (Array.isArray(value.payments) && value.payments.length > 0)
+      || (Array.isArray(value.statusHistory) && value.statusHistory.length > 0);
     const totalPaid = calculateTotalPaid(nextValue.payments);
+    const recordTotalPaid = toFiniteNumber(record.totalPaid);
     const needsScalarRefresh = record.status !== toOptionalText(nextValue.status)
       || record.memberSince !== toOptionalText(nextValue.memberSince)
       || record.originalMemberSince !== toOptionalText(nextValue.originalMemberSince || nextValue.memberSince)
-      || toFiniteNumber(record.totalPaid) !== totalPaid;
+      || recordTotalPaid !== totalPaid;
 
     if (hasLegacyArrays || needsScalarRefresh) {
       await upsertPeopleRecord(appConfig, record.personKey, nextValue);
     }
-  }
+  });
 }
 
 async function migrateLegacyExpensesData(appConfig) {
@@ -917,12 +952,10 @@ async function removePeopleRecord(appConfig, personKey) {
       listAllRecords('payments', pbFilterEquals('personKey', personKey), appConfig),
       listAllRecords('status_history', pbFilterEquals('personKey', personKey), appConfig)
     ]);
-    for (const payment of payments) {
-      await deleteRecord('payments', payment.id, appConfig);
-    }
-    for (const entry of statusHistory) {
-      await deleteRecord('status_history', entry.id, appConfig);
-    }
+    await Promise.all([
+      ...payments.map((payment) => deleteRecord('payments', payment.id, appConfig)),
+      ...statusHistory.map((entry) => deleteRecord('status_history', entry.id, appConfig))
+    ]);
     await deleteRecord('people', existing.id, appConfig);
   }
 }
