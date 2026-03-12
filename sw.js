@@ -28,19 +28,29 @@ self.addEventListener('fetch', event => {
         return;
     }
 
+    // Network-first strategy: always try to fetch the latest version from the
+    // server so that Docker image updates are visible immediately.  Fall back
+    // to the cache when the network is unavailable (offline support).
     event.respondWith(
-        caches.match(event.request)
+        fetch(event.request)
             .then(response => {
-                // Cache hit - return response
-                if (response) {
-                    return response;
-                }
-                return fetch(event.request).catch(() => {
-                    // Fallback for navigation requests
-                    if (event.request.mode === 'navigate') {
-                        return caches.match('./index.html');
-                    }
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME).then(cache => {
+                    cache.put(event.request, responseToCache);
                 });
+                return response;
+            })
+            .catch(() => {
+                return caches.match(event.request)
+                    .then(response => {
+                        if (response) {
+                            return response;
+                        }
+                        // Fallback for navigation requests
+                        if (event.request.mode === 'navigate') {
+                            return caches.match('./index.html');
+                        }
+                    });
             })
     );
 });

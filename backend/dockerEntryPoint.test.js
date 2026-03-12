@@ -84,6 +84,7 @@ test('docker entrypoint updates stale frontend files on image upgrade', () => {
   const tempRoot = makeTempDir();
   try {
     const dataDir = path.join(tempRoot, 'data');
+    const dbDir = path.join(tempRoot, 'db');
     const frontendDir = path.join(tempRoot, 'html');
     const seedDir = path.join(tempRoot, 'html-seed');
 
@@ -102,6 +103,7 @@ test('docker entrypoint updates stale frontend files on image upgrade', () => {
       env: {
         ...process.env,
         DATA_DIR: dataDir,
+        DB_DIR: dbDir,
         FRONTEND_DIR: frontendDir,
         FRONTEND_SEED_DIR: seedDir
       },
@@ -114,6 +116,52 @@ test('docker entrypoint updates stale frontend files on image upgrade', () => {
     assert.equal(fs.readFileSync(path.join(frontendDir, 'assets', 'app.js'), 'utf8'), 'new app code');
     // New files from seed should appear in the frontend directory
     assert.equal(fs.readFileSync(path.join(frontendDir, 'assets', 'new-file.css'), 'utf8'), 'added in upgrade');
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('docker entrypoint removes stale files that no longer exist in the seed', () => {
+  const tempRoot = makeTempDir();
+  try {
+    const dataDir = path.join(tempRoot, 'data');
+    const dbDir = path.join(tempRoot, 'db');
+    const frontendDir = path.join(tempRoot, 'html');
+    const seedDir = path.join(tempRoot, 'html-seed');
+
+    // Simulate an existing volume with files from a previous image version
+    fs.mkdirSync(path.join(frontendDir, 'assets'), { recursive: true });
+    fs.mkdirSync(path.join(frontendDir, 'old-dir'), { recursive: true });
+    fs.writeFileSync(path.join(frontendDir, 'index.html'), 'old index');
+    fs.writeFileSync(path.join(frontendDir, 'assets', 'app.js'), 'old app');
+    fs.writeFileSync(path.join(frontendDir, 'assets', 'removed.css'), 'will be removed');
+    fs.writeFileSync(path.join(frontendDir, 'old-dir', 'legacy.js'), 'will be removed');
+
+    // New image seed no longer includes removed.css, old-dir/legacy.js
+    fs.mkdirSync(path.join(seedDir, 'assets'), { recursive: true });
+    fs.writeFileSync(path.join(seedDir, 'index.html'), 'new index');
+    fs.writeFileSync(path.join(seedDir, 'assets', 'app.js'), 'new app');
+
+    const result = spawnSync(entrypoint, ['/bin/sh', '-c', 'exit 0'], {
+      env: {
+        ...process.env,
+        DATA_DIR: dataDir,
+        DB_DIR: dbDir,
+        FRONTEND_DIR: frontendDir,
+        FRONTEND_SEED_DIR: seedDir
+      },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, formatFailure(result));
+    // Updated files should reflect the new seed content
+    assert.equal(fs.readFileSync(path.join(frontendDir, 'index.html'), 'utf8'), 'new index');
+    assert.equal(fs.readFileSync(path.join(frontendDir, 'assets', 'app.js'), 'utf8'), 'new app');
+    // Stale files that no longer exist in the seed should be removed
+    assert.equal(fs.existsSync(path.join(frontendDir, 'assets', 'removed.css')), false);
+    assert.equal(fs.existsSync(path.join(frontendDir, 'old-dir', 'legacy.js')), false);
+    // Empty directory should also be cleaned up
+    assert.equal(fs.existsSync(path.join(frontendDir, 'old-dir')), false);
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }

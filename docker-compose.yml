@@ -1,0 +1,14 @@
+services:
+  nova:
+    image: ghcr.io/ricouhd/nova:latest
+    container_name: nova-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - nova-data:/app/data
+      - nova-db:/app/db
+
+volumes:
+  nova-data:
+  nova-db:
