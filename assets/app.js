@@ -23,6 +23,7 @@ let currentEditedPayment = null;
 
 // ⚡ Bolt: Global variable to handle paginated display of historical transactions
 let transactionDisplayLimit = 150;
+let cachedTransactions = null;
 
 // ⚡ Bolt: Global formatters for improved performance (avoiding re-initialization)
 const numberFormatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -2115,29 +2116,34 @@ window.addEventListener('resize', () => {
 window.showTransactionModal = function(resetLimit = true) {
     if (resetLimit) {
         transactionDisplayLimit = 150;
+        cachedTransactions = null; // Clear cache on reset
     }
 
     const container = document.getElementById('full-transaction-list');
-    let all = [];
+    let all = cachedTransactions;
 
-    const safePeople = safeList(people);
-    const safeDonations = safeList(donations);
-    const safeExpenses = safeList(expenses);
+    if (!all) {
+        all = [];
+        const safePeople = safeList(people);
+        const safeDonations = safeList(donations);
+        const safeExpenses = safeList(expenses);
 
-    safePeople.forEach(p => {
-        safeList(p.payments).forEach(pay => {
-            all.push({...pay, who: p.name, type: 'pay'});
+        safePeople.forEach(p => {
+            safeList(p.payments).forEach(pay => {
+                all.push({...pay, who: p.name, type: 'pay'});
+            });
         });
-    });
-    safeDonations.forEach(d => {
-        all.push({...d, who: d.name || 'Spende', type: 'don'});
-    });
-    safeExpenses.forEach(e => {
-        all.push({...e, who: e.issuer, type: 'exp'});
-    });
+        safeDonations.forEach(d => {
+            all.push({...d, who: d.name || 'Spende', type: 'don'});
+        });
+        safeExpenses.forEach(e => {
+            all.push({...e, who: e.issuer, type: 'exp'});
+        });
 
-    // ⚡ Bolt: Use localeCompare for faster sorting without Date objects
-    all.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+        // ⚡ Bolt: Use localeCompare for faster sorting without Date objects
+        all.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+        cachedTransactions = all;
+    }
 
     if (all.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Keine Buchungen vorhanden.</div>';
