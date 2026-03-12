@@ -986,7 +986,7 @@ app.get('/api/receipts/:filename', protectedActionRateLimit, verifyToken, (req, 
   }
 });
 
-app.post('/api/send-email', protectedActionRateLimit, verifyToken, async (req, res) => {
+app.post('/api/send-email', protectedActionRateLimit, verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { to, subject, text, html } = req.body;
     if (!to || !subject) {
