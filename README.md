@@ -9,7 +9,7 @@
 
 Nova is a web-based financial management application for small groups, clubs, or flatshares. It provides features to track income, expenses, donations, and individual members' contributions. The app consists of a frontend written in HTML/JS, a Node.js backend for handling file uploads, email notifications, and configuration, and an embedded PocketBase instance for authentication and data storage.
 
-## Features
+## ✨ Features
 
 - **Admin/User Views:** Distinct interfaces tailored for administrators and standard users.
 - **Request Management (with approvals):** Users can submit requests (payments, status changes, expenses) which admins can review and approve or reject.
@@ -18,7 +18,7 @@ Nova is a web-based financial management application for small groups, clubs, or
 - **Donations:** Separate tracking for general donations.
 - **Expenses:** Log expenses with optional receipt uploads.
 
-## Running the Application
+## 🚀 Running the Application
 
 Nova is distributed as an all-in-one Docker image. It includes the frontend, the backend server, and a bundled PocketBase process.
 
@@ -71,7 +71,7 @@ docker run -d \
 <details>
 <summary><b>Setup Wizard</b></summary>
 
-## Setup Wizard
+## 🛠 Setup Wizard
 
 When you first access the application at `http://localhost:3000` (or your mapped port), you will be greeted by the built-in Setup Wizard. You only need to provide:
 
@@ -82,7 +82,7 @@ When you first access the application at `http://localhost:3000` (or your mapped
 PocketBase is provisioned automatically inside the container. Nova stores its runtime configuration in `/app/data/config.json`, the uploaded logo in `/app/data/church-logo.svg`, and the PocketBase database in `/app/db` by default. If needed, you can override the database path with `DB_DIR` (or the more explicit `POCKETBASE_DIR`).
 </details>
 
-## First User Setup (Super-Admin)
+## 👑 First User Setup (Super-Admin)
 
 The **first user who logs in after setup** is automatically promoted to:
 
@@ -94,20 +94,12 @@ The super-admin can then:
 - promote/demote other users to regular admins (supervisors),
 - edit recorded payments afterwards,
 - update `assets/church-logo.svg` (church icon),
-- update the app name and SMTP configuration directly from the advanced settings UI,
-- use the temporary Firebase migration add-on to read the old Realtime Database directly into PocketBase.
-
-The migration add-on accepts either the full legacy `/app/data/config.json` from the Firebase-based setup or the two old config blocks separately:
-
-- `firebaseConfig`
-- `serviceAccount`
-
-It migrates the legacy database roots (`settings`, `system`, `donations`, `expenses`, `people`, `requests`, `users`) into the current PocketBase-backed structure. Existing PocketBase user profiles are updated when the same UID already exists there; Firebase Auth passwords are not transferred.
+- update the app name and SMTP configuration directly from the advanced settings UI.
 
 <details>
 <summary><b>PocketBase access model</b></summary>
 
-## PocketBase access model
+## 🔐 PocketBase access model
 
 Nova now provisions PocketBase automatically and configures the collections, indexes, and default records on startup. The effective permission model mirrors the previous Firebase rules:
 
@@ -116,6 +108,6 @@ Nova now provisions PocketBase automatically and configures the collections, ind
 - **The first logged-in user** is promoted to `superAdmin` and can manage admin roles plus the advanced system settings.
 </details>
 
-## License
+## 📄 License
 
 This project is licensed under the newest GNU General Public License (GPLv3). See the `LICENSE` file for more details.
