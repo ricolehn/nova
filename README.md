@@ -123,6 +123,42 @@ When you first access the application at `http://localhost:3000` (or your mapped
 PocketBase is provisioned automatically inside the container. Nova stores its runtime configuration in `/app/data/config.json`, the uploaded logo in `/app/data/church-logo.svg`, and the PocketBase database in `/app/db` by default. If needed, you can override the database path with `DB_DIR` (or the more explicit `POCKETBASE_DIR`).
 </details>
 
+## 🔄 Migrating to a New Instance
+
+Migrating Nova to a new server is straightforward because all persistent state lives in exactly two host directories that you mount as Docker volumes:
+
+| Volume (inside container) | What it stores |
+|---------------------------|---------------|
+| `/app/data` | `config.json` (app name, SMTP settings, PocketBase credentials used by the backend), the custom logo (`church-logo.svg`), and any uploaded receipt files |
+| `/app/db` | The PocketBase database (`pb_data/`) — all collections (people, payments, expenses, requests, …) **and** the user accounts / passwords |
+
+### Steps
+
+1. **Stop the running container** on the old host so no writes happen during the copy.
+
+2. **Copy both host directories** to the new host:
+   ```bash
+   # Example with rsync — adjust source paths to match your setup
+   rsync -avz /path/to/your/storage/  newhost:/path/to/new/storage/
+   rsync -avz /path/to/your/cache/    newhost:/path/to/new/cache/
+   ```
+   Any tool that preserves file contents works (`scp -r`, `cp -a`, a tarball, etc.).
+
+3. **Start Nova on the new host**, pointing the volumes at the copied directories:
+   ```bash
+   docker run -d \
+     -p 3000:3000 \
+     -v /path/to/new/storage:/app/data \
+     -v /path/to/new/cache:/app/db \
+     --name nova-app \
+     --restart unless-stopped \
+     ghcr.io/ricouhd/nova:latest
+   ```
+
+That is all. **You do not need to change any login credentials.** Every user account, password hash, and admin/super-admin flag is stored inside the PocketBase database (`/app/db`), so they are preserved automatically when you copy that directory. The backend credentials Nova uses to talk to PocketBase internally are stored in `/app/data/config.json` and are likewise copied as-is — no manual edits required.
+
+> **Tip:** After the new container is running you can decommission the old one. If you want a quick sanity-check before doing so, open the new instance in a browser and log in with your existing credentials to confirm everything migrated correctly.
+
 ## 👑 First User Setup (Super-Admin)
 
 The **first user who logs in after setup** is automatically promoted to:
