@@ -65,22 +65,24 @@ ensure_writable_dir() {
 ensure_writable_dir "$data_dir" "Data"
 ensure_writable_dir "$frontend_dir" "Frontend"
 
-# Check if the mapped directory is empty by looking for index.html 
+# Always sync bundled frontend files into the (possibly mounted) frontend
+# directory so that image upgrades take effect without removing the volume.
 if [ ! -f "$frontend_dir/index.html" ]; then
     echo "First run detected. Populating $frontend_dir with frontend files..."
-    
-    # Copy files directly as root to avoid BusyBox su limitations
-    cp -R "$frontend_seed_dir"/. "$frontend_dir"
-    
-    # Immediately hand ownership to the runtime user
-    if [ "$(id -u)" -eq 0 ]; then
-        chown -R "$runtime_user":"$runtime_user" "$frontend_dir"
-    fi
-    
-    echo "Files copied successfully."
 else
-    echo "Existing frontend files detected in $frontend_dir. Skipping copy."
+    echo "Updating frontend files in $frontend_dir from bundled seed..."
 fi
+
+# Copy files directly as root to avoid BusyBox su limitations.
+# Existing files are overwritten; user data lives in $data_dir, not here.
+cp -R "$frontend_seed_dir"/. "$frontend_dir"
+
+# Immediately hand ownership to the runtime user
+if [ "$(id -u)" -eq 0 ]; then
+    chown -R "$runtime_user":"$runtime_user" "$frontend_dir"
+fi
+
+echo "Frontend files synced successfully."
 
 # Hand over control to the Node application
 run_as_runtime_user "$@"
