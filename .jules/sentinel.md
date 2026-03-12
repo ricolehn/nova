@@ -1,0 +1,4 @@
+## 2024-05-18 - [CRITICAL] Fix Path Traversal in `/api/receipts/:filename`
+**Vulnerability:** The `/api/receipts/:filename` endpoint was vulnerable to Path Traversal (Directory Traversal). It concatenated unsanitized user input directly into a file path (`path.join(uploadDir, req.params.filename)`) and served the result using `res.sendFile`. An attacker could pass a payload like `..%2F..%2Fconfig.json` to access arbitrary files on the backend filesystem.
+**Learning:** Express implicitly decodes URL-encoded parameters. Using `path.join` alone is not safe when passing user input to file operations. We need to normalize and check if the resulting path remains within the bounds of the expected base directory.
+**Prevention:** Always normalize the final path using `path.resolve()` and the base directory using `path.resolve()`. Then, use `.startsWith()` to explicitly verify that the resolved final path begins with the resolved base directory path.

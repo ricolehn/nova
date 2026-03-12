@@ -1008,7 +1008,13 @@ app.post('/api/upload', protectedActionRateLimit, verifyToken, upload.single('re
 });
 
 app.get('/api/receipts/:filename', protectedActionRateLimit, verifyToken, (req, res) => {
-  const filePath = path.join(uploadDir, req.params.filename);
+  const filePath = path.resolve(path.join(uploadDir, req.params.filename));
+  const normalizedUploadDir = path.resolve(uploadDir);
+
+  if (!filePath.startsWith(normalizedUploadDir)) {
+    return res.status(403).send('Forbidden: Path traversal detected');
+  }
+
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
