@@ -21,6 +21,9 @@ let superAdminPaymentRows = [];
 let superAdminUserRows = [];
 let currentEditedPayment = null;
 
+// ⚡ Bolt: Global variable to handle paginated display of historical transactions
+let transactionDisplayLimit = 150;
+
 // ⚡ Bolt: Global formatters for improved performance (avoiding re-initialization)
 const numberFormatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const currencyFormatter = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
@@ -2109,7 +2112,11 @@ window.addEventListener('resize', () => {
     }, 100);
 });
 
-window.showTransactionModal = function() {
+window.showTransactionModal = function(resetLimit = true) {
+    if (resetLimit) {
+        transactionDisplayLimit = 150;
+    }
+
     const container = document.getElementById('full-transaction-list');
     let all = [];
 
@@ -2135,7 +2142,9 @@ window.showTransactionModal = function() {
     if (all.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Keine Buchungen vorhanden.</div>';
     } else {
-        container.innerHTML = all.map(t => {
+        // ⚡ Bolt: Limit DOM elements rendered to avoid blocking the main thread on large histories
+        const preview = all.slice(0, transactionDisplayLimit);
+        let html = preview.map(t => {
             const isExp = t.type === 'exp';
             const color = isExp ? 'text-danger' : 'text-success';
             const sign = isExp ? '-' : '+';
@@ -2151,8 +2160,33 @@ window.showTransactionModal = function() {
                 </div>
             `;
         }).join('');
+
+        if (all.length > preview.length) {
+            html += `
+                <div style="text-align:center; padding:10px;">
+                    <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom: 10px;">Es werden ${preview.length} von ${all.length} Buchungen angezeigt.</div>
+                    <button class="btn btn-secondary" onclick="loadMoreTransactions()">Mehr laden...</button>
+                </div>
+            `;
+        }
+
+        // Save scroll position
+        const previousScrollTop = container.scrollTop;
+
+        container.innerHTML = html;
+
+        // Restore scroll position to avoid jumping to top when loading more
+        if (!resetLimit) {
+             container.scrollTop = previousScrollTop;
+        }
     }
     openModal('transaction-modal');
+};
+
+window.loadMoreTransactions = function() {
+    transactionDisplayLimit += 150;
+    // Call with resetLimit = false to keep the increased limit and preserve scroll
+    window.showTransactionModal(false);
 };
 
 window.addPerson = async () => {
