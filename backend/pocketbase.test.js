@@ -14,8 +14,7 @@ const {
   buildStatusHistoryRecordPayload,
   buildExpenseRecordPayload,
   hydratePersonRecord,
-  clearSuperuserTokenCache,
-  importFirebaseData
+  clearSuperuserTokenCache
 } = require('./pocketbase');
 
 test('normalizeDataPath trims duplicate separators', () => {
@@ -220,6 +219,3 @@ test('hydratePersonRecord attaches _childPayments/_childStatusHistory-compatible
   assert.equal(result.totalPaid, 5);
 });
 
-test('importFirebaseData is exported as a callable async function', () => {
-  assert.equal(typeof importFirebaseData, 'function');
-});

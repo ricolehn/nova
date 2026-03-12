@@ -2686,86 +2686,20 @@ window.saveAdvancedSystemConfig = async () => {
             body: JSON.stringify(payload)
         });
         if (!response.ok) {
-            throw new Error(await response.text());
+            let errMsg;
+            try {
+                const errData = await response.json();
+                errMsg = errData.error || JSON.stringify(errData);
+            } catch {
+                errMsg = await response.text();
+            }
+            throw new Error(errMsg);
         }
         advancedConfigAppName = appName;
         showToast('System-Konfiguration gespeichert');
     } catch (err) {
         console.error('Fehler beim Speichern der erweiterten Konfiguration:', err);
         alert(`Erweiterte Konfiguration konnte nicht gespeichert werden: ${err.message || 'Unbekannter Fehler'}`);
-    }
-};
-
-function parseFirebaseExport(code) {
-    const text = (code || '').trim();
-    try {
-        return JSON.parse(text);
-    } catch {}
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-    if (start === -1 || end === -1 || end <= start) {
-        throw new Error('Kein gültiges JSON-Objekt gefunden. Bitte stellen Sie sicher, dass Sie den vollständigen JSON-Export eingefügt haben.');
-    }
-    try {
-        return JSON.parse(text.slice(start, end + 1));
-    } catch {
-        throw new Error('JSON-Parsing fehlgeschlagen. Bitte prüfen Sie, ob der Export vollständig und korrekt formatiert ist.');
-    }
-}
-
-window.runFirebaseMigration = async () => {
-    if (!isSuperAdminUser()) return;
-    const code = document.getElementById('firebase-import-code').value;
-    if (!code.trim()) {
-        alert('Bitte fügen Sie den Firebase-Datenbank-Export ein.');
-        return;
-    }
-    let data;
-    try {
-        data = parseFirebaseExport(code);
-    } catch (err) {
-        alert('Ungültiges Format. Bitte fügen Sie den JSON-Export der Firebase Realtime Database ein.\n\n' + (err.message || ''));
-        return;
-    }
-    if (data.apiKey || data.authDomain || data.databaseURL) {
-        alert('Sie haben eine Firebase SDK-Konfiguration eingefügt.\n\nBitte exportieren Sie stattdessen die Datenbankdaten:\n1. Firebase Console öffnen\n2. Realtime Database auswählen\n3. ⋮ Menü → „Daten exportieren (JSON)"\n4. Die heruntergeladene JSON-Datei hier einfügen.');
-        return;
-    }
-    setButtonLoading('btn-firebase-import', true, 'Importiere...');
-    const resultEl = document.getElementById('firebase-import-result');
-    resultEl.style.display = 'none';
-    try {
-        const response = await fetchWithAuth(`${config.apiBaseUrl}/admin/firebase-import`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data })
-        });
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({ error: 'Import fehlgeschlagen' }));
-            throw new Error(err.error || 'Import fehlgeschlagen');
-        }
-        const result = await response.json();
-        const imp = result.imported || {};
-        const lines = [
-            `✓ Personen importiert: ${imp.people || 0}`,
-            `✓ Ausgaben importiert: ${imp.expenses || 0}`,
-            imp.settingsUpdated ? '✓ Einstellungen aktualisiert' : null,
-            imp.donationsUpdated ? '✓ Spenden aktualisiert' : null
-        ].filter(Boolean).join('<br>');
-        resultEl.style.display = 'block';
-        resultEl.style.background = 'var(--success-bg, #d4edda)';
-        resultEl.style.color = 'var(--success-text, #155724)';
-        resultEl.innerHTML = '<strong>Import erfolgreich!</strong><br>' + lines;
-        await loadData();
-        showToast('Firebase-Import abgeschlossen');
-    } catch (err) {
-        resultEl.style.display = 'block';
-        resultEl.style.background = 'var(--danger-bg, #f8d7da)';
-        resultEl.style.color = 'var(--danger-text, #721c24)';
-        resultEl.innerHTML = '<strong>Fehler:</strong> ' + escapeHtml(err.message || 'Unbekannter Fehler');
-        console.error('Firebase import error:', err);
-    } finally {
-        setButtonLoading('btn-firebase-import', false);
     }
 };
 

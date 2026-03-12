@@ -35,8 +35,7 @@ const {
   syncExpenseRecords,
   listRequestRecords,
   getRequestRecord,
-  upsertRequestRecord,
-  importFirebaseData
+  upsertRequestRecord
 } = require('./pocketbase');
 
 const app = express();
@@ -895,7 +894,8 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
     };
 
     fs.writeFileSync(configFile, JSON.stringify(newConfig, null, 2), 'utf8');
-    await setRuntimeConfig(newConfig);
+    appConfig = newConfig;
+    transporter = buildSmtpTransport(newConfig.smtp || null);
     res.json({ success: true });
   } catch (error) {
     console.error('Failed to update system config:', error);
@@ -967,20 +967,6 @@ app.post('/api/admin/logo', verifyToken, verifySuperAdmin, (req, res) => {
       res.status(500).json({ error: 'Failed to update logo: ' + msg });
     }
   });
-});
-
-app.post('/api/admin/firebase-import', verifyToken, verifySuperAdmin, async (req, res) => {
-  try {
-    const data = req.body?.data;
-    if (!data || typeof data !== 'object') {
-      return res.status(400).json({ error: 'Missing or invalid import data' });
-    }
-    const results = await importFirebaseData(appConfig, data);
-    res.json({ success: true, imported: results });
-  } catch (error) {
-    console.error('Firebase import failed:', error);
-    res.status(500).json({ error: 'Import failed: ' + (error.message || 'Unknown error') });
-  }
 });
 
 app.post('/api/upload', protectedActionRateLimit, verifyToken, upload.single('receipt'), (req, res) => {

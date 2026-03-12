@@ -204,22 +204,6 @@
                         <button class="btn btn-primary btn-block" onclick="uploadChurchLogo()">Logo hochladen</button>
                     </div>
 
-                    <!-- Firebase Migration -->
-                    <div class="form-group" style="margin-bottom: 30px; border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--surface-alt);">
-                        <div style="font-weight:800; margin-bottom:10px; font-size: 1.05rem;">Firebase-Datenmigration</div>
-                        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:15px;">
-                            Migriert Daten aus dem alten Firebase-System nach PocketBase. Fügen Sie den JSON-Export Ihrer Firebase Realtime Database ein.<br>
-                            Den Export erhalten Sie in der Firebase Console unter <strong>Realtime Database → ⋮ → Daten exportieren (JSON)</strong>.<br>
-                            Vorhandene Datensätze werden nicht überschrieben – es werden nur neue Daten ergänzt.
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="firebase-import-code">Firebase-Datenbank Export (JSON)</label>
-                            <textarea id="firebase-import-code" class="form-input" style="min-height: 120px; font-family: monospace; font-size: 0.85rem;" placeholder='{ "people": { ... }, "expenses": { ... }, "settings": { ... } }'></textarea>
-                        </div>
-                        <div id="firebase-import-result" style="display:none; margin-bottom:10px; padding: 10px; border-radius: 8px;"></div>
-                        <button class="btn btn-primary btn-block" id="btn-firebase-import" onclick="runFirebaseMigration()">Daten importieren</button>
-                    </div>
-
                     <!-- System Config -->
                     <div class="form-group" style="margin-bottom: 15px; border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--surface-alt);">
                         <div style="font-weight:800; margin-bottom:15px; font-size: 1.05rem;">System-Konfiguration</div>

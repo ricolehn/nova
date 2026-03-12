@@ -803,44 +803,6 @@ async function migrateLegacyExpensesData(appConfig) {
   await upsertStateValue(appConfig, 'expenses', {});
 }
 
-async function importFirebaseData(appConfig, data) {
-  const results = { people: 0, expenses: 0, settingsUpdated: false, donationsUpdated: false };
-
-  if (data.settings && typeof data.settings === 'object') {
-    const existing = await getStateValue(appConfig, 'settings', DEFAULT_SETTINGS);
-    await upsertStateValue(appConfig, 'settings', { ...DEFAULT_SETTINGS, ...existing, ...data.settings });
-    results.settingsUpdated = true;
-  }
-
-  if (data.donations !== undefined && data.donations !== null) {
-    await upsertStateValue(appConfig, 'donations', data.donations);
-    results.donationsUpdated = true;
-  }
-
-  if (data.expenses !== undefined) {
-    const legacyExpenses = normalizeRecordListInput(data.expenses);
-    const existingExpenses = await listAllRecords('expenses', '', appConfig);
-    const merged = mergeExpenseData(existingExpenses, legacyExpenses);
-    await syncCollectionRecords(
-      'expenses',
-      'expenseKey',
-      existingExpenses,
-      merged.map((expense, index) => buildExpenseRecordPayload(expense, index)),
-      appConfig
-    );
-    results.expenses = legacyExpenses.length;
-  }
-
-  if (data.people && typeof data.people === 'object') {
-    const peopleEntries = Object.entries(data.people);
-    await runInBatches(peopleEntries, MIGRATION_BATCH_SIZE, async ([personKey, personData]) => {
-      await upsertPeopleRecord(appConfig, personKey, personData);
-    });
-    results.people = peopleEntries.length;
-  }
-
-  return results;
-}
 
 async function ensurePocketBaseSchema(appConfig) {
   await ensureUsersCollection(appConfig);
@@ -1122,6 +1084,5 @@ module.exports = {
   syncExpenseRecords,
   listRequestRecords,
   getRequestRecord,
-  upsertRequestRecord,
-  importFirebaseData
+  upsertRequestRecord
 };
