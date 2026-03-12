@@ -1,15 +1,13 @@
-const CACHE_NAME = 'nova-v1.0.4';
+const CACHE_NAME = 'nova-v1.0.5';
 const URLS_TO_CACHE = [
     './',
     './index.html',
     './assets/style.css',
     './assets/config.js',
     './assets/app.js',
+    './assets/pocketbase-compat.js',
     './manifest.json',
-    './assets/icon.png',
-    'https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js',
-    'https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js',
-    'https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js'
+    './assets/icon.png'
 ];
 
 self.addEventListener('install', event => {

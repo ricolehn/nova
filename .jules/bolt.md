@@ -1,0 +1,10 @@
+## 2024-11-20 - Set.has() vs Array.some() for O(1) Lookups
+**Learning:** Found and replaced O(N*M) nested array scans (like `Array.some()` inside a `while` loop, and `Array.filter()` combined with `Array.some()`) in `assets/app.js` with `Set` lookups. This significantly improves performance from O(N*M) to O(N+M) for operations like `checkAndExecuteStandingOrders` and `renderUnlinkedUsers`, where N and M can be large lists of users or payments.
+**Action:** When working with collections and nested iterations in vanilla JavaScript, always look for opportunities to precompute a `Set` of IDs before the loop. Remember to also `add()` new elements to the `Set` during the loop if the collection is being actively mutated.
+
+## 2024-11-20 - Unbounded DOM Generation in Vanilla JS Modals
+**Learning:** Discovered an architectural bottleneck in vanilla JS modal rendering (e.g., `showTransactionModal`), where assigning thousands of historical data items directly to `innerHTML` via `.map().join('')` causes synchronous main thread blocking and massive layout thrashing due to a lack of list virtualization.
+**Action:** Always apply limits (e.g., `.slice(0, N)`) or implement basic lazy loading/virtualization before rendering long lists into the DOM in a vanilla JavaScript application to ensure a fast time-to-interactive and smooth animations.
+## 2026-03-12 - Re-sorting Pagination Bottleneck
+**Learning:** Discovered that generating and sorting a combined list of transactions (O(N log N)) inside a pagination function (`showTransactionModal`) caused severe blocking when the user simply clicked "Load More". Since the underlying data doesn't change while the modal is open, recalculating from scratch is wasteful.
+**Action:** When implementing 'Load More' pagination for large aggregated lists, always cache the generated and sorted array in a higher-scope variable when the modal first opens. For subsequent page requests, slice directly from the cache to achieve O(1) data preparation time. Ensure the cache is explicitly cleared when the modal is reopened or when underlying data changes.

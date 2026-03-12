@@ -9,6 +9,23 @@ function resolveDataDirectory({ env = process.env } = {}) {
   return path.join(__dirname, '..', 'data');
 }
 
+function resolvePocketBaseDirectory({ env = process.env, existsSync = fs.existsSync } = {}) {
+  if (env.POCKETBASE_DIR) {
+    return path.resolve(env.POCKETBASE_DIR);
+  }
+
+  if (env.DB_DIR) {
+    return path.resolve(env.DB_DIR);
+  }
+
+  const dbDir = path.join(__dirname, '..', 'db');
+  if (existsSync(dbDir)) {
+    return dbDir;
+  }
+
+  return path.join(resolveDataDirectory({ env }), 'pocketbase');
+}
+
 function resolveFrontendDirectory({ env = process.env, existsSync = fs.existsSync } = {}) {
   if (env.FRONTEND_DIR) {
     return path.resolve(env.FRONTEND_DIR);
@@ -24,5 +41,6 @@ function resolveFrontendDirectory({ env = process.env, existsSync = fs.existsSyn
 
 module.exports = {
   resolveDataDirectory,
+  resolvePocketBaseDirectory,
   resolveFrontendDirectory
 };

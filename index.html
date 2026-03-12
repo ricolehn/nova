@@ -6,12 +6,9 @@
     <meta name="theme-color" content="#06b6d4">
     <link rel="manifest" href="manifest.json">
     <title>Nova</title>
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="modulepreload" href="assets/config.js">
     <link rel="modulepreload" href="assets/app.js">
-    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js">
-    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js">
-    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js">
+    <link rel="modulepreload" href="assets/pocketbase-compat.js">
     <link rel="stylesheet" href="assets/style.css">
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 </head>
@@ -212,13 +209,9 @@
                         <div style="font-weight:800; margin-bottom:15px; font-size: 1.05rem;">System-Konfiguration</div>
 
                         <div class="form-group">
-                            <label class="form-label" for="super-admin-firebase-config">Firebase Config (JSON)</label>
-                            <textarea id="super-admin-firebase-config" class="form-input" rows="5" spellcheck="false" style="font-family: monospace; font-size: 0.85rem;"></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="super-admin-service-account">Firebase Service Account (JSON)</label>
-                            <textarea id="super-admin-service-account" class="form-input" rows="5" spellcheck="false" style="font-family: monospace; font-size: 0.85rem;"></textarea>
+                            <label class="form-label" for="super-admin-app-name">Name der Anwendung</label>
+                            <input type="text" id="super-admin-app-name" class="form-input" placeholder="Nova">
+                            <div class="help-text">PocketBase wird automatisch im Docker-Container verwaltet. Hier können Sie nur den Anzeigenamen und optionale SMTP-Daten ändern.</div>
                         </div>
 
                         <div style="font-weight:800; margin-bottom:15px; margin-top: 25px; font-size: 1rem;">SMTP Server (Optional)</div>

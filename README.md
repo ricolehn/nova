@@ -7,9 +7,9 @@
   </p>
 </div>
 
-Nova is a web-based financial management application for small groups, clubs, or flatshares. It provides features to track income, expenses, donations, and individual members' contributions. The app consists of a frontend written in HTML/JS and a Node.js backend for handling file uploads, email notifications, and configuration.
+Nova is a web-based financial management application for small groups, clubs, or flatshares. It provides features to track income, expenses, donations, and individual members' contributions. The app consists of a frontend written in HTML/JS, a Node.js backend for handling file uploads, email notifications, and configuration, and an embedded PocketBase instance for authentication and data storage.
 
-## Features
+## ✨ Features
 
 - **Admin/User Views:** Distinct interfaces tailored for administrators and standard users.
 - **Request Management (with approvals):** Users can submit requests (payments, status changes, expenses) which admins can review and approve or reject.
@@ -18,13 +18,18 @@ Nova is a web-based financial management application for small groups, clubs, or
 - **Donations:** Separate tracking for general donations.
 - **Expenses:** Log expenses with optional receipt uploads.
 
-## Running the Application
+## 🚀 Running the Application
 
-Nova is distributed as an all-in-one Docker image. It includes both the frontend and the backend server.
+Nova is distributed as an all-in-one Docker image. It includes the frontend, the backend server, and a bundled PocketBase process.
 
 ### Quick Start (Docker)
 
-To run Nova, pull the latest image and start a container. It is highly recommended to map the `/app/data` path to a persistent storage pool or volume, as this is where your configuration, uploaded receipts, and the custom logo will be saved.
+To run Nova, pull the latest image and start a container. Nova now keeps general app data and the PocketBase database in separate paths by default:
+
+- `/app/data` for configuration, uploads, and the custom logo
+- `/app/db` for the PocketBase database files
+
+That makes it easy to place `/app/db` on faster cache/SSD storage while keeping the rest on larger HDD-backed storage.
 
 ```bash
 docker pull ghcr.io/ricouhd/nova:latest
@@ -32,14 +37,15 @@ docker pull ghcr.io/ricouhd/nova:latest
 docker run -d \
   -p 3000:3000 \
   -v /path/to/your/storage:/app/data \
+  -v /path/to/your/cache:/app/db \
   --name nova-app \
   --restart unless-stopped \
   ghcr.io/ricouhd/nova:latest
 ```
 
-*Replace `/path/to/your/storage` with a directory on your host machine to ensure your data survives container restarts.*
+*Replace `/path/to/your/storage` and `/path/to/your/cache` with directories on your host machine to ensure your data survives container restarts.*
 
-> **Unraid / Permission Note:** Nova starts as root only long enough to prepare bind-mounted `/app/data` and `/app/html` directories for the bundled `node` user (UID 1000), then drops back to `node` before starting the app. If your storage backend blocks ownership changes, make sure every mapped host directory is writable by UID 1000, e.g. `chown -R 1000:1000 /path/to/your/storage /path/to/your/frontend`.
+> **Unraid / Permission Note:** Nova starts as root only long enough to prepare bind-mounted `/app/data`, `/app/db`, and `/app/html` directories for the bundled `node` user (UID 1000), then drops back to `node` before starting the app. If your storage backend blocks ownership changes, make sure every mapped host directory is writable by UID 1000, e.g. `chown -R 1000:1000 /path/to/your/storage /path/to/your/cache /path/to/your/frontend`.
 
 ### Optional: Frontend Volume Mapping
 
@@ -49,6 +55,7 @@ The frontend files are bundled directly in `/app/html` inside the container. If 
 docker run -d \
   -p 3000:3000 \
   -v /path/to/your/storage:/app/data \
+  -v /path/to/your/cache:/app/db \
   -v /path/to/your/frontend:/app/html \
   --name nova-app \
   --restart unless-stopped \
@@ -64,19 +71,18 @@ docker run -d \
 <details>
 <summary><b>Setup Wizard</b></summary>
 
-## Setup Wizard
+## 🛠 Setup Wizard
 
-When you first access the application at `http://localhost:3000` (or your mapped port), you will be greeted by the built-in Setup Wizard. You will need to provide:
+When you first access the application at `http://localhost:3000` (or your mapped port), you will be greeted by the built-in Setup Wizard. You only need to provide:
 
 1. **App Name:** The name of your instance (e.g., Nova).
-2. **Firebase Frontend Config:** Either the pure JSON object from your Firebase Project Settings or the full snippet (`const firebaseConfig = { ... };`). Required fields: `apiKey`, `authDomain`, `databaseURL`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`.
-3. **Firebase Service Account:** A newly generated private key JSON from Firebase > Project Settings > Service Accounts.
-4. **SMTP Details (Optional):** Credentials for a mail server to send automated status and request notifications.
+2. **Optional SVG Logo:** You can upload a custom logo directly during the wizard.
+3. **SMTP Details (Optional):** Credentials for a mail server to send automated status and request notifications.
 
-Once configured, the app will save this data to `/app/data/config.json` and start the main application seamlessly.
+PocketBase is provisioned automatically inside the container. Nova stores its runtime configuration in `/app/data/config.json`, the uploaded logo in `/app/data/church-logo.svg`, and the PocketBase database in `/app/db` by default. If needed, you can override the database path with `DB_DIR` (or the more explicit `POCKETBASE_DIR`).
 </details>
 
-## First User Setup (Super-Admin)
+## 👑 First User Setup (Super-Admin)
 
 The **first user who logs in after setup** is automatically promoted to:
 
@@ -88,75 +94,20 @@ The super-admin can then:
 - promote/demote other users to regular admins (supervisors),
 - edit recorded payments afterwards,
 - update `assets/church-logo.svg` (church icon),
-- update Firebase and SMTP configuration directly from the advanced settings UI.
+- update the app name and SMTP configuration directly from the advanced settings UI.
 
 <details>
-<summary><b>Firebase Database Rules</b></summary>
+<summary><b>PocketBase access model</b></summary>
 
-## Firebase Database Rules
+## 🔐 PocketBase access model
 
-To secure your application, apply the following rules in your Firebase Realtime Database settings. These rules ensure that only administrators can access all data, while regular users can only access their specific information.
+Nova now provisions PocketBase automatically and configures the collections, indexes, and default records on startup. The effective permission model mirrors the previous Firebase rules:
 
-```json
-{
-  "rules": {
-    "people": {
-      ".indexOn": ["uid", "name"],
-      // FIX 1: Allow Admin to read the whole list.
-      // FIX 2: Allow Users to read ONLY if they use the specific query "uid == auth.uid".
-      ".read": "root.child('users').child(auth.uid).child('admin').val() === true || (query.orderByChild === 'uid' && query.equalTo === auth.uid)",
-      ".write": "root.child('users').child(auth.uid).child('admin').val() === true",
-      "$person_id": {
-        // Fallback for reading a single ID directly if needed
-        ".read": "data.child('uid').val() === auth.uid || root.child('users').child(auth.uid).child('admin').val() === true"
-      }
-    },
-    "donations": {
-      // Only Admin can read/write the list
-      ".read": "root.child('users').child(auth.uid).child('admin').val() === true",
-      ".write": "root.child('users').child(auth.uid).child('admin').val() === true"
-    },
-    "expenses": {
-      // Only Admin can read/write the list
-      ".read": "root.child('users').child(auth.uid).child('admin').val() === true",
-      ".write": "root.child('users').child(auth.uid).child('admin').val() === true"
-    },
-    "requests": {
-      ".indexOn": ["userId", "status"],
-      // Allow Admin read all OR User query their own
-      ".read": "root.child('users').child(auth.uid).child('admin').val() === true || (query.orderByChild === 'userId' && query.equalTo === auth.uid)",
-      "$req_id": {
-        ".write": "(newData.exists() && newData.child('userId').val() === auth.uid) || root.child('users').child(auth.uid).child('admin').val() === true",
-        ".read": "data.child('userId').val() === auth.uid || root.child('users').child(auth.uid).child('admin').val() === true"
-      }
-    },
-    "settings": {
-      ".read": "auth != null",
-      ".write": "root.child('users').child(auth.uid).child('admin').val() === true"
-    },
-    "system": {
-      "inviteCode": {
-        // Necessary for your app.js registration check
-        ".read": true,
-        ".write": "root.child('users').child(auth.uid).child('admin').val() === true"
-      }
-    },
-    "users": {
-      // Admin needs to read the list of users to find 'Unlinked Users'
-      ".read": "root.child('users').child(auth.uid).child('admin').val() === true",
-      "$uid": {
-        // Users can read their own profile, Admins can read any profile
-        ".read": "$uid === auth.uid || root.child('users').child(auth.uid).child('admin').val() === true",
-        // Admins can write to any profile (including their own).
-        // Standard users can write to their own profile, but cannot give themselves admin rights.
-        ".write": "root.child('users').child(auth.uid).child('admin').val() === true || ($uid === auth.uid && newData.child('admin').val() !== true)"
-      }
-    }
-  }
-}
-```
+- **Admins** can read and write all people, requests, donations, expenses, settings, and user records.
+- **Regular users** can authenticate with PocketBase, read/update their own profile, read shared settings, read the public invite code, view only their linked person/request records, and submit their own requests.
+- **The first logged-in user** is promoted to `superAdmin` and can manage admin roles plus the advanced system settings.
 </details>
 
-## License
+## 📄 License
 
 This project is licensed under the newest GNU General Public License (GPLv3). See the `LICENSE` file for more details.

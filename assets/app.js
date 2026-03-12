@@ -1,9 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, onValue, update, query, orderByChild, equalTo, runTransaction, remove } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+import { initializeApp, getDatabase, ref, set, get, child, update, query, orderByChild, equalTo, runTransaction, remove, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "./pocketbase-compat.js";
 import { config } from "./config.js";
 
-const app = initializeApp(config.firebaseConfig);
+const app = initializeApp(config);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
@@ -22,6 +20,10 @@ let advancedConfigAppName = null;
 let superAdminPaymentRows = [];
 let superAdminUserRows = [];
 let currentEditedPayment = null;
+
+// ⚡ Bolt: Global variable to handle paginated display of historical transactions
+let transactionDisplayLimit = 150;
+let cachedTransactions = null;
 
 // ⚡ Bolt: Global formatters for improved performance (avoiding re-initialization)
 const numberFormatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -81,7 +83,7 @@ function setButtonLoading(btnId, isLoading, loadingText = "Laden...") {
     }
 }
 
-// Helper: Firebase can return lists as objects {0:.., 1:..}, this fixes that.
+// Helper: the backend can return lists as objects {0:.., 1:..}, this fixes that.
 function safeList(val) {
     if (!val) return [];
     if (Array.isArray(val)) return val;
@@ -780,6 +782,8 @@ function checkAndExecuteStandingOrders(person) {
     const today = new Date();
     today.setHours(23,59,59,999); // Use end of day to avoid timezone lag (UTC vs Local)
 
+    // ⚡ Bolt: Build a Set for O(1) payment ID lookups, avoiding O(N) array scans inside the loop
+    const existingPaymentIds = new Set(payments.map(p => p.id));
     const updatedStandingOrders = [];
 
     for (const so of standingOrders) {
@@ -826,9 +830,8 @@ function checkAndExecuteStandingOrders(person) {
             const dateStr = nextDueDate.toISOString().split('T')[0];
             const paymentId = `auto_${currentSO.id}_${dateStr}`;
 
-            const exists = payments.some(p => p.id === paymentId);
-
-            if (!exists) {
+            // ⚡ Bolt: O(1) lookup instead of O(N) payments.some(...)
+            if (!existingPaymentIds.has(paymentId)) {
                 payments.push({
                     id: paymentId,
                     amount: parseFloat(currentSO.amount),
@@ -836,6 +839,7 @@ function checkAndExecuteStandingOrders(person) {
                     description: (currentSO.note || 'Dauerauftrag') + ' (Auto)',
                     isAuto: true
                 });
+                existingPaymentIds.add(paymentId); // Update Set with new ID
                 modified = true;
                 soModified = true;
             }
@@ -936,7 +940,7 @@ async function loadData() {
                     p.uid = currentUser.uid;
                     // We need the key to update. Assuming 'id' is the key or we need to find it.
                     // In this app structure, people is an array or object.
-                    // If it's an object from Firebase, we need the key.
+                    // If it's an object keyed by record id, we need the key.
                     // safeList loses keys if not careful, but here we just need to update the object in memory for now.
                     // To persist the link, we would need to know the key.
                     // Let's try to find the key from the snapshot if possible.
@@ -1187,7 +1191,9 @@ function renderUnlinkedUsers() {
     const target = document.getElementById('unlinkedUsers');
     if (!target) return;
 
-    const unlinked = users.filter(u => !people.some(p => p.uid === u.uid));
+    // ⚡ Bolt: Use a Set for O(1) lookups instead of O(N*M) nested loops
+    const linkedUids = new Set(people.filter(p => p.uid).map(p => p.uid));
+    const unlinked = users.filter(u => !linkedUids.has(u.uid));
     const availablePeople = people.filter(p => !p.uid);
 
     if (unlinked.length === 0) {
@@ -2107,33 +2113,45 @@ window.addEventListener('resize', () => {
     }, 100);
 });
 
-window.showTransactionModal = function() {
+window.showTransactionModal = function(resetLimit = true) {
+    if (resetLimit) {
+        transactionDisplayLimit = 150;
+        cachedTransactions = null; // Clear cache on reset
+    }
+
+    const modal = document.getElementById('transaction-modal');
     const container = document.getElementById('full-transaction-list');
-    let all = [];
+    let all = cachedTransactions;
 
-    const safePeople = safeList(people);
-    const safeDonations = safeList(donations);
-    const safeExpenses = safeList(expenses);
+    if (!all) {
+        all = [];
+        const safePeople = safeList(people);
+        const safeDonations = safeList(donations);
+        const safeExpenses = safeList(expenses);
 
-    safePeople.forEach(p => {
-        safeList(p.payments).forEach(pay => {
-            all.push({...pay, who: p.name, type: 'pay'});
+        safePeople.forEach(p => {
+            safeList(p.payments).forEach(pay => {
+                all.push({...pay, who: p.name, type: 'pay'});
+            });
         });
-    });
-    safeDonations.forEach(d => {
-        all.push({...d, who: d.name || 'Spende', type: 'don'});
-    });
-    safeExpenses.forEach(e => {
-        all.push({...e, who: e.issuer, type: 'exp'});
-    });
+        safeDonations.forEach(d => {
+            all.push({...d, who: d.name || 'Spende', type: 'don'});
+        });
+        safeExpenses.forEach(e => {
+            all.push({...e, who: e.issuer, type: 'exp'});
+        });
 
-    // ⚡ Bolt: Use localeCompare for faster sorting without Date objects
-    all.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+        // ⚡ Bolt: Use localeCompare for faster sorting without Date objects
+        all.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+        cachedTransactions = all;
+    }
 
     if (all.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Keine Buchungen vorhanden.</div>';
     } else {
-        container.innerHTML = all.map(t => {
+        // ⚡ Bolt: Limit DOM elements rendered to avoid blocking the main thread on large histories
+        const preview = all.slice(0, transactionDisplayLimit);
+        let html = preview.map(t => {
             const isExp = t.type === 'exp';
             const color = isExp ? 'text-danger' : 'text-success';
             const sign = isExp ? '-' : '+';
@@ -2149,8 +2167,35 @@ window.showTransactionModal = function() {
                 </div>
             `;
         }).join('');
+
+        if (all.length > preview.length) {
+            html += `
+                <div style="text-align:center; padding:10px;">
+                    <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom: 10px;">Es werden ${preview.length} von ${all.length} Buchungen angezeigt.</div>
+                    <button class="btn btn-secondary" onclick="loadMoreTransactions()">Mehr laden...</button>
+                </div>
+            `;
+        }
+
+        const scrollContainer = container?.closest('.modal-content') || container;
+        const previousScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+
+        container.innerHTML = html;
+
+        // Restore scroll position to avoid jumping when loading more
+        if (!resetLimit && scrollContainer) {
+            scrollContainer.scrollTop = previousScrollTop;
+        }
     }
-    openModal('transaction-modal');
+    if (!modal?.classList.contains('show')) {
+        openModal('transaction-modal');
+    }
+};
+
+window.loadMoreTransactions = function() {
+    transactionDisplayLimit += 150;
+    // Call with resetLimit = false to keep the increased limit and preserve scroll
+    window.showTransactionModal(false);
 };
 
 window.addPerson = async () => {
@@ -2594,8 +2639,7 @@ async function loadAdvancedSystemConfig() {
         }
         const data = await response.json();
         advancedConfigAppName = data.appName || null;
-        document.getElementById('super-admin-firebase-config').value = JSON.stringify(data.firebaseConfig || {}, null, 2);
-        document.getElementById('super-admin-service-account').value = JSON.stringify(data.serviceAccount || {}, null, 2);
+        document.getElementById('super-admin-app-name').value = data.appName || '';
         document.getElementById('super-admin-smtp-host').value = data.smtp?.host || '';
         document.getElementById('super-admin-smtp-port').value = data.smtp?.port || '';
         document.getElementById('super-admin-smtp-secure').checked = !!data.smtp?.secure;
@@ -2611,15 +2655,13 @@ async function loadAdvancedSystemConfig() {
 window.saveAdvancedSystemConfig = async () => {
     if (!isSuperAdminUser()) return;
     try {
-        const appName = advancedConfigAppName || config.appName;
+        const appName = document.getElementById('super-admin-app-name').value.trim() || advancedConfigAppName || config.appName;
         if (!appName) {
             throw new Error('App-Name konnte nicht ermittelt werden. Dies kann auf fehlende Konfigurationsdaten hinweisen. Bitte Seite neu laden.');
         }
 
         const payload = {
             appName,
-            firebaseConfig: JSON.parse(document.getElementById('super-admin-firebase-config').value || '{}'),
-            serviceAccount: JSON.parse(document.getElementById('super-admin-service-account').value || '{}'),
             smtp: null
         };
 
@@ -2646,6 +2688,7 @@ window.saveAdvancedSystemConfig = async () => {
         if (!response.ok) {
             throw new Error(await response.text());
         }
+        advancedConfigAppName = appName;
         showToast('System-Konfiguration gespeichert');
     } catch (err) {
         console.error('Fehler beim Speichern der erweiterten Konfiguration:', err);
@@ -2961,7 +3004,12 @@ window.attemptRegister = async () => {
             return;
         }
 
-        const userCredential = await createUserWithEmailAndPassword(auth, email, p1);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, p1, {
+            inviteCode: code,
+            firstName: first,
+            lastName: last,
+            name: `${first} ${last}`.trim()
+        });
         const user = userCredential.user;
         // Persist basic user profile
         await set(ref(db, 'users/' + user.uid), {
@@ -3182,7 +3230,7 @@ window.uploadReceipt = async function(file, transactionName, transactionDate) {
     const user = auth.currentUser;
     if (!user) throw new Error('Not authenticated');
     
-    // Grab the active user's Firebase token to prove their identity
+    // Grab the active user's auth token to prove their identity
     const token = await user.getIdToken();
     const formData = new FormData();
 

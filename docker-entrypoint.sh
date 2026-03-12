@@ -3,9 +3,13 @@
 set -eu
 
 data_dir="${DATA_DIR:-/app/data}"
+db_dir="${DB_DIR:-/app/db}"
 frontend_dir="${FRONTEND_DIR:-/app/html}"
 frontend_seed_dir="${FRONTEND_SEED_DIR:-/app/html-seed}"
 runtime_user="${RUNTIME_USER:-node}"
+pocketbase_bin="${POCKETBASE_BIN:-/app/pocketbase}"
+pocketbase_dir="${POCKETBASE_DIR:-$db_dir}"
+pocketbase_http="${POCKETBASE_HTTP:-0.0.0.0:8090}"
 
 # BusyBox `su -c` treats the first argument after the command string as $0,
 # so we pass a placeholder before the real arguments that the nested shell uses.
@@ -64,6 +68,7 @@ ensure_writable_dir() {
 
 ensure_writable_dir "$data_dir" "Data"
 ensure_writable_dir "$frontend_dir" "Frontend"
+ensure_writable_dir "$pocketbase_dir" "PocketBase"
 
 # Always sync bundled frontend files into the (possibly mounted) frontend
 # directory so that image upgrades take effect without removing the volume.
@@ -85,4 +90,40 @@ fi
 echo "Frontend files synced successfully."
 
 # Hand over control to the Node application
+start_pocketbase() {
+    if [ ! -x "$pocketbase_bin" ]; then
+        echo "PocketBase binary not found at $pocketbase_bin. Skipping embedded PocketBase startup."
+        return 1
+    fi
+    run_shell_as_runtime_user 'exec "$1" serve --dir "$2" --http "$3" >/tmp/pocketbase.log 2>&1 &' "$pocketbase_bin" "$pocketbase_dir" "$pocketbase_http"
+    return 0
+}
+
+wait_for_pocketbase() {
+    pocketbase_port="$pocketbase_http"
+    case "$pocketbase_port" in
+        *:*) pocketbase_port="${pocketbase_port##*:}" ;;
+    esac
+    case "$pocketbase_port" in
+        ''|*[!0-9]*)
+            echo "Error: Invalid PocketBase HTTP binding '$pocketbase_http'." >&2
+            exit 1
+            ;;
+    esac
+
+    attempts=0
+    until run_shell_as_runtime_user 'wget -qO- "http://127.0.0.1:${1}/api/health" >/dev/null 2>&1' "$pocketbase_port"; do
+        attempts=$((attempts + 1))
+        if [ "$attempts" -ge 50 ]; then
+            echo "Error: PocketBase did not become ready in time." >&2
+            exit 1
+        fi
+        sleep 1
+    done
+}
+
+if start_pocketbase; then
+    wait_for_pocketbase
+fi
+
 run_as_runtime_user "$@"

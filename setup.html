@@ -43,11 +43,6 @@
         .step-dot.completed {
             background: var(--success);
         }
-        textarea.form-input {
-            font-family: monospace;
-            min-height: 150px;
-            resize: vertical;
-        }
         .help-text {
             font-size: 0.85rem;
             color: var(--text-secondary);
@@ -62,18 +57,15 @@
     <div style="text-align: center; margin-bottom: 30px;">
         <img src="assets/church-logo.svg" alt="Logo" style="width: 60px; height: 60px; margin-bottom: 10px;">
         <h1 style="font-size: 2rem; font-weight: 800;">Ersteinrichtung</h1>
-        <p style="color: var(--text-secondary);">Willkommen! Bitte konfigurieren Sie die Anwendung.</p>
+        <p style="color: var(--text-secondary);">Nova richtet PocketBase automatisch im Docker-Container ein.</p>
     </div>
 
     <div class="step-indicator" id="stepIndicator">
         <div class="step-dot active"></div>
         <div class="step-dot"></div>
-        <div class="step-dot"></div>
-        <div class="step-dot"></div>
     </div>
 
     <form id="setupForm" novalidate onsubmit="event.preventDefault(); nextStep();">
-        <!-- Step 1: App Info -->
         <div class="setup-step active" id="step1">
             <h2 style="margin-bottom: 20px;">1. Allgemeine Informationen</h2>
 
@@ -83,45 +75,18 @@
                 <div class="help-text">Dieser Name wird in der App und in E-Mails angezeigt.</div>
             </div>
 
+            <div class="form-group">
+                <label class="form-label" for="setupLogo">Eigenes Logo (SVG, optional)</label>
+                <input type="file" id="setupLogo" class="form-input" accept=".svg,image/svg+xml">
+                <div class="help-text">Optional können Sie direkt in der Ersteinrichtung ein eigenes SVG-Logo speichern.</div>
+            </div>
+
             <button type="submit" class="btn btn-primary btn-block" style="margin-top: 30px;">Weiter</button>
         </div>
 
-        <!-- Step 2: Firebase Frontend Config -->
         <div class="setup-step" id="step2">
-            <h2 style="margin-bottom: 20px;">2. Firebase Frontend-Konfiguration</h2>
-
-            <div class="form-group">
-                <label class="form-label" for="firebaseConfig">Firebase Config JSON</label>
-                <textarea id="firebaseConfig" class="form-input" placeholder='{\n  "apiKey": "...",\n  "authDomain": "...",\n  "databaseURL": "...",\n  "projectId": "...",\n  "storageBucket": "...",\n  "messagingSenderId": "...",\n  "appId": "..."\n}' required></textarea>
-                <div class="help-text">Kopieren Sie das JSON-Objekt aus Ihren Firebase-Projekteinstellungen (Web-App).</div>
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 30px;">
-                <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="prevStep()">Zurück</button>
-                <button type="submit" class="btn btn-primary" style="flex: 2;">Weiter</button>
-            </div>
-        </div>
-
-        <!-- Step 3: Firebase Service Account -->
-        <div class="setup-step" id="step3">
-            <h2 style="margin-bottom: 20px;">3. Firebase Service Account (Backend)</h2>
-
-            <div class="form-group">
-                <label class="form-label" for="serviceAccount">Service Account JSON</label>
-                <textarea id="serviceAccount" class="form-input" placeholder='{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key_id": "...",\n  "private_key": "...",\n  "client_email": "...",\n  "client_id": "...",\n  "auth_uri": "...",\n  "token_uri": "...",\n  "auth_provider_x509_cert_url": "...",\n  "client_x509_cert_url": "..."\n}' required></textarea>
-                <div class="help-text">Generieren Sie einen neuen privaten Schlüssel in den Firebase Projekteinstellungen unter "Dienstkonten" und fügen Sie den gesamten Dateiinhalt hier ein.</div>
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 30px;">
-                <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="prevStep()">Zurück</button>
-                <button type="submit" class="btn btn-primary" style="flex: 2;">Weiter</button>
-            </div>
-        </div>
-
-        <!-- Step 4: SMTP Config (Optional) -->
-        <div class="setup-step" id="step4">
-            <h2 style="margin-bottom: 20px;">4. E-Mail Einstellungen (Optional)</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">Diese Einstellungen werden für Benachrichtigungen (Anfragen, Status-Mails) benötigt. Sie können diesen Schritt überspringen.</p>
+            <h2 style="margin-bottom: 20px;">2. E-Mail Einstellungen (Optional)</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">Diese Einstellungen werden für Benachrichtigungen benötigt. Sie können diesen Schritt überspringen.</p>
 
             <div class="form-group">
                 <label class="form-label" for="smtpHost">SMTP Server</label>
@@ -165,26 +130,20 @@
 
 <script>
     let currentStep = 1;
-    const totalSteps = 4;
+    const totalSteps = 2;
 
-    // Check if setup is actually needed
     fetch('/api/status').then(res => res.json()).then(data => {
         if (!data.setupMode) {
             window.location.href = '/';
         }
-    }).catch(() => {
-        // Assume setup is needed if we can't fetch status
-    });
+    }).catch(() => {});
 
     function updateDots() {
         const dots = document.querySelectorAll('.step-dot');
         dots.forEach((dot, index) => {
             dot.className = 'step-dot';
-            if (index + 1 === currentStep) {
-                dot.classList.add('active');
-            } else if (index + 1 < currentStep) {
-                dot.classList.add('completed');
-            }
+            if (index + 1 === currentStep) dot.classList.add('active');
+            else if (index + 1 < currentStep) dot.classList.add('completed');
         });
     }
 
@@ -205,209 +164,29 @@
         return appName;
     }
 
-    function parseFirebaseConfigInput(rawValue) {
-        const requiredFields = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
-        let parsed;
-        const input = rawValue.trim();
-
-        function extractFirebaseConfigObjectLiteral(value) {
-            const assignmentPattern = /^(?:const|let|var)?\s*firebaseConfig\s*=/;
-            if (!assignmentPattern.test(value)) {
-                return value;
-            }
-
-            const start = value.indexOf('{');
-            if (start === -1) {
-                throw new Error('Missing object literal in firebaseConfig snippet.');
-            }
-
-            let depth = 0;
-            let quote = null;
-            let escaped = false;
-
-            for (let index = start; index < value.length; index++) {
-                const char = value[index];
-
-                if (quote) {
-                    if (escaped) {
-                        escaped = false;
-                        continue;
-                    }
-                    if (char === '\\') {
-                        escaped = true;
-                        continue;
-                    }
-                    if (char === quote) {
-                        quote = null;
-                    }
-                    continue;
-                }
-
-                if (char === '"' || char === "'" || char === '`') {
-                    quote = char;
-                    continue;
-                }
-
-                if (char === '{') {
-                    depth++;
-                } else if (char === '}') {
-                    depth--;
-                    if (depth === 0) {
-                        return value.slice(start, index + 1);
-                    }
-                }
-            }
-
-            throw new Error('Unterminated object literal in firebaseConfig snippet.');
+    async function readOptionalLogoSvg() {
+        const fileInput = document.getElementById('setupLogo');
+        const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+        if (!file) return null;
+        const name = (file.name || '').toLowerCase();
+        const type = (file.type || '').toLowerCase();
+        if (!(name.endsWith('.svg') || type === 'image/svg+xml')) {
+            throw new Error('Bitte nur SVG-Dateien hochladen.');
         }
-
-        function parseJsStringLiteral(literal) {
-            const quote = literal[0];
-            if (!['"', "'", '`'].includes(quote) || literal[literal.length - 1] !== quote) {
-                throw new Error('Invalid Firebase field value.');
-            }
-
-            if (quote === '"') {
-                return JSON.parse(literal);
-            }
-
-            let result = '';
-            for (let index = 1; index < literal.length - 1; index++) {
-                const char = literal[index];
-
-                if (char !== '\\') {
-                    result += char;
-                    continue;
-                }
-
-                const next = literal[++index];
-                if (next === undefined) {
-                    throw new Error('Invalid escape sequence in Firebase field value.');
-                }
-
-                if (next === 'n') result += '\n';
-                else if (next === 'r') result += '\r';
-                else if (next === 't') result += '\t';
-                else if (next === 'b') result += '\b';
-                else if (next === 'f') result += '\f';
-                else if (next === 'v') result += '\v';
-                else if (next === '0') result += '\0';
-                else if (next === 'x') {
-                    const hex = literal.slice(index + 1, index + 3);
-                    if (!/^[\da-fA-F]{2}$/.test(hex)) throw new Error('Invalid hex escape in Firebase field value.');
-                    result += String.fromCharCode(parseInt(hex, 16));
-                    index += 2;
-                } else if (next === 'u') {
-                    const unicode = literal.slice(index + 1, index + 5);
-                    if (!/^[\da-fA-F]{4}$/.test(unicode)) throw new Error('Invalid unicode escape in Firebase field value.');
-                    result += String.fromCharCode(parseInt(unicode, 16));
-                    index += 4;
-                } else {
-                    result += next;
-                }
-            }
-
-            return result;
-        }
-
-        try {
-            parsed = JSON.parse(input);
-        } catch (jsonError) {
-            const objectLiteral = extractFirebaseConfigObjectLiteral(input);
-            const extractedConfig = {};
-            const firebaseFieldPattern = requiredFields.join('|');
-            const firebaseFieldRegex = new RegExp('(' + firebaseFieldPattern + ')\\s*:\\s*("(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'|`(?:[^`\\\\]|\\\\.)*`)', 'g');
-            let match;
-
-            while ((match = firebaseFieldRegex.exec(objectLiteral)) !== null) {
-                try {
-                    extractedConfig[match[1]] = parseJsStringLiteral(match[2]);
-                } catch (parseError) {
-                    throw jsonError;
-                }
-            }
-
-            if (Object.keys(extractedConfig).length === 0) {
-                throw jsonError;
-            }
-
-            parsed = extractedConfig;
-        }
-
-        if (parsed?.firebaseConfig && typeof parsed.firebaseConfig === 'object') {
-            parsed = parsed.firebaseConfig;
-        }
-
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-            throw new Error('Firebase config must be an object.');
-        }
-
-        const missingFields = requiredFields.filter((field) => !(field in parsed));
-        const invalidFields = requiredFields.filter((field) => field in parsed && (typeof parsed[field] !== 'string' || !parsed[field].trim()));
-        if (missingFields.length > 0) {
-            throw new Error(`Missing Firebase fields: ${missingFields.join(', ')}`);
-        }
-        if (invalidFields.length > 0) {
-            throw new Error(`Invalid Firebase fields: ${invalidFields.join(', ')}`);
-        }
-
-        return parsed;
-    }
-
-    function getFirebaseConfigErrorMessage(error) {
-        const fallback = 'Bitte verwenden Sie JSON oder ein firebaseConfig-Snippet (const firebaseConfig = { ... }) mit allen Pflichtfeldern.';
-        if (!error || typeof error.message !== 'string') {
-            return fallback;
-        }
-
-        const allowedPrefixes = ['Missing Firebase fields:', 'Invalid Firebase fields:'];
-        const allowedMessages = [
-            'Firebase config must be an object.',
-            'Missing object literal in firebaseConfig snippet.',
-            'Unterminated object literal in firebaseConfig snippet.',
-            'Invalid Firebase field value.',
-            'Invalid escape sequence in Firebase field value.',
-            'Invalid hex escape in Firebase field value.',
-            'Invalid unicode escape in Firebase field value.'
-        ];
-
-        if (allowedPrefixes.some((prefix) => error.message.startsWith(prefix)) || allowedMessages.includes(error.message)) {
-            return error.message;
-        }
-
-        return fallback;
+        return file.text();
     }
 
     function nextStep() {
+        if (currentStep === 1) {
+            if (!validateAppName((message) => {
+                const appNameInput = document.getElementById('appName');
+                appNameInput.setCustomValidity(message);
+                appNameInput.reportValidity();
+            })) {
+                return;
+            }
+        }
         if (currentStep < totalSteps) {
-            if (currentStep === 1) {
-                if (!validateAppName((message) => {
-                    const appNameInput = document.getElementById('appName');
-                    appNameInput.setCustomValidity(message);
-                    appNameInput.reportValidity();
-                })) {
-                    return;
-                }
-            }
-            // Validate JSON in step 2 and 3 before proceeding
-            if (currentStep === 2) {
-                try {
-                    const parsedFirebaseConfig = parseFirebaseConfigInput(document.getElementById('firebaseConfig').value);
-                    document.getElementById('firebaseConfig').value = JSON.stringify(parsedFirebaseConfig, null, 2);
-                } catch (e) {
-                    alert(`Ungültige Firebase Config: ${getFirebaseConfigErrorMessage(e)}`);
-                    return;
-                }
-            }
-            if (currentStep === 3) {
-                try {
-                    JSON.parse(document.getElementById('serviceAccount').value);
-                } catch (e) {
-                    alert('Ungültiges JSON-Format beim Service Account.');
-                    return;
-                }
-            }
-
             currentStep++;
             showStep(currentStep);
         }
@@ -424,83 +203,50 @@
     async function submitSetup() {
         const btn = document.getElementById('btnSubmit');
         const errorMsg = document.getElementById('errorMsg');
-
         const appName = validateAppName((message) => {
             errorMsg.innerText = message;
             errorMsg.style.display = 'block';
         });
-        let firebaseConfig, serviceAccount;
 
-        if (!appName) {
-            return;
-        }
+        if (!appName) return;
 
-        try {
-            firebaseConfig = parseFirebaseConfigInput(document.getElementById('firebaseConfig').value);
-        } catch (e) {
-            errorMsg.innerText = `Ungültige Firebase Config: ${getFirebaseConfigErrorMessage(e)}`;
-            errorMsg.style.display = 'block';
-            return;
-        }
-
-        try {
-            serviceAccount = JSON.parse(document.getElementById('serviceAccount').value);
-        } catch (e) {
-            errorMsg.innerText = "Fehler beim Parsen des Service Account JSON.";
-            errorMsg.style.display = 'block';
-            return;
-        }
-
-        const smtpHost = document.getElementById('smtpHost').value.trim();
         let smtp = null;
+        const smtpHost = document.getElementById('smtpHost').value.trim();
         if (smtpHost) {
             smtp = {
                 host: smtpHost,
-                port: parseInt(document.getElementById('smtpPort').value) || 465,
+                port: parseInt(document.getElementById('smtpPort').value || '465', 10),
                 secure: document.getElementById('smtpSecure').checked,
                 user: document.getElementById('smtpUser').value.trim(),
                 pass: document.getElementById('smtpPass').value.trim()
             };
         }
 
-        const payload = {
-            appName,
-            firebaseConfig,
-            serviceAccount,
-            smtp
-        };
-
-        btn.innerText = "Speichert...";
+        btn.innerText = 'Speichert...';
         btn.disabled = true;
         errorMsg.style.display = 'none';
 
         try {
+            const logoSvg = await readOptionalLogoSvg();
             const res = await fetch('/api/setup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ appName, smtp, logoSvg })
             });
-
             const data = await res.json();
-
             if (res.ok && data.success) {
-                // Redirect to main app
                 window.location.href = '/';
-            } else {
-                errorMsg.innerText = data.error || "Ein unbekannter Fehler ist aufgetreten.";
-                errorMsg.style.display = 'block';
-                btn.innerText = "Speichern & Starten";
-                btn.disabled = false;
+                return;
             }
+            throw new Error(data.error || 'Ein unbekannter Fehler ist aufgetreten.');
         } catch (err) {
-            errorMsg.innerText = "Netzwerkfehler beim Speichern.";
+            errorMsg.innerText = err.message || 'Netzwerkfehler beim Speichern.';
             errorMsg.style.display = 'block';
-            btn.innerText = "Speichern & Starten";
+            btn.innerText = 'Speichern & Starten';
             btn.disabled = false;
         }
     }
 
-    // Initialize OS theme
     const actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', actualTheme);
 </script>
