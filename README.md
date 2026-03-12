@@ -62,11 +62,52 @@ docker run -d \
   ghcr.io/ricouhd/nova:latest
 ```
 
-*When mapping `/app/html`, Nova automatically copies the bundled frontend files from the image into that directory on the first start if `index.html` is missing. After that, your mapped files stay in place and you can customize them on disk.*
+*When mapping `/app/html`, Nova automatically syncs the bundled frontend files from the image into that directory on every start so that image upgrades take effect without removing the volume. Files that were removed in a newer image version are cleaned up automatically.*
 
 > **Custom logo storage:** The admin SVG upload is persisted in `/app/data/church-logo.svg`, not in `/app/html/assets/church-logo.svg`. The app serves `/assets/church-logo.svg` dynamically so the uploaded logo keeps working even when `/app/html` is mapped.
 
 > **Reverse proxy note:** Nova trusts local/private reverse proxies by default so the bundled rate limiting works cleanly behind Docker reverse proxies. If your proxy setup is different, you can override Express' proxy handling with the `TRUST_PROXY` environment variable.
+
+### Docker Compose
+
+A `docker-compose.yml` is included in the repository for convenience. To start Nova with Compose:
+
+```bash
+docker compose up -d
+```
+
+### Updating
+
+Nova is designed to be fully updateable through Docker image upgrades. When you pull a new image and recreate the container, all changes — backend code, frontend files, and the embedded PocketBase binary — are applied automatically. Your data in `/app/data` and `/app/db` is preserved across updates.
+
+**With Docker Compose** (recommended):
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+**With plain Docker:**
+
+```bash
+docker pull ghcr.io/ricouhd/nova:latest
+docker stop nova-app
+docker rm nova-app
+docker run -d \
+  -p 3000:3000 \
+  -v /path/to/your/storage:/app/data \
+  -v /path/to/your/cache:/app/db \
+  --name nova-app \
+  --restart unless-stopped \
+  ghcr.io/ricouhd/nova:latest
+```
+
+**What happens during an update:**
+
+- The new backend code and PocketBase binary are part of the image and take effect immediately.
+- The entrypoint script syncs the bundled frontend files into the `/app/html` volume, overwriting outdated files and removing stale ones that no longer exist in the new image.
+- The service worker in the browser uses a network-first strategy, so users see the updated frontend as soon as the new container is running.
+- All user data (configuration, uploads, database) is stored on the mounted volumes and remains untouched.
 
 <details>
 <summary><b>Setup Wizard</b></summary>

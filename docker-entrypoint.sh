@@ -76,6 +76,16 @@ if [ ! -f "$frontend_dir/index.html" ]; then
     echo "First run detected. Populating $frontend_dir with frontend files..."
 else
     echo "Updating frontend files in $frontend_dir from bundled seed..."
+
+    # Remove files that no longer exist in the new image so that renamed or
+    # deleted assets from previous versions do not linger on mounted volumes.
+    (cd "$frontend_dir" && find . -type f) | while IFS= read -r rel_path; do
+        if [ ! -f "$frontend_seed_dir/$rel_path" ]; then
+            rm -f "$frontend_dir/$rel_path"
+        fi
+    done
+    # Clean up directories that became empty after stale file removal.
+    find "$frontend_dir" -depth -type d ! -path "$frontend_dir" -exec rmdir {} \; 2>/dev/null || true
 fi
 
 # Copy files directly as root to avoid BusyBox su limitations.
