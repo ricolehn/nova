@@ -20,8 +20,12 @@ let chartDataCache = null;
 let advancedConfigLoaded = false;
 let advancedConfigAppName = null;
 let superAdminPaymentRows = [];
+let superAdminAllPayments = [];
 let superAdminUserRows = [];
 let currentEditedPayment = null;
+const PAYMENT_PAGE_SIZE = 50;
+const TRANSACTION_PAGE_SIZE = 80;
+let transactionDisplayCount = 0;
 
 // ⚡ Bolt: Global formatters for improved performance (avoiding re-initialization)
 const numberFormatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1285,10 +1289,10 @@ function renderSuperAdminPaymentEditor() {
     const target = document.getElementById('super-admin-payment-editor');
     if (!target || !isSuperAdminUser()) return;
 
-    const allPayments = [];
+    superAdminAllPayments = [];
     people.forEach(person => {
         safeList(person.payments).forEach((payment, index) => {
-            allPayments.push({
+            superAdminAllPayments.push({
                 personId: person.id,
                 personName: person.name,
                 paymentId: payment.id ?? `idx-${index}`,
@@ -1298,8 +1302,13 @@ function renderSuperAdminPaymentEditor() {
         });
     });
 
-    allPayments.sort((a, b) => (b.payment.date || '').localeCompare(a.payment.date || ''));
-    superAdminPaymentRows = allPayments.slice(0, 30);
+    superAdminAllPayments.sort((a, b) => (b.payment.date || '').localeCompare(a.payment.date || ''));
+    superAdminPaymentRows = superAdminAllPayments.slice(0, PAYMENT_PAGE_SIZE);
+
+    renderPaymentEditorContent(target);
+}
+
+function renderPaymentEditorContent(target) {
     const preview = superAdminPaymentRows;
 
     if (preview.length === 0) {
@@ -1314,6 +1323,15 @@ function renderSuperAdminPaymentEditor() {
         return `<option value="${index}">${escapeHtml(label)}</option>`;
     }).join('');
 
+    const remaining = superAdminAllPayments.length - preview.length;
+    const showMoreBtn = remaining > 0
+        ? `<button class="btn btn-secondary btn-block" onclick="loadMorePayments()" style="margin-top:8px;">Mehr anzeigen (${remaining} weitere)</button>`
+        : '';
+
+    const countInfo = superAdminAllPayments.length > preview.length
+        ? `<div style="font-size:0.85rem; color:var(--text-secondary); margin-top:8px;">${preview.length} von ${superAdminAllPayments.length} Zahlungen angezeigt.</div>`
+        : '';
+
     target.innerHTML = `
         <div class="form-group" style="margin:0;">
             <label class="form-label" for="super-admin-payment-select">Zahlung auswählen</label>
@@ -1323,12 +1341,24 @@ function renderSuperAdminPaymentEditor() {
             </select>
         </div>
         <button class="btn btn-secondary btn-block" onclick="editSelectedPayment()">Ausgewählte Zahlung bearbeiten</button>
+        ${showMoreBtn}
+        ${countInfo}
     `;
-
-    if (allPayments.length > preview.length) {
-        target.innerHTML += `<div style="font-size:0.85rem; color:var(--text-secondary); margin-top:8px;">Es werden die letzten ${preview.length} Zahlungen angezeigt.</div>`;
-    }
 }
+
+window.loadMorePayments = () => {
+    const currentCount = superAdminPaymentRows.length;
+    const nextBatch = superAdminAllPayments.slice(currentCount, currentCount + PAYMENT_PAGE_SIZE);
+    if (nextBatch.length === 0) return;
+
+    superAdminPaymentRows = superAdminPaymentRows.concat(nextBatch);
+
+    // Preserve scroll position when loading more entries
+    const scrollY = window.scrollY;
+    const target = document.getElementById('super-admin-payment-editor');
+    if (target) renderPaymentEditorContent(target);
+    window.scrollTo(0, scrollY);
+};
 
 window.setSupervisorAdmin = async (uid, isAdmin) => {
     if (!isSuperAdminUser()) return;
@@ -1434,7 +1464,10 @@ window.saveEditedPayment = async () => {
         });
         closeModal('edit-payment-modal');
         currentEditedPayment = null;
-        renderAll();
+        // Targeted re-render: only update what changed
+        renderPeople();
+        renderStats();
+        if (isSuperAdminUser()) renderSuperAdminPaymentEditor();
         showToast('Zahlung aktualisiert');
     } catch (err) {
         console.error('Fehler beim Bearbeiten der Zahlung:', err);
@@ -1673,6 +1706,9 @@ function renderPeople() {
     }
     empty.style.display = 'none';
 
+    // Remember which person drawer was open before re-render
+    const openDrawerId = document.querySelector('.person-details.active')?.id?.replace('drawer-', '') || null;
+
     // ⚡ Bolt: Centralized todayStr calculation for performance
     const todayStr = getTodayStr();
 
@@ -1709,6 +1745,29 @@ function renderPeople() {
             <div class="people-column valid-column">${validHtml}</div>
         </div>
     `;
+
+    // Restore the previously open drawer after re-render
+    if (openDrawerId) {
+        const drawer = document.getElementById(`drawer-${openDrawerId}`);
+        const header = document.getElementById(`person-item-${openDrawerId}`);
+        if (drawer && header) {
+            // Re-trigger lazy timeline load and expand
+            const placeholder = document.getElementById(`timeline-${openDrawerId}`);
+            if (placeholder && !placeholder.dataset.loaded) {
+                const person = people.find(p => String(p.id) === String(openDrawerId));
+                if (person) {
+                    placeholder.innerHTML = generateTimelineHTML(person);
+                    placeholder.dataset.loaded = "true";
+                }
+            }
+            header.classList.add('active');
+            header.setAttribute('aria-expanded', 'true');
+            drawer.classList.add('active');
+            drawer.style.maxHeight = drawer.scrollHeight + "px";
+            const wrapper = header.closest('.person-wrapper');
+            if (wrapper) wrapper.classList.add('active');
+        }
+    }
 }
 
 function generateTimelineHTML(person) {
@@ -1752,6 +1811,21 @@ function generateTimelineHTML(person) {
         return '<div style="font-size:0.8rem; color:var(--text-secondary); font-style:italic;">Keine Einträge vorhanden.</div>';
     }
 
+    const TIMELINE_PAGE_SIZE = 30;
+    const initialEvents = allEvents.slice(0, TIMELINE_PAGE_SIZE);
+    const timelineItems = initialEvents.map(renderTimelineEvent).join('');
+
+    let showMoreBtn = '';
+    if (allEvents.length > TIMELINE_PAGE_SIZE) {
+        const remaining = allEvents.length - TIMELINE_PAGE_SIZE;
+        const eventsJson = encodeURIComponent(JSON.stringify(allEvents.slice(TIMELINE_PAGE_SIZE)));
+        showMoreBtn = `<button class="btn btn-secondary btn-block timeline-show-more" data-events="${eventsJson}" onclick="loadMoreTimelineEvents(this)" style="margin-top:8px; font-size:0.85rem;">Mehr anzeigen (${remaining} weitere)</button>`;
+    }
+
+    return `<div class="timeline">${timelineItems}</div>${showMoreBtn}`;
+}
+
+function renderTimelineEvent(event) {
     const statusLabels = {
         'vollverdiener': '💼 Vollverdiener',
         'geringverdiener': '📉 Geringverdiener',
@@ -1759,34 +1833,66 @@ function generateTimelineHTML(person) {
         'pausiert': '⏸️ Pausiert'
     };
 
-    const timelineItems = allEvents.map(event => {
-        const dateStr = dateFormatter.format(new Date(event.dateStr));
-        let content = '';
-        let dotClass = 'timeline-dot';
+    const dateStr = dateFormatter.format(new Date(event.dateStr));
+    let content = '';
+    const dotClass = 'timeline-dot';
 
-        if (event.type === 'status') {
-            const label = statusLabels[event.status] || event.status;
-            content = `
-                <div style="font-weight: 600;">Statusänderung: ${label}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">Gültig ab ${dateStr}</div>
-            `;
-        } else {
-            content = `
-                <div style="font-weight: 600;">Zahlung: ${formatCurrency(event.amount)}€</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(event.description) || 'Keine Notiz'} • ${dateStr}</div>
-            `;
+    if (event.type === 'status') {
+        const label = statusLabels[event.status] || event.status;
+        content = `
+            <div style="font-weight: 600;">Statusänderung: ${label}</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">Gültig ab ${dateStr}</div>
+        `;
+    } else {
+        content = `
+            <div style="font-weight: 600;">Zahlung: ${formatCurrency(event.amount)}€</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(event.description) || 'Keine Notiz'} • ${dateStr}</div>
+        `;
+    }
+
+    return `
+        <div class="timeline-item">
+            <div class="${dotClass}"></div>
+            <div class="timeline-content">${content}</div>
+        </div>
+    `;
+}
+
+window.loadMoreTimelineEvents = (btn) => {
+    try {
+        const events = JSON.parse(decodeURIComponent(btn.dataset.events));
+        const TIMELINE_PAGE_SIZE = 30;
+        const nextBatch = events.slice(0, TIMELINE_PAGE_SIZE);
+        const remainingEvents = events.slice(TIMELINE_PAGE_SIZE);
+
+        const timeline = btn.previousElementSibling;
+        if (!timeline || !timeline.classList.contains('timeline')) return;
+
+        // Append new items to the timeline
+        const temp = document.createElement('div');
+        temp.innerHTML = nextBatch.map(renderTimelineEvent).join('');
+        while (temp.firstChild) {
+            timeline.appendChild(temp.firstChild);
         }
 
-        return `
-            <div class="timeline-item">
-                <div class="${dotClass}"></div>
-                <div class="timeline-content">${content}</div>
-            </div>
-        `;
-    }).join('');
+        // Update the drawer's max-height to accommodate new content
+        const drawer = btn.closest('.person-details');
+        if (drawer && drawer.style.maxHeight) {
+            drawer.style.maxHeight = drawer.scrollHeight + "px";
+        }
 
-    return `<div class="timeline">${timelineItems}</div>`;
-}
+        // Update or remove button
+        if (remainingEvents.length > 0) {
+            btn.dataset.events = encodeURIComponent(JSON.stringify(remainingEvents));
+            btn.textContent = `Mehr anzeigen (${remainingEvents.length} weitere)`;
+        } else {
+            btn.remove();
+        }
+    } catch (e) {
+        console.error('Error loading more timeline events:', e);
+        btn.remove();
+    }
+};
 
 function generatePersonHTML(p, preCalcData = null) {
     const paidUntil = preCalcData ? preCalcData.paidUntil : calculatePaidUntil(p);
@@ -2107,9 +2213,28 @@ window.addEventListener('resize', () => {
     }, 100);
 });
 
+let allTransactionsSorted = [];
+
+function renderTransactionItem(t) {
+    const isExp = t.type === 'exp';
+    const color = isExp ? 'text-danger' : 'text-success';
+    const sign = isExp ? '-' : '+';
+    const icon = t.type === 'pay' ? '👤' : (t.type === 'don' ? '💝' : '💸');
+    const hasReceipt = t.receipt ? '<span style="margin-left:5px" title="Beleg vorhanden">📷</span>' : '';
+    return `
+        <div class="trans-item" role="button" tabindex="0" onclick="showTransactionDetails('${t.id}', '${t.type}')" onkeydown="if(event.key==='Enter'||event.key===' '){showTransactionDetails('${t.id}', '${t.type}')}" style="cursor:pointer;">
+            <div class="trans-left">
+                <span style="font-weight:600;">${icon} ${t.who}</span>
+                <div class="trans-meta">${t.description || '-'} ${hasReceipt} • ${t.date ? dateFormatter.format(new Date(t.date)) : 'Kein Datum'}</div>
+            </div>
+            <div class="trans-amount ${color}">${sign}${formatCurrency(t.amount)}€</div>
+        </div>
+    `;
+}
+
 window.showTransactionModal = function() {
     const container = document.getElementById('full-transaction-list');
-    let all = [];
+    allTransactionsSorted = [];
 
     const safePeople = safeList(people);
     const safeDonations = safeList(donations);
@@ -2117,40 +2242,61 @@ window.showTransactionModal = function() {
 
     safePeople.forEach(p => {
         safeList(p.payments).forEach(pay => {
-            all.push({...pay, who: p.name, type: 'pay'});
+            allTransactionsSorted.push({...pay, who: p.name, type: 'pay'});
         });
     });
     safeDonations.forEach(d => {
-        all.push({...d, who: d.name || 'Spende', type: 'don'});
+        allTransactionsSorted.push({...d, who: d.name || 'Spende', type: 'don'});
     });
     safeExpenses.forEach(e => {
-        all.push({...e, who: e.issuer, type: 'exp'});
+        allTransactionsSorted.push({...e, who: e.issuer, type: 'exp'});
     });
 
     // ⚡ Bolt: Use localeCompare for faster sorting without Date objects
-    all.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+    allTransactionsSorted.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
 
-    if (all.length === 0) {
+    if (allTransactionsSorted.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Keine Buchungen vorhanden.</div>';
     } else {
-        container.innerHTML = all.map(t => {
-            const isExp = t.type === 'exp';
-            const color = isExp ? 'text-danger' : 'text-success';
-            const sign = isExp ? '-' : '+';
-            const icon = t.type === 'pay' ? '👤' : (t.type === 'don' ? '💝' : '💸');
-            const hasReceipt = t.receipt ? '<span style="margin-left:5px" title="Beleg vorhanden">📷</span>' : '';
-            return `
-                <div class="trans-item" role="button" tabindex="0" onclick="showTransactionDetails('${t.id}', '${t.type}')" onkeydown="if(event.key==='Enter'||event.key===' '){showTransactionDetails('${t.id}', '${t.type}')}" style="cursor:pointer;">
-                    <div class="trans-left">
-                        <span style="font-weight:600;">${icon} ${t.who}</span>
-                        <div class="trans-meta">${t.description || '-'} ${hasReceipt} • ${t.date ? dateFormatter.format(new Date(t.date)) : 'Kein Datum'}</div>
-                    </div>
-                    <div class="trans-amount ${color}">${sign}${formatCurrency(t.amount)}€</div>
-                </div>
-            `;
-        }).join('');
+        transactionDisplayCount = Math.min(TRANSACTION_PAGE_SIZE, allTransactionsSorted.length);
+        const visible = allTransactionsSorted.slice(0, transactionDisplayCount);
+        let html = '<div id="transaction-items-container">' + visible.map(renderTransactionItem).join('') + '</div>';
+
+        if (allTransactionsSorted.length > transactionDisplayCount) {
+            const remaining = allTransactionsSorted.length - transactionDisplayCount;
+            html += `<button id="transaction-show-more-btn" class="btn btn-secondary btn-block" onclick="loadMoreTransactions()" style="margin-top:12px;">Mehr anzeigen (${remaining} weitere)</button>`;
+        }
+
+        container.innerHTML = html;
     }
     openModal('transaction-modal');
+};
+
+window.loadMoreTransactions = () => {
+    const itemsContainer = document.getElementById('transaction-items-container');
+    const showMoreBtn = document.getElementById('transaction-show-more-btn');
+    if (!itemsContainer) return;
+
+    const prevCount = transactionDisplayCount;
+    transactionDisplayCount = Math.min(transactionDisplayCount + TRANSACTION_PAGE_SIZE, allTransactionsSorted.length);
+    const newItems = allTransactionsSorted.slice(prevCount, transactionDisplayCount);
+
+    // Append new items without rebuilding existing DOM (preserves scroll position)
+    const fragment = document.createDocumentFragment();
+    const temp = document.createElement('div');
+    temp.innerHTML = newItems.map(renderTransactionItem).join('');
+    while (temp.firstChild) {
+        fragment.appendChild(temp.firstChild);
+    }
+    itemsContainer.appendChild(fragment);
+
+    // Update or remove "show more" button
+    if (transactionDisplayCount >= allTransactionsSorted.length) {
+        if (showMoreBtn) showMoreBtn.remove();
+    } else if (showMoreBtn) {
+        const remaining = allTransactionsSorted.length - transactionDisplayCount;
+        showMoreBtn.textContent = `Mehr anzeigen (${remaining} weitere)`;
+    }
 };
 
 window.addPerson = async () => {
@@ -2201,8 +2347,16 @@ window.addPayment = async () => {
         return;
     }
 
+    // Close modal immediately for better perceived performance
+    const savedPersonId = currentPersonId;
+    setButtonLoading('btn-add-payment', false);
+    closeModal('add-payment-modal');
+    document.getElementById('payment-is-standing-order').checked = false;
+    const lbl = document.getElementById('payment-date-label');
+    if(lbl) lbl.innerText = 'Datum';
+
     try {
-        const updated = await mutatePerson(currentPersonId, (person) => {
+        const updated = await mutatePerson(savedPersonId, (person) => {
             if (isStandingOrder) {
                 const standingOrders = safeList(person.standingOrders);
                 const newSO = {
@@ -2231,21 +2385,19 @@ window.addPayment = async () => {
         });
 
         if (!updated) {
-            alert('Person nicht gefunden.');
+            showToast('Person nicht gefunden.', 'error');
             return;
         }
 
-        renderAll();
-        closeModal('add-payment-modal');
-        document.getElementById('payment-is-standing-order').checked = false;
-        const lbl = document.getElementById('payment-date-label');
-        if(lbl) lbl.innerText = 'Datum';
+        // Targeted re-render: only update what changed
+        renderPeople();
+        renderStats();
+        if (isSuperAdminUser()) renderSuperAdminPaymentEditor();
         showToast('Zahlung gebucht');
     } catch (err) {
         console.error('Fehler beim Speichern der Zahlung:', err);
-        alert('Zahlung konnte nicht gespeichert werden. Bitte erneut versuchen.');
-    } finally {
-        setButtonLoading('btn-add-payment', false);
+        showToast('Zahlung konnte nicht gespeichert werden. Daten werden neu geladen.', 'error');
+        loadData();
     }
 };
 
