@@ -3,7 +3,9 @@ const assert = require('node:assert/strict');
 const {
   normalizeDataPath,
   decodeTokenPayload,
+  toPublicUser,
   sanitizeSelfUserWrite,
+  buildPocketBaseError,
   generatePocketBaseCredentials,
   normalizeRecordListInput,
   stripNormalizedPersonData,
@@ -41,6 +43,40 @@ test('sanitizeSelfUserWrite strips admin flags but keeps editable profile fields
     emailNotifications: false,
     name: 'Ada Lovelace'
   });
+});
+
+test('toPublicUser falls back to first and last name when the auth record has no name', () => {
+  const user = toPublicUser({
+    id: 'user-1',
+    email: 'ada@example.com',
+    firstName: 'Ada',
+    lastName: 'Lovelace'
+  });
+
+  assert.deepEqual(user, {
+    uid: 'user-1',
+    id: 'user-1',
+    email: 'ada@example.com',
+    firstName: 'Ada',
+    lastName: 'Lovelace',
+    name: 'Ada Lovelace',
+    admin: false,
+    superAdmin: false,
+    emailNotifications: true
+  });
+});
+
+test('buildPocketBaseError prefers detailed field validation messages', () => {
+  const error = buildPocketBaseError({
+    status: 400,
+    message: 'Failed to create record.',
+    data: {
+      firstName: { message: 'Vorname ist erforderlich.' }
+    }
+  }, 'Fallback');
+
+  assert.equal(error.message, 'Vorname ist erforderlich.');
+  assert.equal(error.status, 400);
 });
 
 test('generatePocketBaseCredentials returns docker-local defaults', () => {

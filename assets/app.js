@@ -2119,7 +2119,11 @@ window.showTransactionModal = function(resetLimit = true) {
         cachedTransactions = null; // Clear cache on reset
     }
 
+    const modal = document.getElementById('transaction-modal');
     const container = document.getElementById('full-transaction-list');
+    const scrollContainer = container?.closest('.modal-content') || container;
+    const previousScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+    const previousScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
     let all = cachedTransactions;
 
     if (!all) {
@@ -2176,17 +2180,17 @@ window.showTransactionModal = function(resetLimit = true) {
             `;
         }
 
-        // Save scroll position
-        const previousScrollTop = container.scrollTop;
-
         container.innerHTML = html;
 
         // Restore scroll position to avoid jumping to top when loading more
-        if (!resetLimit) {
-             container.scrollTop = previousScrollTop;
+        if (!resetLimit && scrollContainer) {
+            const addedHeight = Math.max(0, scrollContainer.scrollHeight - previousScrollHeight);
+            scrollContainer.scrollTop = previousScrollTop + addedHeight;
         }
     }
-    openModal('transaction-modal');
+    if (!modal?.classList.contains('show')) {
+        openModal('transaction-modal');
+    }
 };
 
 window.loadMoreTransactions = function() {
@@ -3001,7 +3005,13 @@ window.attemptRegister = async () => {
             return;
         }
 
-        const userCredential = await createUserWithEmailAndPassword(auth, email, p1, { inviteCode: code });
+        const fullName = `${first} ${last}`.trim();
+        const userCredential = await createUserWithEmailAndPassword(auth, email, p1, {
+            inviteCode: code,
+            firstName: first,
+            lastName: last,
+            name: fullName
+        });
         const user = userCredential.user;
         // Persist basic user profile
         await set(ref(db, 'users/' + user.uid), {

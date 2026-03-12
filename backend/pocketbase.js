@@ -228,7 +228,12 @@ function sanitizeSelfUserWrite(input = {}) {
 }
 
 function buildPocketBaseError(response, fallback) {
-  const error = new Error(response?.message || fallback || 'PocketBase request failed');
+  const details = response?.data && typeof response.data === 'object'
+    ? Object.values(response.data)
+        .map((entry) => entry?.message)
+        .find((message) => typeof message === 'string' && message.trim())
+    : null;
+  const error = new Error(details || response?.message || fallback || 'PocketBase request failed');
   error.status = response?.status || 500;
   error.response = response || null;
   return error;
@@ -791,13 +796,19 @@ async function verifyUserToken(token) {
   return toPublicUser(userRecord);
 }
 
-async function registerUser({ email, password }) {
+async function registerUser({ email, password, firstName = '', lastName = '' }) {
+  const normalizedFirstName = String(firstName || '').trim();
+  const normalizedLastName = String(lastName || '').trim();
+  const name = `${normalizedFirstName} ${normalizedLastName}`.trim();
   const created = await pocketBaseRequest('/api/collections/users/records', {
     method: 'POST',
     body: {
       email,
       password,
       passwordConfirm: password,
+      firstName: normalizedFirstName,
+      lastName: normalizedLastName,
+      name,
       emailVisibility: false,
       admin: false,
       superAdmin: false,
@@ -1003,6 +1014,7 @@ module.exports = {
   normalizeDataPath,
   decodeTokenPayload,
   toPublicUser,
+  buildPocketBaseError,
   sanitizeSelfUserWrite,
   normalizeRecordListInput,
   stripNormalizedPersonData,

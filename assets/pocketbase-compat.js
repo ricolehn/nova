@@ -211,7 +211,14 @@ export async function createUserWithEmailAndPassword(auth, email, password, extr
   const data = await apiFetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, inviteCode: extra.inviteCode || null })
+    body: JSON.stringify({
+      email,
+      password,
+      inviteCode: extra.inviteCode || null,
+      firstName: extra.firstName || '',
+      lastName: extra.lastName || '',
+      name: extra.name || ''
+    })
   });
   saveAuth(data.token, data.user);
   return { user: authState.currentUser };

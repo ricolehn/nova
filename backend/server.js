@@ -435,6 +435,8 @@ app.post('/api/auth/register', authRateLimit, async (req, res) => {
   const email = String(req.body?.email || '').trim();
   const password = String(req.body?.password || '');
   const inviteCode = String(req.body?.inviteCode || '').trim();
+  const firstName = String(req.body?.firstName || '').trim();
+  const lastName = String(req.body?.lastName || '').trim();
   if (!email || !password) {
     return res.status(400).json({ error: 'Missing email or password.' });
   }
@@ -445,7 +447,7 @@ app.post('/api/auth/register', authRateLimit, async (req, res) => {
     if (!inviteCode || inviteCode !== validInviteCode) {
       return res.status(403).json({ error: 'Ungültiger Registrierungscode.' });
     }
-    const auth = await registerUser({ email, password });
+    const auth = await registerUser({ email, password, firstName, lastName });
     setAuthCookie(res, auth.token);
     res.json(auth);
   } catch (error) {
