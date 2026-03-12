@@ -25,7 +25,9 @@ let superAdminUserRows = [];
 let currentEditedPayment = null;
 const PAYMENT_PAGE_SIZE = 50;
 const TRANSACTION_PAGE_SIZE = 80;
+const TIMELINE_PAGE_SIZE = 30;
 let transactionDisplayCount = 0;
+const timelineRemainingEvents = {};
 
 // ⚡ Bolt: Global formatters for improved performance (avoiding re-initialization)
 const numberFormatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1477,22 +1479,24 @@ window.saveEditedPayment = async () => {
 
 window.approveRequest = async (reqId) => {
     const req = requests.find(r => r.id === reqId);
-    if(!req) return;
+    if(!req || !req.data) return;
 
     try {
         if(req.type === 'payment') {
+            if (!req.personId) { showToast('Fehlende Personenzuordnung', 'error'); return; }
             await mutatePerson(req.personId, (person) => {
                 const payments = safeList(person.payments);
                 payments.push({
                     id: Date.now().toString(),
-                    amount: parseFloat(req.data.amount),
+                    amount: parseFloat(req.data.amount || 0),
                     date: req.data.date,
                     description: req.data.note || 'Zahlung (Genehmigt)'
                 });
-                const totalPaid = (person.totalPaid || 0) + parseFloat(req.data.amount);
+                const totalPaid = (person.totalPaid || 0) + parseFloat(req.data.amount || 0);
                 return { ...person, payments, totalPaid };
             });
         } else if(req.type === 'status') {
+            if (!req.personId) { showToast('Fehlende Personenzuordnung', 'error'); return; }
             await mutatePerson(req.personId, (person) => {
                 const changeDate = req.data.date;
                 const newStatus = req.data.newStatus;
@@ -1518,20 +1522,21 @@ window.approveRequest = async (reqId) => {
         } else if(req.type === 'expense') {
             const newExpense = {
                 id: Date.now().toString(),
-                amount: parseFloat(req.data.amount),
-                description: req.data.description + ` (Von: ${req.personName})`,
+                amount: parseFloat(req.data.amount || 0),
+                description: (req.data.description || 'Ausgabe') + ` (Von: ${req.personName || 'Unbekannt'})`,
                 date: req.data.date,
-                receipt: req.data.receipt
+                receipt: req.data.receipt || null
             };
             const nextExpenses = [...expenses, newExpense];
             await set(ref(db, 'expenses'), nextExpenses);
             expenses = nextExpenses;
         } else if(req.type === 'standing_order') {
+            if (!req.personId) { showToast('Fehlende Personenzuordnung', 'error'); return; }
             await mutatePerson(req.personId, (person) => {
                 const standingOrders = safeList(person.standingOrders);
                 const newSO = {
                     id: Date.now().toString(),
-                    amount: parseFloat(req.data.amount),
+                    amount: parseFloat(req.data.amount || 0),
                     startDate: req.data.date,
                     note: req.data.note || 'Dauerauftrag (Genehmigt)',
                     lastAutoPayment: null
@@ -1550,7 +1555,7 @@ window.approveRequest = async (reqId) => {
         }
 
         await update(ref(db, 'requests/' + reqId), { status: 'approved' });
-        loadData();
+        await loadData();
         showToast('Anfrage genehmigt');
     } catch (err) {
         console.error('Fehler beim Genehmigen der Anfrage:', err);
@@ -1567,7 +1572,7 @@ window.rejectRequest = async (reqId) => {
             status: 'rejected',
             rejectionReason: reason || 'Kein Grund angegeben'
         });
-        loadData();
+        await loadData();
         showToast('Anfrage abgelehnt');
     } catch (err) {
         console.error('Fehler beim Ablehnen der Anfrage:', err);
@@ -1811,15 +1816,15 @@ function generateTimelineHTML(person) {
         return '<div style="font-size:0.8rem; color:var(--text-secondary); font-style:italic;">Keine Einträge vorhanden.</div>';
     }
 
-    const TIMELINE_PAGE_SIZE = 30;
     const initialEvents = allEvents.slice(0, TIMELINE_PAGE_SIZE);
     const timelineItems = initialEvents.map(renderTimelineEvent).join('');
 
     let showMoreBtn = '';
     if (allEvents.length > TIMELINE_PAGE_SIZE) {
         const remaining = allEvents.length - TIMELINE_PAGE_SIZE;
-        const eventsJson = encodeURIComponent(JSON.stringify(allEvents.slice(TIMELINE_PAGE_SIZE)));
-        showMoreBtn = `<button class="btn btn-secondary btn-block timeline-show-more" data-events="${eventsJson}" onclick="loadMoreTimelineEvents(this)" style="margin-top:8px; font-size:0.85rem;">Mehr anzeigen (${remaining} weitere)</button>`;
+        const timelineKey = String(person.id);
+        timelineRemainingEvents[timelineKey] = allEvents.slice(TIMELINE_PAGE_SIZE);
+        showMoreBtn = `<button class="btn btn-secondary btn-block timeline-show-more" data-person-id="${escapeHtml(timelineKey)}" onclick="loadMoreTimelineEvents(this)" style="margin-top:8px; font-size:0.85rem;">Mehr anzeigen (${remaining} weitere)</button>`;
     }
 
     return `<div class="timeline">${timelineItems}</div>${showMoreBtn}`;
@@ -1860,10 +1865,13 @@ function renderTimelineEvent(event) {
 
 window.loadMoreTimelineEvents = (btn) => {
     try {
-        const events = JSON.parse(decodeURIComponent(btn.dataset.events));
-        const TIMELINE_PAGE_SIZE = 30;
+        const personId = btn.dataset.personId;
+        const events = timelineRemainingEvents[personId];
+        if (!events || events.length === 0) { btn.remove(); return; }
+
         const nextBatch = events.slice(0, TIMELINE_PAGE_SIZE);
-        const remainingEvents = events.slice(TIMELINE_PAGE_SIZE);
+        const remaining = events.slice(TIMELINE_PAGE_SIZE);
+        timelineRemainingEvents[personId] = remaining;
 
         const timeline = btn.previousElementSibling;
         if (!timeline || !timeline.classList.contains('timeline')) return;
@@ -1882,9 +1890,8 @@ window.loadMoreTimelineEvents = (btn) => {
         }
 
         // Update or remove button
-        if (remainingEvents.length > 0) {
-            btn.dataset.events = encodeURIComponent(JSON.stringify(remainingEvents));
-            btn.textContent = `Mehr anzeigen (${remainingEvents.length} weitere)`;
+        if (remaining.length > 0) {
+            btn.textContent = `Mehr anzeigen (${remaining.length} weitere)`;
         } else {
             btn.remove();
         }
@@ -2221,11 +2228,13 @@ function renderTransactionItem(t) {
     const sign = isExp ? '-' : '+';
     const icon = t.type === 'pay' ? '👤' : (t.type === 'don' ? '💝' : '💸');
     const hasReceipt = t.receipt ? '<span style="margin-left:5px" title="Beleg vorhanden">📷</span>' : '';
+    const safeId = escapeHtml(String(t.id || ''));
+    const safeType = escapeHtml(String(t.type || ''));
     return `
-        <div class="trans-item" role="button" tabindex="0" onclick="showTransactionDetails('${t.id}', '${t.type}')" onkeydown="if(event.key==='Enter'||event.key===' '){showTransactionDetails('${t.id}', '${t.type}')}" style="cursor:pointer;">
+        <div class="trans-item" role="button" tabindex="0" onclick="showTransactionDetails('${safeId}', '${safeType}')" onkeydown="if(event.key==='Enter'||event.key===' '){showTransactionDetails('${safeId}', '${safeType}')}" style="cursor:pointer;">
             <div class="trans-left">
-                <span style="font-weight:600;">${icon} ${t.who}</span>
-                <div class="trans-meta">${t.description || '-'} ${hasReceipt} • ${t.date ? dateFormatter.format(new Date(t.date)) : 'Kein Datum'}</div>
+                <span style="font-weight:600;">${icon} ${escapeHtml(t.who || '')}</span>
+                <div class="trans-meta">${escapeHtml(t.description || '-')} ${hasReceipt} • ${t.date ? dateFormatter.format(new Date(t.date)) : 'Kein Datum'}</div>
             </div>
             <div class="trans-amount ${color}">${sign}${formatCurrency(t.amount)}€</div>
         </div>
