@@ -2121,9 +2121,6 @@ window.showTransactionModal = function(resetLimit = true) {
 
     const modal = document.getElementById('transaction-modal');
     const container = document.getElementById('full-transaction-list');
-    const scrollContainer = container?.closest('.modal-content') || container;
-    const previousScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
-    const previousScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
     let all = cachedTransactions;
 
     if (!all) {
@@ -2179,6 +2176,10 @@ window.showTransactionModal = function(resetLimit = true) {
                 </div>
             `;
         }
+
+        const scrollContainer = container?.closest('.modal-content') || container;
+        const previousScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+        const previousScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
 
         container.innerHTML = html;
 
@@ -3005,12 +3006,11 @@ window.attemptRegister = async () => {
             return;
         }
 
-        const fullName = `${first} ${last}`.trim();
         const userCredential = await createUserWithEmailAndPassword(auth, email, p1, {
             inviteCode: code,
             firstName: first,
             lastName: last,
-            name: fullName
+            name: `${first} ${last}`.trim()
         });
         const user = userCredential.user;
         // Persist basic user profile
