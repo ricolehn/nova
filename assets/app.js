@@ -496,8 +496,8 @@ function calculatePaymentStatus(person) {
         // History is already sorted in loadData
         const sortedHistory = person.statusHistory;
 
-        // Maximal 120 Monate (10 Jahre) in die Zukunft prüfen
-        const maxIterations = 120;
+        // Maximal 1200 Monate (100 Jahre) in die Zukunft prüfen
+        const maxIterations = 1200;
         let iterations = 0;
 
         // ⚡ Bolt: Optimized linear scan through history
@@ -571,7 +571,7 @@ function calculateCostRange(person, startDate, endDate) {
     // ⚡ Bolt: Pre-calculate target months for faster integer comparison
     const targetTotal = endDate.getFullYear() * 12 + endDate.getMonth();
 
-    while ((year * 12 + month) <= targetTotal && limit < 120) {
+    while ((year * 12 + month) <= targetTotal && limit < 1200) {
         const currentTotal = year * 12 + month;
 
         const { status: historyStatus, newIdx } = findStatusInHistory(sortedHistory, historyIdx, currentTotal);
@@ -828,7 +828,7 @@ function checkAndExecuteStandingOrders(person) {
         // Loop until limitDate
         // Safety break to prevent infinite loops if dates are messed up
         let safety = 0;
-        while (nextDueDate <= limitDate && safety < 120) {
+        while (nextDueDate <= limitDate && safety < 1200) {
             const dateStr = nextDueDate.toISOString().split('T')[0];
             const paymentId = `auto_${currentSO.id}_${dateStr}`;
 
