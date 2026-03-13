@@ -57,11 +57,12 @@ async function apiFetch(url, options = {}) {
   const response = await fetch(url, { ...options, headers });
   if (!response.ok) {
     let message = 'Request failed';
+    const responseClone = response.clone();
     try {
       const data = await response.json();
       message = data.error || data.message || message;
     } catch {
-      message = await response.text() || message;
+      message = await responseClone.text() || message;
     }
     throw new Error(message);
   }

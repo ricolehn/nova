@@ -1063,7 +1063,7 @@ async function loadData() {
         if (updates.length > 0) await Promise.all(updates);
     }
 
-    renderAll();
+    await renderAll();
     } catch (err) {
         console.error("Ladefehler:", err);
         alert("Fehler beim Laden der Daten. Bitte Seite neu laden.");
@@ -1073,12 +1073,12 @@ async function loadData() {
     }
 }
 
-function renderAll() {
+async function renderAll() {
     if (currentUser && !currentUser.admin) {
         renderUserView();
     } else {
         renderPeople();
-        renderStats();
+        await renderStats();
         renderAdminRequests();
         renderUnlinkedUsers();
         document.getElementById('rate-vollverdiener').value = settings.vollverdiener;
@@ -1443,7 +1443,7 @@ window.saveEditedPayment = async () => {
         });
         closeModal('edit-payment-modal');
         currentEditedPayment = null;
-        renderAll();
+        await renderAll();
         showToast('Zahlung aktualisiert');
     } catch (err) {
         console.error('Fehler beim Bearbeiten der Zahlung:', err);
@@ -1499,7 +1499,8 @@ window.approveRequest = async (reqId) => {
                 date: req.data.date,
                 receipt: req.data.receipt
             };
-            const nextExpenses = [...expenses, newExpense];
+            const currentData = await apiGet('expenses');
+            const nextExpenses = [...safeList(currentData), newExpense];
             await set(ref(db, 'expenses'), nextExpenses);
             expenses = nextExpenses;
         } else if(req.type === 'standing_order') {
@@ -1518,7 +1519,7 @@ window.approveRequest = async (reqId) => {
         }
 
         await update(ref(db, 'requests/' + reqId), { status: 'approved' });
-        loadData();
+        await loadData();
         showToast('Anfrage genehmigt');
     } catch (err) {
         console.error('Fehler beim Genehmigen der Anfrage:', err);
@@ -1535,7 +1536,7 @@ window.rejectRequest = async (reqId) => {
             status: 'rejected',
             rejectionReason: reason || 'Kein Grund angegeben'
         });
-        loadData();
+        await loadData();
         showToast('Anfrage abgelehnt');
     } catch (err) {
         console.error('Fehler beim Ablehnen der Anfrage:', err);
@@ -1887,48 +1888,30 @@ function generatePersonHTML(p, preCalcData = null) {
     `;
 }
 
-function renderStats() {
-    let periodInc = 0, periodExp = 0;
-    let totalInc = 0, totalExp = 0;
+async function renderStats() {
+    try {
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/stats`);
+        if (!response.ok) throw new Error('Stats fetch failed');
+        const data = await response.json();
 
-    // ⚡ Bolt: Using string comparison for dates to avoid creating thousands of Date objects
-    const startStr = settings.reportStartDate || '';
+        // ⚡ Bolt: Using persistent currencyFormatter
+        document.getElementById('heroAmount').textContent = currencyFormatter.format(data.totalBalance || 0);
+        document.getElementById('totalIncome').textContent = currencyFormatter.format(data.totalIncome || 0);
+        document.getElementById('totalExpenses').textContent = currencyFormatter.format(data.totalExpenses || 0);
 
-    people.forEach(p => {
-        const pTotal = parseFloat(p.totalPaid || 0);
-        totalInc += pTotal;
-
-        if (startStr) {
-            // If we have a filter, we still need to iterate payments
-            safeList(p.payments).forEach(pay => {
-                if (pay.date >= startStr) periodInc += parseFloat(pay.amount);
-            });
+        if (data.chartData && Array.isArray(data.chartData.dataPoints)) {
+            chartDataCache = {
+                dataPoints: data.chartData.dataPoints.map(dp => ({ ...dp, date: new Date(dp.date) })),
+                minVal: data.chartData.minVal,
+                maxVal: data.chartData.maxVal
+            };
         } else {
-            periodInc += pTotal;
+            chartDataCache = null;
         }
-    });
-
-    donations.forEach(d => {
-        const amount = parseFloat(d.amount);
-        totalInc += amount;
-        if (!startStr || d.date >= startStr) periodInc += amount;
-    });
-
-    expenses.forEach(e => {
-        const amount = parseFloat(e.amount);
-        totalExp += amount;
-        if (!startStr || e.date >= startStr) periodExp += amount;
-    });
-
-    const totalBalance = totalInc - totalExp;
-
-    // ⚡ Bolt: Using persistent currencyFormatter
-    document.getElementById('heroAmount').textContent = currencyFormatter.format(totalBalance);
-    document.getElementById('totalIncome').textContent = currencyFormatter.format(periodInc);
-    document.getElementById('totalExpenses').textContent = currencyFormatter.format(periodExp);
-
-    chartDataCache = null;
-    renderBalanceChart();
+        renderBalanceChart();
+    } catch (err) {
+        console.error('Fehler beim Laden der Statistiken:', err);
+    }
 }
 
 function renderBalanceChart() {
@@ -1946,80 +1929,7 @@ function renderBalanceChart() {
 
     ctx.clearRect(0, 0, width, height);
 
-    if (!chartDataCache) {
-        // ⚡ Bolt: Optimized Data Collection (O(N) vs O(N log N))
-        // Avoids creating Date objects for every transaction and sorting them.
-
-        // 1. Determine Cutoff Date
-        const today = new Date();
-        today.setHours(0,0,0,0);
-
-        const ninetyDaysAgo = new Date(today);
-        ninetyDaysAgo.setDate(today.getDate() - 90);
-
-        // Create comparable string (YYYY-MM-DD) from ninetyDaysAgo
-        // Note: We use local year/month/day to match the input date strings
-        const cutoffY = ninetyDaysAgo.getFullYear();
-        const cutoffM = String(ninetyDaysAgo.getMonth() + 1).padStart(2, '0');
-        const cutoffD = String(ninetyDaysAgo.getDate()).padStart(2, '0');
-        const cutoffStr = `${cutoffY}-${cutoffM}-${cutoffD}`;
-
-        let currentBalance = 0;
-        const eventsByDay = {};
-
-        // 2. Single Pass Aggregation
-        // Helper to process amount/date pairs
-        const processEvent = (amount, dateStr) => {
-            if (!dateStr) return; // Skip if no date
-
-            // String comparison works for ISO dates (YYYY-MM-DD)
-            if (dateStr < cutoffStr) {
-                currentBalance += amount;
-            } else {
-                // Aggregate for chart
-                eventsByDay[dateStr] = (eventsByDay[dateStr] || 0) + amount;
-            }
-        };
-
-        people.forEach(p => {
-            safeList(p.payments).forEach(pay => {
-                processEvent(parseFloat(pay.amount), pay.date);
-            });
-        });
-        donations.forEach(d => {
-            processEvent(parseFloat(d.amount), d.date);
-        });
-        expenses.forEach(e => {
-            processEvent(-parseFloat(e.amount), e.date);
-        });
-
-        // 3. Generate Data Points
-        const dataPoints = [];
-        let minVal = currentBalance;
-        let maxVal = currentBalance;
-
-        for (let i = 0; i <= 90; i++) {
-            const d = new Date(ninetyDaysAgo);
-            d.setDate(d.getDate() + i);
-
-            // Generate lookup key (Local YYYY-MM-DD)
-            const dY = d.getFullYear();
-            const dM = String(d.getMonth() + 1).padStart(2, '0');
-            const dD = String(d.getDate()).padStart(2, '0');
-            const dayStr = `${dY}-${dM}-${dD}`;
-
-            if (eventsByDay[dayStr]) {
-                currentBalance += eventsByDay[dayStr];
-            }
-
-            dataPoints.push({ x: i, y: currentBalance, date: d });
-
-            if (currentBalance < minVal) minVal = currentBalance;
-            if (currentBalance > maxVal) maxVal = currentBalance;
-        }
-
-        chartDataCache = { dataPoints, minVal, maxVal };
-    }
+    if (!chartDataCache || !chartDataCache.dataPoints || chartDataCache.dataPoints.length === 0) return;
 
     const { dataPoints, minVal, maxVal } = chartDataCache;
 
@@ -2198,7 +2108,7 @@ window.addPerson = async () => {
 
     try {
         await saveNewPerson(newP);
-        renderAll();
+        await renderAll();
         closeModal('add-person-modal');
         document.getElementById('new-person-name').value = ''; // Clear input on success
         showToast('Person hinzugefügt');
@@ -2251,7 +2161,7 @@ window.addPayment = async () => {
             return;
         }
 
-        renderAll();
+        await renderAll();
         closeModal('add-payment-modal');
         document.getElementById('payment-is-standing-order').checked = false;
         const lbl = document.getElementById('payment-date-label');
@@ -2276,11 +2186,12 @@ window.addDonation = async () => {
         return;
     }
     const newDonation = { amount: amt, name: document.getElementById('donation-name').value, date: document.getElementById('donation-date').value, id: Date.now() };
-    const nextDonations = [...donations, newDonation];
     try {
+        const currentData = await apiGet('donations');
+        const nextDonations = [...safeList(currentData), newDonation];
         await set(ref(db, 'donations'), { ...nextDonations });
         donations = nextDonations;
-        renderAll();
+        await renderAll();
         closeModal('add-donation-modal');
         showToast('Spende gespeichert');
     } catch (err) {
@@ -2328,11 +2239,12 @@ window.addExpense = async () => {
         id: Date.now(),
         receipt: receiptFilename
     };
-    const nextExpenses = [...expenses, newExpense];
     try {
+        const currentData = await apiGet('expenses');
+        const nextExpenses = [...safeList(currentData), newExpense];
         await set(ref(db, 'expenses'), { ...nextExpenses });
         expenses = nextExpenses;
-        renderAll();
+        await renderAll();
         closeModal('add-expense-modal');
         document.getElementById('expense-amount').value = '';
         document.getElementById('expense-issuer').value = '';
@@ -2352,7 +2264,7 @@ window.deletePerson = async (id) => {
         try {
             await remove(ref(db, 'people/' + id));
             people = people.filter(p => String(p.id) !== String(id));
-            renderAll();
+            await renderAll();
             showToast('Person gelöscht');
         } catch (err) {
             console.error('Fehler beim Löschen der Person:', err);
@@ -2422,7 +2334,7 @@ window.saveStandingOrderEnd = async () => {
             return { ...person, standingOrders, payments, totalPaid };
         });
 
-        renderAll();
+        await renderAll();
         closeModal('end-standing-order-modal');
         showToast('Dauerauftrag aktualisiert');
     } catch (err) {
@@ -2439,7 +2351,7 @@ window.deleteStandingOrderCompletely = async () => {
             const standingOrders = safeList(person.standingOrders).filter(so => String(so.id) !== String(editingSoId));
             return { ...person, standingOrders };
         });
-        renderAll();
+        await renderAll();
         closeModal('end-standing-order-modal');
         showToast('Dauerauftrag gelöscht');
     } catch (err) {
@@ -2591,7 +2503,7 @@ window.saveStatusChange = async () => {
             return;
         }
 
-        renderAll();
+        await renderAll();
         closeModal('change-status-modal');
         showToast('Status geändert');
     } catch (err) {
@@ -2657,11 +2569,12 @@ window.saveAdvancedSystemConfig = async () => {
         });
         if (!response.ok) {
             let errMsg;
+            const responseClone = response.clone();
             try {
                 const errData = await response.json();
                 errMsg = errData.error || JSON.stringify(errData);
             } catch {
-                errMsg = await response.text();
+                errMsg = await responseClone.text();
             }
             throw new Error(errMsg);
         }
@@ -2738,7 +2651,7 @@ window.saveSettings = async () => {
             await update(ref(db, 'users/' + currentUser.uid), { emailNotifications });
             currentUser.emailNotifications = emailNotifications;
         }
-        renderAll();
+        await renderAll();
         showToast("Einstellungen gespeichert");
     } catch (err) {
         console.error('Fehler beim Speichern der Einstellungen:', err);
@@ -3328,17 +3241,17 @@ window.viewRequestReceipt = async function(filename, containerId) {
 };
 
 window.findTransaction = function(id, type) {
+    if (!cachedTransactions || cachedTransactions.length === 0) return null;
+
+    const item = cachedTransactions.find(x => String(x.id) === String(id));
+    if (!item) return null;
+
     if (type === 'exp') {
-        const e = expenses.find(x => String(x.id) === String(id));
-        return e ? { ...e, typeName: 'Ausgabe' } : null;
+        return { ...item, typeName: 'Ausgabe' };
     } else if (type === 'don') {
-        const d = donations.find(x => String(x.id) === String(id));
-        return d ? { ...d, typeName: 'Spende', who: d.name } : null;
+        return { ...item, typeName: 'Spende', who: item.name || item.who };
     } else if (type === 'pay') {
-        for (const p of people) {
-            const pay = safeList(p.payments).find(x => String(x.id) === String(id));
-            if (pay) return { ...pay, typeName: 'Zahlung', who: p.name };
-        }
+        return { ...item, typeName: 'Zahlung' };
     }
     return null;
 };
