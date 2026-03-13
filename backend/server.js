@@ -1016,7 +1016,7 @@ app.get('/api/receipts/:filename', protectedActionRateLimit, verifyToken, (req, 
   const filePath = path.resolve(path.join(uploadDir, req.params.filename));
   const normalizedUploadDir = path.resolve(uploadDir);
 
-  if (!filePath.startsWith(normalizedUploadDir)) {
+  if (!filePath.startsWith(normalizedUploadDir + path.sep)) {
     return res.status(403).send('Forbidden: Path traversal detected');
   }
 

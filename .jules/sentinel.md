@@ -1,0 +1,4 @@
+## 2023-10-27 - [Path Traversal bypass in startsWith verification]
+**Vulnerability:** A path traversal vulnerability existed in `/api/receipts/:filename` where `filePath.startsWith(normalizedUploadDir)` was used to prevent files outside the directory from being read. If `normalizedUploadDir` was `/app/data/uploads`, an attacker could bypass the check by requesting `/app/data/uploads-backup/secret.txt`, as this path starts with the exact string.
+**Learning:** `startsWith` on directory paths without a trailing separator can match adjacent directories with the same prefix.
+**Prevention:** Always append `path.sep` to the target directory before using `startsWith` to verify that the generated file path remains safely within the expected directory constraints.
