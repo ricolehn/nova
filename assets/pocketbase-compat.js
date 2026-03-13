@@ -130,6 +130,11 @@ export async function get(queryTarget) {
   return makeSnapshot(result?.value);
 }
 
+export async function apiGet(path) {
+  const result = await apiFetch(`/api/db?path=${encodeURIComponent(path)}`);
+  return result; // Note backend returns result.value or just the payload depending on `raw` param
+}
+
 export async function set(reference, value) {
   await apiFetch('/api/db', {
     method: 'PUT',

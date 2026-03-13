@@ -1,4 +1,4 @@
-import { initializeApp, getDatabase, ref, set, get, child, update, query, orderByChild, equalTo, runTransaction, remove, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "./pocketbase-compat.js";
+import { initializeApp, getDatabase, ref, set, get, child, update, query, orderByChild, equalTo, runTransaction, remove, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, apiGet } from "./pocketbase-compat.js";
 import { config } from "./config.js";
 
 const app = initializeApp(config);
@@ -22,8 +22,10 @@ let superAdminUserRows = [];
 let currentEditedPayment = null;
 
 // ⚡ Bolt: Global variable to handle paginated display of historical transactions
-let transactionDisplayLimit = 150;
+let transactionPage = 1;
+const transactionPerPage = 150;
 let cachedTransactions = null;
+let transactionTotalItems = 0;
 
 // ⚡ Bolt: Global formatters for improved performance (avoiding re-initialization)
 const numberFormatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -994,30 +996,31 @@ async function loadData() {
         advancedConfigLoaded = false;
         advancedConfigAppName = null;
         // Admin: fetch full dataset
-        const [pSnap, dSnap, eSnap, sSnap, cSnap, rSnap, uSnap] = await Promise.all([
-            get(child(dbRef, 'people')),
-            get(child(dbRef, 'donations')),
-            get(child(dbRef, 'expenses')),
-            get(child(dbRef, 'settings')),
-            get(child(dbRef, 'system/inviteCode')),
-            get(child(dbRef, 'requests')),
-            get(child(dbRef, 'users'))
+        const [pData, sData, cData, rData, uData] = await Promise.all([
+            apiGet('people').catch(() => null),
+            apiGet('settings').catch(() => null),
+            apiGet('system/inviteCode').catch(() => null),
+            apiGet('requests').catch(() => null),
+            apiGet('users').catch(() => null)
         ]);
 
-        people = safeList(pSnap.val());
-        donations = safeList(dSnap.val());
-        expenses = safeList(eSnap.val());
-        requests = safeList(rSnap.val());
-        if (sSnap.exists()) {
-            settings = sSnap.val();
+        people = safeList(pData);
+        // We no longer need to load all donations and expenses on startup for the Admin!
+        // The stats endpoint and transaction pagination handle this data now.
+        donations = [];
+        expenses = [];
+        requests = safeList(rData);
+
+        if (sData) {
+            settings = sData;
             settingsVersion++;
         }
-        users = uSnap.exists()
-            ? Object.entries(uSnap.val()).map(([uid, data]) => ({...data, uid}))
+        users = uData
+            ? Object.entries(uData).map(([uid, data]) => ({...data, uid}))
             : [];
 
         // Show Invite Code
-        const code = cSnap.exists() ? cSnap.val() : '123456';
+        const code = cData ? cData : '123456';
         const codeInput = document.getElementById('admin-invite-code');
         if(codeInput) codeInput.value = code;
 
@@ -1510,15 +1513,7 @@ window.approveRequest = async (reqId) => {
                     lastAutoPayment: null
                 };
                 standingOrders.push(newSO);
-                // Also trigger execution logic immediately
-                const draftPerson = { ...person, standingOrders };
-                const execResult = checkAndExecuteStandingOrders(draftPerson);
-                // Calculate totalPaid from payments if updated
-                if (execResult) {
-                    const newTotal = safeList(execResult.payments).reduce((acc, p) => acc + parseFloat(p.amount), 0);
-                    return { ...execResult, totalPaid: newTotal };
-                }
-                return draftPerson;
+                return { ...person, standingOrders };
             });
         }
 
@@ -1559,16 +1554,10 @@ function renderUserView() {
     }
 
     const p = people[0]; // User has only one person (themselves)
-    const { paidUntil, remainingCredit } = calculatePaymentStatus(p);
-
-    // ⚡ Bolt: Centralized todayStr calculation
-    const todayStr = getTodayStr();
-
-    const statusMeta = calculateTimeRemaining(p, paidUntil, todayStr);
-    const overdueAmount = statusMeta.isOverdue ? calculateOverdueAmount(p, paidUntil, remainingCredit, todayStr) : 0;
-
-    // Get current status (not future status)
-    const currentStatus = getCurrentStatus(p);
+    const paidUntil = p._paidUntil ? new Date(p._paidUntil) : null;
+    const statusMeta = p._statusMeta || { text: 'Unbekannt', isOverdue: false, isSoonDue: false };
+    const overdueAmount = p._overdueAmount || 0;
+    const currentStatus = p._currentStatus || p.status;
 
     // Format date to show only month and year
     let dateText = paidUntil ? monthYearFormatter.format(paidUntil) : 'Nie';
@@ -1679,16 +1668,14 @@ function renderPeople() {
     }
     empty.style.display = 'none';
 
-    // ⚡ Bolt: Centralized todayStr calculation for performance
-    const todayStr = getTodayStr();
-
-    // ⚡ Bolt: Calculate costly status/dates ONCE per person here
+    // Data is pre-calculated by backend now
     const processed = people.map(p => {
-        const { paidUntil, remainingCredit } = calculatePaymentStatus(p);
-        const statusMeta = calculateTimeRemaining(p, paidUntil, todayStr);
-        // Only calculate overdue amount if actually overdue
-        const overdueAmount = statusMeta.isOverdue ? calculateOverdueAmount(p, paidUntil, remainingCredit, todayStr) : 0;
-        return { p, paidUntil, statusMeta, overdueAmount };
+        return {
+            p,
+            paidUntil: p._paidUntil ? new Date(p._paidUntil) : null,
+            statusMeta: p._statusMeta || { text: '', isOverdue: false, isSoonDue: false },
+            overdueAmount: p._overdueAmount || 0
+        };
     });
 
     const overdueItems = processed.filter(x => x.statusMeta.isOverdue);
@@ -1795,13 +1782,11 @@ function generateTimelineHTML(person) {
 }
 
 function generatePersonHTML(p, preCalcData = null) {
-    const paidUntil = preCalcData ? preCalcData.paidUntil : calculatePaidUntil(p);
-    // Note: statusMeta in preCalcData already utilized paidUntil internally
-    const statusMeta = preCalcData ? preCalcData.statusMeta : calculateTimeRemaining(p, paidUntil);
-    const overdueAmount = preCalcData ? preCalcData.overdueAmount : calculateOverdueAmount(p);
+    const paidUntil = preCalcData ? preCalcData.paidUntil : (p._paidUntil ? new Date(p._paidUntil) : null);
+    const statusMeta = preCalcData ? preCalcData.statusMeta : (p._statusMeta || { text: '', isOverdue: false, isSoonDue: false });
+    const overdueAmount = preCalcData ? preCalcData.overdueAmount : (p._overdueAmount || 0);
 
-    // Get current status (not future status)
-    const currentStatus = getCurrentStatus(p);
+    const currentStatus = p._currentStatus || p.status;
 
     let dateText = paidUntil ? monthYearFormatter.format(paidUntil) : 'Nie';
     let pillClass = 'status-ok';
@@ -2113,45 +2098,41 @@ window.addEventListener('resize', () => {
     }, 100);
 });
 
-window.showTransactionModal = function(resetLimit = true) {
+window.showTransactionModal = async function(resetLimit = true) {
     if (resetLimit) {
-        transactionDisplayLimit = 150;
-        cachedTransactions = null; // Clear cache on reset
+        transactionPage = 1;
+        cachedTransactions = null;
     }
 
     const modal = document.getElementById('transaction-modal');
     const container = document.getElementById('full-transaction-list');
-    let all = cachedTransactions;
 
-    if (!all) {
-        all = [];
-        const safePeople = safeList(people);
-        const safeDonations = safeList(donations);
-        const safeExpenses = safeList(expenses);
-
-        safePeople.forEach(p => {
-            safeList(p.payments).forEach(pay => {
-                all.push({...pay, who: p.name, type: 'pay'});
-            });
-        });
-        safeDonations.forEach(d => {
-            all.push({...d, who: d.name || 'Spende', type: 'don'});
-        });
-        safeExpenses.forEach(e => {
-            all.push({...e, who: e.issuer, type: 'exp'});
-        });
-
-        // ⚡ Bolt: Use localeCompare for faster sorting without Date objects
-        all.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
-        cachedTransactions = all;
+    if (resetLimit) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Lade Buchungen...</div>';
     }
 
-    if (all.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Keine Buchungen vorhanden.</div>';
-    } else {
-        // ⚡ Bolt: Limit DOM elements rendered to avoid blocking the main thread on large histories
-        const preview = all.slice(0, transactionDisplayLimit);
-        let html = preview.map(t => {
+    if (!modal?.classList.contains('show')) {
+        openModal('transaction-modal');
+    }
+
+    try {
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/transactions?page=${transactionPage}&perPage=${transactionPerPage}`);
+        if (!response.ok) throw new Error('Failed to fetch transactions');
+        const data = await response.json();
+
+        if (resetLimit) {
+            cachedTransactions = data.items;
+        } else {
+            cachedTransactions = [...(cachedTransactions || []), ...data.items];
+        }
+        transactionTotalItems = data.totalItems;
+
+        if (!cachedTransactions || cachedTransactions.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Keine Buchungen vorhanden.</div>';
+            return;
+        }
+
+        let html = cachedTransactions.map(t => {
             const isExp = t.type === 'exp';
             const color = isExp ? 'text-danger' : 'text-success';
             const sign = isExp ? '-' : '+';
@@ -2168,10 +2149,10 @@ window.showTransactionModal = function(resetLimit = true) {
             `;
         }).join('');
 
-        if (all.length > preview.length) {
+        if (cachedTransactions.length < transactionTotalItems) {
             html += `
                 <div style="text-align:center; padding:10px;">
-                    <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom: 10px;">Es werden ${preview.length} von ${all.length} Buchungen angezeigt.</div>
+                    <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom: 10px;">Es werden ${cachedTransactions.length} von ${transactionTotalItems} Buchungen angezeigt.</div>
                     <button class="btn btn-secondary" onclick="loadMoreTransactions()">Mehr laden...</button>
                 </div>
             `;
@@ -2182,19 +2163,17 @@ window.showTransactionModal = function(resetLimit = true) {
 
         container.innerHTML = html;
 
-        // Restore scroll position to avoid jumping when loading more
         if (!resetLimit && scrollContainer) {
             scrollContainer.scrollTop = previousScrollTop;
         }
-    }
-    if (!modal?.classList.contains('show')) {
-        openModal('transaction-modal');
+    } catch (err) {
+        console.error('Fehler beim Laden der Transaktionen:', err);
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger);">Fehler beim Laden der Buchungen.</div>';
     }
 };
 
 window.loadMoreTransactions = function() {
-    transactionDisplayLimit += 150;
-    // Call with resetLimit = false to keep the increased limit and preserve scroll
+    transactionPage += 1;
     window.showTransactionModal(false);
 };
 
@@ -2258,15 +2237,7 @@ window.addPayment = async () => {
                     lastAutoPayment: null
                 };
                 standingOrders.push(newSO);
-                // Also trigger execution logic immediately
-                const draftPerson = { ...person, standingOrders };
-                const execResult = checkAndExecuteStandingOrders(draftPerson);
-                // Calculate totalPaid from payments if updated
-                if (execResult) {
-                    const newTotal = safeList(execResult.payments).reduce((acc, p) => acc + parseFloat(p.amount), 0);
-                    return { ...execResult, totalPaid: newTotal };
-                }
-                return draftPerson;
+                return { ...person, standingOrders };
             } else {
                 const payments = safeList(person.payments);
                 payments.push({ amount: amt, date, description: desc, id: Date.now() });
@@ -2517,10 +2488,9 @@ window.sendStatusEmail = async (personId) => {
         return;
     }
 
-    const { paidUntil, remainingCredit } = calculatePaymentStatus(person);
-    const statusMeta = calculateTimeRemaining(person, paidUntil);
-    const overdueAmount = statusMeta.isOverdue ? calculateOverdueAmount(person, paidUntil, remainingCredit) : 0;
-    const currentStatus = getCurrentStatus(person);
+    const statusMeta = person._statusMeta || { text: '', isOverdue: false, isSoonDue: false };
+    const overdueAmount = person._overdueAmount || 0;
+    const currentStatus = person._currentStatus || person.status;
 
     const statusLabels = {
         'vollverdiener': 'Vollverdiener',
