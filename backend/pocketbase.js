@@ -477,12 +477,14 @@ async function ensureStateDefaults(appConfig) {
     ['system', DEFAULT_SYSTEM_STATE]
   ]);
 
-  for (const [key, value] of defaults.entries()) {
+  const promises = Array.from(defaults.entries()).map(async ([key, value]) => {
     const existing = await getStateRecord(appConfig, key);
     if (!existing) {
       await createRecord('app_state', { key, value }, appConfig);
     }
-  }
+  });
+
+  await Promise.all(promises);
 }
 
 function normalizeRecordListInput(value) {
