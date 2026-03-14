@@ -13,6 +13,7 @@ const {
   buildPaymentRecordPayload,
   buildStatusHistoryRecordPayload,
   buildExpenseRecordPayload,
+  buildRequestRecordPayload,
   hydratePersonRecord,
   clearSuperuserTokenCache
 } = require('./pocketbase');
@@ -214,3 +215,49 @@ test('hydratePersonRecord attaches _childPayments/_childStatusHistory-compatible
   assert.equal(result.totalPaid, 5);
 });
 
+test('buildRequestRecordPayload normalizes fields and handles missing values', () => {
+  const payloadFull = buildRequestRecordPayload('req-1', {
+    userId: 'user-123',
+    personId: 'person-456',
+    personName: 'Jane Doe',
+    type: 'membership',
+    status: 'pending',
+    timestamp: 1710452400000
+  });
+
+  assert.equal(payloadFull.requestKey, 'req-1');
+  assert.equal(payloadFull.userId, 'user-123');
+  assert.equal(payloadFull.personId, 'person-456');
+  assert.equal(payloadFull.personName, 'Jane Doe');
+  assert.equal(payloadFull.type, 'membership');
+  assert.equal(payloadFull.status, 'pending');
+  assert.equal(payloadFull.timestamp, 1710452400000);
+  assert.deepEqual(payloadFull.data, {
+    userId: 'user-123',
+    personId: 'person-456',
+    personName: 'Jane Doe',
+    type: 'membership',
+    status: 'pending',
+    timestamp: 1710452400000
+  });
+
+  const payloadEmpty = buildRequestRecordPayload('req-2', {
+    userId: null,
+    personId: undefined,
+    personName: '',
+    // type and status missing
+    timestamp: 'not-a-number'
+  });
+
+  assert.equal(payloadEmpty.requestKey, 'req-2');
+  assert.equal(payloadEmpty.userId, '');
+  assert.equal(payloadEmpty.personId, '');
+  assert.equal(payloadEmpty.personName, '');
+  assert.equal(payloadEmpty.type, '');
+  assert.equal(payloadEmpty.status, '');
+  assert.equal(payloadEmpty.timestamp, null);
+
+  const payloadNullValue = buildRequestRecordPayload('req-3', null);
+  assert.equal(payloadNullValue.userId, '');
+  assert.equal(payloadNullValue.data, null);
+});
