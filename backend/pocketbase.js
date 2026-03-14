@@ -923,11 +923,11 @@ function buildPersonRecordPayload(personKey, value) {
 function buildRequestRecordPayload(requestKey, value) {
   return {
     requestKey: String(requestKey),
-    userId: value?.userId ? String(value.userId) : '',
-    personId: value?.personId ? String(value.personId) : '',
-    personName: value?.personName ? String(value.personName) : '',
-    type: value?.type ? String(value.type) : '',
-    status: value?.status ? String(value.status) : '',
+    userId: toOptionalText(value?.userId),
+    personId: toOptionalText(value?.personId),
+    personName: toOptionalText(value?.personName),
+    type: toOptionalText(value?.type),
+    status: toOptionalText(value?.status),
     timestamp: typeof value?.timestamp === 'number' ? value.timestamp : null,
     data: value || null
   };
@@ -1091,5 +1091,6 @@ module.exports = {
   syncExpenseRecords,
   listRequestRecords,
   getRequestRecord,
-  upsertRequestRecord
+  upsertRequestRecord,
+  buildRequestRecordPayload
 };
