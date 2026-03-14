@@ -1,0 +1,3 @@
+## 2024-05-20 - Button Keyboard Focus Visibility
+**Learning:** Found that custom `.btn` and `.close-btn` classes lacked clear keyboard focus indicators, making tab navigation difficult for accessibility. Adding `:focus-visible` with a 2px solid outline (using existing `--primary` and `--danger` CSS variables) and a 2px `outline-offset` provides excellent, clear visual feedback for keyboard users without affecting mouse users.
+**Action:** Always ensure custom interactive elements (like buttons) explicitly define `:focus-visible` states that stand out against the background, ideally using an offset to avoid clashing with the element's border.

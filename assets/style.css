@@ -342,6 +342,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     cursor: pointer; transition: 0.2s; font-size: 0.95rem; width: auto;
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
 }
+.btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .btn-block { width: 100%; }
 .btn-primary { background: linear-gradient(90deg, #06b6d4 0%, #10b981 100%); color: white; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
 .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
@@ -745,6 +746,10 @@ input:checked + .slider:before { transform: translateX(22px); }
 .close-btn:hover, .close-btn:focus {
     color: var(--danger);
     outline: none;
+}
+.close-btn:focus-visible {
+    outline: 2px solid var(--danger);
+    border-radius: 4px;
 }
 .sr-only {
   position: absolute;
