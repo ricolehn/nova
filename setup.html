@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="de" data-theme="system">
-<head>
+<!DOCTYPE html><html lang="de" data-theme="system"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#06b6d4">
@@ -50,14 +48,16 @@
             margin-bottom: 15px;
         }
     </style>
+    <script src="assets/translations.js"></script>
+    <script src="assets/i18n.js"></script>
 </head>
 <body>
 
 <div class="setup-container">
     <div style="text-align: center; margin-bottom: 30px;">
         <img src="assets/church-logo.svg" alt="Logo" style="width: 60px; height: 60px; margin-bottom: 10px;">
-        <h1 style="font-size: 2rem; font-weight: 800;">Ersteinrichtung</h1>
-        <p style="color: var(--text-secondary);">Nova richtet PocketBase automatisch im Docker-Container ein.</p>
+        <h1 style="font-size: 2rem; font-weight: 800;" data-i18n="Ersteinrichtung">Ersteinrichtung</h1>
+        <p style="color: var(--text-secondary);" data-i18n="Nova richtet PocketBase automatisch im Docker-Container ein.">Nova richtet PocketBase automatisch im Docker-Container ein.</p>
     </div>
 
     <div class="step-indicator" id="stepIndicator">
@@ -65,64 +65,64 @@
         <div class="step-dot"></div>
     </div>
 
-    <form id="setupForm" novalidate onsubmit="event.preventDefault(); nextStep();">
+    <form id="setupForm" novalidate="" onsubmit="event.preventDefault(); nextStep();">
         <div class="setup-step active" id="step1">
-            <h2 style="margin-bottom: 20px;">1. Allgemeine Informationen</h2>
+            <h2 style="margin-bottom: 20px;" data-i18n="1. Allgemeine Informationen">1. Allgemeine Informationen</h2>
 
             <div class="form-group">
-                <label class="form-label" for="appName">Name der Anwendung</label>
-                <input type="text" id="appName" class="form-input" placeholder="z.B. Nova..." required>
-                <div class="help-text">Dieser Name wird in der App und in E-Mails angezeigt.</div>
+                <label class="form-label" for="appName" data-i18n="Name der Anwendung">Name der Anwendung</label>
+                <input type="text" id="appName" class="form-input" placeholder="z.B. Nova..." required="" data-i18n-placeholder="z.B. Nova...">
+                <div class="help-text" data-i18n="Dieser Name wird in der App und in E-Mails angezeigt.">Dieser Name wird in der App und in E-Mails angezeigt.</div>
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="setupLogo">Eigenes Logo (SVG, optional)</label>
+                <label class="form-label" for="setupLogo" data-i18n="Eigenes Logo (SVG, optional)">Eigenes Logo (SVG, optional)</label>
                 <input type="file" id="setupLogo" class="form-input" accept=".svg,image/svg+xml">
-                <div class="help-text">Optional können Sie direkt in der Ersteinrichtung ein eigenes SVG-Logo speichern.</div>
+                <div class="help-text" data-i18n="Optional können Sie direkt in der Ersteinrichtung ein eigenes SVG-Logo speichern.">Optional können Sie direkt in der Ersteinrichtung ein eigenes SVG-Logo speichern.</div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 30px;">Weiter</button>
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 30px;" data-i18n="Weiter">Weiter</button>
         </div>
 
         <div class="setup-step" id="step2">
-            <h2 style="margin-bottom: 20px;">2. E-Mail Einstellungen (Optional)</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">Diese Einstellungen werden für Benachrichtigungen benötigt. Sie können diesen Schritt überspringen.</p>
+            <h2 style="margin-bottom: 20px;" data-i18n="2. E-Mail Einstellungen (Optional)">2. E-Mail Einstellungen (Optional)</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;" data-i18n="Diese Einstellungen werden für Benachrichtigungen benötigt. Sie können diesen Schritt überspringen.">Diese Einstellungen werden für Benachrichtigungen benötigt. Sie können diesen Schritt überspringen.</p>
 
             <div class="form-group">
-                <label class="form-label" for="smtpHost">SMTP Server</label>
-                <input type="text" id="smtpHost" class="form-input" placeholder="z.B. smtp.gmail.com">
+                <label class="form-label" for="smtpHost" data-i18n="SMTP Server">SMTP Server</label>
+                <input type="text" id="smtpHost" class="form-input" placeholder="z.B. smtp.gmail.com" data-i18n-placeholder="z.B. smtp.gmail.com">
             </div>
 
             <div style="display: flex; gap: 15px;">
                 <div class="form-group" style="flex: 1;">
-                    <label class="form-label" for="smtpPort">Port</label>
-                    <input type="number" id="smtpPort" class="form-input" placeholder="z.B. 465">
+                    <label class="form-label" for="smtpPort" data-i18n="Port">Port</label>
+                    <input type="number" id="smtpPort" class="form-input" placeholder="z.B. 465" data-i18n-placeholder="z.B. 465">
                 </div>
                 <div class="form-group" style="flex: 1; display: flex; align-items: flex-end; padding-bottom: 10px;">
                     <label class="switch" style="margin-right: 10px;">
-                        <input type="checkbox" id="smtpSecure" checked>
+                        <input type="checkbox" id="smtpSecure" checked="">
                         <span class="slider"></span>
                     </label>
-                    <label for="smtpSecure" style="margin:0; font-weight:600; cursor:pointer">SSL/TLS</label>
+                    <label for="smtpSecure" style="margin:0; font-weight:600; cursor:pointer" data-i18n="SSL/TLS">SSL/TLS</label>
                 </div>
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="smtpUser">Benutzername (E-Mail)</label>
-                <input type="email" id="smtpUser" class="form-input" placeholder="z.B. no-reply@example.com" autocomplete="off">
+                <label class="form-label" for="smtpUser" data-i18n="Benutzername (E-Mail)">Benutzername (E-Mail)</label>
+                <input type="email" id="smtpUser" class="form-input" placeholder="z.B. no-reply@example.com" autocomplete="off" data-i18n-placeholder="z.B. no-reply@example.com">
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="smtpPass">Passwort</label>
-                <input type="password" id="smtpPass" class="form-input" placeholder="App-Passwort" autocomplete="off">
-                <div class="help-text">Bei Gmail wird dringend ein App-Passwort empfohlen.</div>
+                <label class="form-label" for="smtpPass" data-i18n="Passwort">Passwort</label>
+                <input type="password" id="smtpPass" class="form-input" placeholder="App-Passwort" autocomplete="off" data-i18n-placeholder="App-Passwort">
+                <div class="help-text" data-i18n="Bei Gmail wird dringend ein App-Passwort empfohlen.">Bei Gmail wird dringend ein App-Passwort empfohlen.</div>
             </div>
 
             <div id="errorMsg" style="color: var(--danger); font-weight: bold; margin-top: 15px; display: none; text-align: center;"></div>
 
             <div style="display: flex; gap: 10px; margin-top: 30px;">
-                <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="prevStep()">Zurück</button>
-                <button type="button" class="btn btn-primary" style="flex: 2;" id="btnSubmit" onclick="submitSetup()">Speichern & Starten</button>
+                <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="prevStep()" data-i18n="Zurück">Zurück</button>
+                <button type="button" class="btn btn-primary" style="flex: 2;" id="btnSubmit" onclick="submitSetup()" data-i18n="Speichern &amp; Starten">Speichern &amp; Starten</button>
             </div>
         </div>
     </form>
@@ -250,5 +250,6 @@
     const actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', actualTheme);
 </script>
-</body>
-</html>
+
+
+</body></html>
