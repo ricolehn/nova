@@ -34,9 +34,9 @@
 
         <!-- ADMIN VIEW -->
     <div id="admin-view">
-        <nav id="admin-desktop-nav" class="desktop-nav">
-            <button class="nav-btn active" onclick="switchTab('overview', this)">Startseite</button>
-            <button class="nav-btn" onclick="switchTab('settings', this)">Einstellungen</button>
+        <nav id="admin-desktop-nav" class="desktop-nav" role="tablist">
+            <button id="tab-btn-overview" class="nav-btn active" role="tab" aria-controls="overview" aria-selected="true" onclick="switchTab('overview', this)">Startseite</button>
+            <button id="tab-btn-settings" class="nav-btn" role="tab" aria-controls="settings" aria-selected="false" onclick="switchTab('settings', this)">Einstellungen</button>
         </nav>
 
         <div id="overview" class="tab-content active" role="tabpanel" aria-labelledby="tab-btn-overview">
@@ -268,9 +268,9 @@
 
     <!-- USER VIEW (Non-Admin) -->
     <div id="user-view" style="display:none;">
-        <nav id="user-desktop-nav" class="desktop-nav">
-            <button class="nav-btn active" onclick="switchTab('user-overview', this)">Startseite</button>
-            <button class="nav-btn" onclick="switchTab('user-settings', this)">Einstellungen</button>
+        <nav id="user-desktop-nav" class="desktop-nav" role="tablist">
+            <button id="tab-btn-user-overview" class="nav-btn active" role="tab" aria-controls="user-overview" aria-selected="true" onclick="switchTab('user-overview', this)">Startseite</button>
+            <button id="tab-btn-user-settings" class="nav-btn" role="tab" aria-controls="user-settings" aria-selected="false" onclick="switchTab('user-settings', this)">Einstellungen</button>
         </nav>
 
         <div id="user-overview" class="tab-content active" role="tabpanel" aria-labelledby="tab-btn-user-overview">
