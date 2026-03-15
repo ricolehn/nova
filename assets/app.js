@@ -2992,15 +2992,6 @@ window.attemptRegister = async () => {
     }
 
     try {
-        const codeSnap = await get(ref(db, 'system/inviteCode'));
-        const validCode = codeSnap.exists() ? codeSnap.val() : '123456';
-
-        if(code !== String(validCode)) {
-            errDiv.innerText = "Ungültiger Registrierungscode.";
-            errDiv.style.display = 'block';
-            return;
-        }
-
         const userCredential = await createUserWithEmailAndPassword(auth, email, p1, {
             inviteCode: code,
             firstName: first,
