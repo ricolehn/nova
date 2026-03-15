@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.showLogin = () => {
     document.getElementById('login-form').style.display = 'block';
     document.getElementById('register-form').style.display = 'none';
-    document.getElementById('auth-title').innerText = window.t('Anmelden');
+    document.getElementById('auth-title').innerText = 'Anmelden';
     document.getElementById('btn-show-login').classList.add('btn-primary');
     document.getElementById('btn-show-login').classList.remove('btn-secondary');
     document.getElementById('btn-show-register').classList.add('btn-secondary');
@@ -60,7 +60,7 @@ window.showLogin = () => {
 window.showRegister = () => {
     document.getElementById('login-form').style.display = 'none';
     document.getElementById('register-form').style.display = 'block';
-    document.getElementById('auth-title').innerText = window.t('Registrieren');
+    document.getElementById('auth-title').innerText = 'Registrieren';
     document.getElementById('btn-show-register').classList.add('btn-primary');
     document.getElementById('btn-show-register').classList.remove('btn-secondary');
     document.getElementById('btn-show-login').classList.add('btn-secondary');
@@ -1066,7 +1066,7 @@ async function loadData() {
     await renderAll();
     } catch (err) {
         console.error("Ladefehler:", err);
-        alert(window.t("Fehler beim Laden der Daten. Bitte Seite neu laden."));
+        alert("Fehler beim Laden der Daten. Bitte Seite neu laden.");
     } finally {
         // Ladebildschirm ausblenden
         if(loader) loader.style.display = 'none';
@@ -1162,8 +1162,8 @@ function renderAdminRequests() {
                 </div>
                 <div style="margin-bottom:10px;">${details}</div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn btn-primary btn-small" style="width:auto;" onclick="approveRequest('${req.id}')">${window.t('Genehmigen')}</button>
-                    <button class="btn btn-danger btn-small" style="width:auto;" onclick="rejectRequest('${req.id}')">${window.t('Ablehnen')}</button>
+                    <button class="btn btn-primary btn-small" style="width:auto;" onclick="approveRequest('${req.id}')">Genehmigen</button>
+                    <button class="btn btn-danger btn-small" style="width:auto;" onclick="rejectRequest('${req.id}')">Ablehnen</button>
                 </div>
             </div>
         `;
@@ -1236,20 +1236,20 @@ window.assignUserToPerson = async (uid) => {
     const select = document.getElementById(`link-select-${uid}`);
     if (!select) return;
     const personId = select.value;
-    if (!personId) { alert(window.t('Bitte eine Person auswählen.')); return; }
+    if (!personId) { alert('Bitte eine Person auswählen.'); return; }
 
     const person = people.find(p => String(p.id) === String(personId));
-    if (!person) { alert(window.t('Person nicht gefunden.')); return; }
+    if (!person) { alert('Person nicht gefunden.'); return; }
 
     try {
         await update(ref(db, 'people/' + personId), { uid });
         person.uid = uid;
-        showToast(window.t('Zuordnung gespeichert'));
+        showToast('Zuordnung gespeichert');
         renderUnlinkedUsers();
         renderPeople();
     } catch (err) {
         console.error('Fehler beim Zuordnen:', err);
-        alert(window.t('Zuordnung fehlgeschlagen. Bitte erneut versuchen.'));
+        alert('Zuordnung fehlgeschlagen. Bitte erneut versuchen.');
     }
 };
 
@@ -1407,10 +1407,10 @@ window.setSupervisorAdmin = async (uid, isAdmin) => {
         const localUser = users.find(u => u.uid === uid);
         if (localUser) localUser.admin = !!isAdmin;
         renderSuperAdminUserManagement();
-        showToast(window.t('Benutzerrechte gespeichert'));
+        showToast('Benutzerrechte gespeichert');
     } catch (err) {
         console.error('Fehler beim Speichern der Rolle:', err);
-        showToast(window.t('Benutzerrechte konnten nicht gespeichert werden'), 'error');
+        showToast('Benutzerrechte konnten nicht gespeichert werden', 'error');
         loadData();
     }
 };
@@ -1424,7 +1424,7 @@ window.setSupervisorAdminByIndex = async (index, isAdmin) => {
 window.editRecordedPaymentByIndex = async (index) => {
     const item = superAdminPaymentRows[index];
     if (!item) {
-        alert(window.t('Der ausgewählte Eintrag wurde nicht gefunden. Bitte Liste aktualisieren.'));
+        alert('Der ausgewählte Eintrag wurde nicht gefunden. Bitte Liste aktualisieren.');
         return;
     }
     await window.editRecordedPayment(item.personId, item.paymentId, item.paymentIndex, item.personName, item.type, item.payment);
@@ -1433,7 +1433,7 @@ window.editRecordedPaymentByIndex = async (index) => {
 window.editSelectedPayment = async () => {
     const select = document.getElementById('super-admin-payment-select');
     if (!select || !select.value) {
-        alert(window.t('Bitte zuerst einen Eintrag auswählen.'));
+        alert('Bitte zuerst einen Eintrag auswählen.');
         return;
     }
     const index = parseInt(select.value, 10);
@@ -1501,15 +1501,15 @@ window.saveEditedPayment = async () => {
     const issuer = issuerEl ? issuerEl.value.trim() : '';
 
     if (Number.isNaN(amount)) {
-        alert(window.t('Ungültiger Betrag.'));
+        alert('Ungültiger Betrag.');
         return;
     }
     if (!date) {
-        alert(window.t('Bitte ein Datum angeben.'));
+        alert('Bitte ein Datum angeben.');
         return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        alert(window.t('Ungültiges Datum.'));
+        alert('Ungültiges Datum.');
         return;
     }
 
@@ -1523,7 +1523,7 @@ window.saveEditedPayment = async () => {
                 const totalPaid = nextPayments.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0);
                 return { ...draft, payments: nextPayments, totalPaid };
             });
-            showToast(window.t('Zahlung aktualisiert'));
+            showToast('Zahlung aktualisiert');
         } else if (currentEditedPayment.type === 'donation') {
             const remoteDonations = safeList(await apiGet('donations').catch(() => []));
             const targetDonationId = currentEditedPayment.paymentId;
@@ -1535,7 +1535,7 @@ window.saveEditedPayment = async () => {
                 await set(ref(db, 'donations'), { ...remoteDonations });
                 donations = remoteDonations;
             }
-            showToast(window.t('Spende aktualisiert'));
+            showToast('Spende aktualisiert');
         } else if (currentEditedPayment.type === 'expense') {
             const remoteExpenses = safeList(await apiGet('expenses').catch(() => []));
             const targetExpenseId = currentEditedPayment.paymentId;
@@ -1546,7 +1546,7 @@ window.saveEditedPayment = async () => {
                 await set(ref(db, 'expenses'), { ...remoteExpenses });
                 expenses = remoteExpenses;
             }
-            showToast(window.t('Ausgabe aktualisiert'));
+            showToast('Ausgabe aktualisiert');
         }
 
         closeModal('edit-payment-modal');
@@ -1554,7 +1554,7 @@ window.saveEditedPayment = async () => {
         await renderAll();
     } catch (err) {
         console.error('Fehler beim Bearbeiten:', err);
-        showToast(window.t('Eintrag konnte nicht aktualisiert werden'), 'error');
+        showToast('Eintrag konnte nicht aktualisiert werden', 'error');
     }
 };
 
@@ -1627,10 +1627,10 @@ window.approveRequest = async (reqId) => {
 
         await update(ref(db, 'requests/' + reqId), { status: 'approved' });
         await loadData();
-        showToast(window.t('Anfrage genehmigt'));
+        showToast('Anfrage genehmigt');
     } catch (err) {
         console.error('Fehler beim Genehmigen der Anfrage:', err);
-        alert(window.t('Anfrage konnte nicht genehmigt werden. Bitte erneut versuchen.'));
+        alert('Anfrage konnte nicht genehmigt werden. Bitte erneut versuchen.');
     }
 };
 
@@ -1644,10 +1644,10 @@ window.rejectRequest = async (reqId) => {
             rejectionReason: reason || 'Kein Grund angegeben'
         });
         await loadData();
-        showToast(window.t('Anfrage abgelehnt'));
+        showToast('Anfrage abgelehnt');
     } catch (err) {
         console.error('Fehler beim Ablehnen der Anfrage:', err);
-        alert(window.t('Anfrage konnte nicht abgelehnt werden. Bitte erneut versuchen.'));
+        alert('Anfrage konnte nicht abgelehnt werden. Bitte erneut versuchen.');
     }
 };
 
@@ -1698,7 +1698,7 @@ function renderUserView() {
             <h2 style="color: ${statusColor}; font-size: 1.5rem; font-weight: 800; margin-bottom: 10px;">
                 ${statusMeta.isOverdue ? 'Zahlung überfällig' : (statusMeta.isSoonDue ? 'Bald fällig' : 'Alles in Ordnung')}
             </h2>
-            ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `<div style="font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 8px;">${window.t('Bezahlt bis')} <strong>${dateText}</strong></div>`}
+            ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `<div style="font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 8px;">Bezahlt bis <strong>${dateText}</strong></div>`}
             <div style="font-size: 0.95rem; opacity: 0.75; color: var(--text);">${statusMeta.text}</div>
             ${statusMeta.isOverdue ? `
                 <div style="margin-top: 20px; padding: 15px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
@@ -1712,7 +1712,7 @@ function renderUserView() {
     // Combined History (Timeline)
     const timeline = generateTimelineHTML(p);
     document.getElementById('user-payment-history').innerHTML = `
-        <div class="history-header">${window.t('Verlauf')}</div>
+        <div class="history-header">Verlauf</div>
         ${timeline}
     `;
 
@@ -1758,7 +1758,9 @@ function renderUserView() {
         }).join('');
     } else {
         reqList.innerHTML = `
-            <div style="text-align:center; padding: 30px 20px; color: var(--text-secondary); background: var(--surface); border-radius: 12px;">${window.t('Keine offenen Anfragen')}</div>
+            <div style="text-align:center; padding: 30px 20px; color: var(--text-secondary); background: var(--surface); border-radius: 12px;">
+                Keine offenen Anfragen
+            </div>
         `;
     }
 }
@@ -1960,11 +1962,11 @@ function generatePersonHTML(p, preCalcData = null) {
                     <div class="details-status-card ${cardClass}">
                         ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `
                         <div class="details-row">
-                            <span class="details-label">${window.t('Bezahlt bis')}</span>
+                            <span class="details-label">Bezahlt bis</span>
                             <span class="details-value">${dateText}</span>
                         </div>`}
                         <div class="details-row">
-                            <span class="details-label">${window.t('Status')}</span>
+                            <span class="details-label">Status</span>
                             <span class="details-value" style="text-transform:capitalize">${p.status}</span>
                         </div>
                         ${statusMeta.isOverdue ? `
@@ -1983,7 +1985,7 @@ function generatePersonHTML(p, preCalcData = null) {
                         <button class="btn btn-secondary btn-span-all" onclick="sendStatusEmail('${p.id}')">📧 Status-E-Mail senden</button>
                     </div>
 
-                    <div class="history-header">${window.t('Verlauf')}</div>
+                    <div class="history-header">Verlauf</div>
                     <div id="timeline-${p.id}">
                         <div style="padding:10px; color:var(--text-secondary); font-size:0.8rem; font-style:italic;">Lade Verlauf...</div>
                     </div>
@@ -2216,10 +2218,10 @@ window.addPerson = async () => {
         await renderAll();
         closeModal('add-person-modal');
         document.getElementById('new-person-name').value = ''; // Clear input on success
-        showToast(window.t('Person hinzugefügt'));
+        showToast('Person hinzugefügt');
     } catch (err) {
         console.error('Fehler beim Anlegen der Person:', err);
-        alert(window.t('Speichern fehlgeschlagen. Bitte erneut versuchen.'));
+        alert('Speichern fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
         setButtonLoading('btn-add-person', false);
     }
@@ -2262,7 +2264,7 @@ window.addPayment = async () => {
         });
 
         if (!updated) {
-            alert(window.t('Person nicht gefunden.'));
+            alert('Person nicht gefunden.');
             return;
         }
 
@@ -2270,11 +2272,11 @@ window.addPayment = async () => {
         closeModal('add-payment-modal');
         document.getElementById('payment-is-standing-order').checked = false;
         const lbl = document.getElementById('payment-date-label');
-        if(lbl) lbl.innerText = window.t('Datum');
-        showToast(window.t('Zahlung gebucht'));
+        if(lbl) lbl.innerText = 'Datum';
+        showToast('Zahlung gebucht');
     } catch (err) {
         console.error('Fehler beim Speichern der Zahlung:', err);
-        alert(window.t('Zahlung konnte nicht gespeichert werden. Bitte erneut versuchen.'));
+        alert('Zahlung konnte nicht gespeichert werden. Bitte erneut versuchen.');
     } finally {
         setButtonLoading('btn-add-payment', false);
     }
@@ -2298,10 +2300,10 @@ window.addDonation = async () => {
         donations = nextDonations;
         await renderAll();
         closeModal('add-donation-modal');
-        showToast(window.t('Spende gespeichert'));
+        showToast('Spende gespeichert');
     } catch (err) {
         console.error('Fehler beim Speichern der Spende:', err);
-        alert(window.t('Spende konnte nicht gespeichert werden. Bitte erneut versuchen.'));
+        alert('Spende konnte nicht gespeichert werden. Bitte erneut versuchen.');
     } finally {
         setButtonLoading('btn-add-donation', false);
     }
@@ -2355,25 +2357,25 @@ window.addExpense = async () => {
         document.getElementById('expense-issuer').value = '';
         document.getElementById('expense-desc').value = '';
         if(fileInput) fileInput.value = '';
-        showToast(window.t('Ausgabe gespeichert'));
+        showToast('Ausgabe gespeichert');
     } catch (err) {
         console.error('Fehler beim Speichern der Ausgabe:', err);
-        alert(window.t('Ausgabe konnte nicht gespeichert werden. Bitte erneut versuchen.'));
+        alert('Ausgabe konnte nicht gespeichert werden. Bitte erneut versuchen.');
     } finally {
         setButtonLoading('btn-add-expense', false);
     }
 };
 
 window.deletePerson = async (id) => {
-    if(confirm(window.t("Wirklich löschen?"))) {
+    if(confirm("Wirklich löschen?")) {
         try {
             await remove(ref(db, 'people/' + id));
             people = people.filter(p => String(p.id) !== String(id));
             await renderAll();
-            showToast(window.t('Person gelöscht'));
+            showToast('Person gelöscht');
         } catch (err) {
             console.error('Fehler beim Löschen der Person:', err);
-            alert(window.t('Löschen fehlgeschlagen. Bitte erneut versuchen.'));
+            alert('Löschen fehlgeschlagen. Bitte erneut versuchen.');
         }
     }
 };
@@ -2403,7 +2405,7 @@ window.saveStandingOrderEnd = async () => {
     if (!editingPersonId || !editingSoId) return;
 
     const endDate = document.getElementById('end-so-date').value;
-    if (!endDate) { alert(window.t("Bitte Datum wählen")); return; }
+    if (!endDate) { alert("Bitte Datum wählen"); return; }
 
     try {
         const updated = await mutatePerson(editingPersonId, (person) => {
@@ -2441,15 +2443,15 @@ window.saveStandingOrderEnd = async () => {
 
         await renderAll();
         closeModal('end-standing-order-modal');
-        showToast(window.t('Dauerauftrag aktualisiert'));
+        showToast('Dauerauftrag aktualisiert');
     } catch (err) {
         console.error('Fehler beim Beenden:', err);
-        alert(window.t('Fehler beim Speichern.'));
+        alert('Fehler beim Speichern.');
     }
 };
 
 window.deleteStandingOrderCompletely = async () => {
-    if (!confirm(window.t("Dauerauftrag wirklich komplett entfernen? Historie geht verloren."))) return;
+    if (!confirm("Dauerauftrag wirklich komplett entfernen? Historie geht verloren.")) return;
 
     try {
         await mutatePerson(editingPersonId, (person) => {
@@ -2458,10 +2460,10 @@ window.deleteStandingOrderCompletely = async () => {
         });
         await renderAll();
         closeModal('end-standing-order-modal');
-        showToast(window.t('Dauerauftrag gelöscht'));
+        showToast('Dauerauftrag gelöscht');
     } catch (err) {
         console.error('Fehler beim Löschen:', err);
-        alert(window.t('Fehler beim Löschen.'));
+        alert('Fehler beim Löschen.');
     }
 };
 
@@ -2488,7 +2490,7 @@ window.sendStatusEmail = async (personId) => {
 
     const person = people.find(p => String(p.id) === String(personId));
     if (!person) {
-        showToast(window.t('Person nicht gefunden'), 'error');
+        showToast('Person nicht gefunden', 'error');
         return;
     }
 
@@ -2501,7 +2503,7 @@ window.sendStatusEmail = async (personId) => {
     }
 
     if (!email) {
-        showToast(window.t('Keine E-Mail-Adresse für diese Person hinterlegt'), 'error');
+        showToast('Keine E-Mail-Adresse für diese Person hinterlegt', 'error');
         return;
     }
 
@@ -2543,14 +2545,14 @@ window.sendStatusEmail = async (personId) => {
         });
 
         if (response.ok) {
-            showToast(window.t('Status-E-Mail gesendet'));
+            showToast('Status-E-Mail gesendet');
         } else {
-            showToast(window.t('Fehler beim Senden der E-Mail'), 'error');
+            showToast('Fehler beim Senden der E-Mail', 'error');
             console.error('Email API response not ok:', await response.text());
         }
     } catch (err) {
         console.error('Fehler beim Senden der Status-E-Mail:', err);
-        showToast(window.t('Fehler beim Senden der E-Mail'), 'error');
+        showToast('Fehler beim Senden der E-Mail', 'error');
     }
 };
 
@@ -2561,7 +2563,7 @@ window.saveStatusChange = async () => {
     const changeDate = document.getElementById('change-status-date').value;
 
     if (!changeDate) {
-        alert(window.t("Bitte ein Datum angeben."));
+        alert("Bitte ein Datum angeben.");
         return;
     }
 
@@ -2604,13 +2606,13 @@ window.saveStatusChange = async () => {
         });
 
         if (!updated) {
-            alert(window.t('Person nicht gefunden.'));
+            alert('Person nicht gefunden.');
             return;
         }
 
         await renderAll();
         closeModal('change-status-modal');
-        showToast(window.t('Status geändert'));
+        showToast('Status geändert');
     } catch (err) {
         console.error('Fehler bei der Statusänderung:', err);
         alert('Statusänderung fehlgeschlagen: ' + err.message);
@@ -2635,7 +2637,7 @@ async function loadAdvancedSystemConfig() {
         advancedConfigLoaded = true;
     } catch (err) {
         console.error('Fehler beim Laden der erweiterten Konfiguration:', err);
-        showToast(window.t('Erweiterte Konfiguration konnte nicht geladen werden'), 'error');
+        showToast('Erweiterte Konfiguration konnte nicht geladen werden', 'error');
     }
 }
 
@@ -2684,7 +2686,7 @@ window.saveAdvancedSystemConfig = async () => {
             throw new Error(errMsg);
         }
         advancedConfigAppName = appName;
-        showToast(window.t('System-Konfiguration gespeichert'));
+        showToast('System-Konfiguration gespeichert');
     } catch (err) {
         console.error('Fehler beim Speichern der erweiterten Konfiguration:', err);
         alert(`Erweiterte Konfiguration konnte nicht gespeichert werden: ${err.message || 'Unbekannter Fehler'}`);
@@ -2695,7 +2697,7 @@ window.uploadChurchLogo = async () => {
     if (!isSuperAdminUser()) return;
     const fileInput = document.getElementById('super-admin-logo-file');
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-        alert(window.t('Bitte eine SVG-Datei auswählen.'));
+        alert('Bitte eine SVG-Datei auswählen.');
         return;
     }
 
@@ -2732,12 +2734,12 @@ window.uploadChurchLogo = async () => {
             img.src = `assets/church-logo.svg${cacheBust}`;
         });
         fileInput.value = '';
-        showToast(window.t('Logo aktualisiert'));
+        showToast('Logo aktualisiert');
     } catch (err) {
         const errMsg = err.message || err.code || 'Unbekannter Fehler';
         console.error('Fehler beim Logo-Upload:', errMsg, err);
         alert(`Logo konnte nicht aktualisiert werden: ${errMsg}`);
-        showToast(window.t('Logo konnte nicht aktualisiert werden'), 'error');
+        showToast('Logo konnte nicht aktualisiert werden', 'error');
     }
 };
 
@@ -2757,10 +2759,10 @@ window.saveSettings = async () => {
             currentUser.emailNotifications = emailNotifications;
         }
         await renderAll();
-        showToast(window.t("Einstellungen gespeichert"));
+        showToast("Einstellungen gespeichert");
     } catch (err) {
         console.error('Fehler beim Speichern der Einstellungen:', err);
-        alert(window.t('Einstellungen konnten nicht gespeichert werden.'));
+        alert('Einstellungen konnten nicht gespeichert werden.');
     }
 };
 
@@ -2769,7 +2771,7 @@ window.changePassword = async (isUser = false) => {
     const pw = document.getElementById(inputId).value;
 
     if(!pw || pw.length < 6) {
-        alert(window.t("Passwort muss mindestens 6 Zeichen lang sein."));
+        alert("Passwort muss mindestens 6 Zeichen lang sein.");
         return;
     }
 
@@ -2777,10 +2779,10 @@ window.changePassword = async (isUser = false) => {
         const user = auth.currentUser;
         if(user) {
             await updatePassword(user, pw);
-            showToast(window.t("Passwort erfolgreich geändert"));
+            showToast("Passwort erfolgreich geändert");
             document.getElementById(inputId).value = '';
         } else {
-            alert(window.t("Kein Benutzer angemeldet."));
+            alert("Kein Benutzer angemeldet.");
         }
     } catch (error) {
         console.error(error);
@@ -2946,7 +2948,7 @@ window.attemptLogin = async () => {
     setButtonLoading('btn-login', true, "Anmelden...");
 
     if(!email || !pass) {
-        errDiv.innerText = window.t("Bitte E-Mail und Passwort eingeben.");
+        errDiv.innerText = "Bitte E-Mail und Passwort eingeben.";
         errDiv.style.display = 'block';
         setButtonLoading('btn-login', false);
         return;
@@ -2979,12 +2981,12 @@ window.attemptRegister = async () => {
         return;
     }
     if(p1.length < 6) {
-        errDiv.innerText = window.t("Passwort muss mindestens 6 Zeichen lang sein.");
+        errDiv.innerText = "Passwort muss mindestens 6 Zeichen lang sein.";
         errDiv.style.display = 'block';
         return;
     }
     if(p1 !== p2) {
-        errDiv.innerText = window.t("Passwörter stimmen nicht überein.");
+        errDiv.innerText = "Passwörter stimmen nicht überein.";
         errDiv.style.display = 'block';
         return;
     }
@@ -3032,14 +3034,14 @@ window.openUserRequestModal = (type) => {
                     <input type="checkbox" id="req-is-standing-order" onchange="document.getElementById('req-date-label').innerText = this.checked ? 'Startdatum' : 'Datum'">
                     <span class="slider"></span>
                 </label>
-                <label for="req-is-standing-order" style="margin:0; font-weight:600; cursor:pointer">${window.t('Dauerauftrag')}</label>
+                <label for="req-is-standing-order" style="margin:0; font-weight:600; cursor:pointer">Dauerauftrag</label>
             </div>
             <div class="form-group">
-                <label class="form-label" for="req-amount">${window.t('Betrag (€)')}</label>
+                <label class="form-label" for="req-amount">Betrag (€)</label>
                 <input type="text" inputmode="decimal" id="req-amount" class="form-input">
             </div>
             <div class="form-group">
-                <label class="form-label" id="req-date-label" for="req-date">${window.t('Datum')}</label>
+                <label class="form-label" id="req-date-label" for="req-date">Datum</label>
                 <input type="date" id="req-date" class="form-input" value="${new Date().toISOString().split('T')[0]}">
             </div>
             <div class="form-group">
@@ -3051,16 +3053,16 @@ window.openUserRequestModal = (type) => {
         title.innerText = "Statusänderung beantragen";
         container.innerHTML = `
             <div class="form-group">
-                <label class="form-label" for="req-status">${window.t('Neuer Status')}</label>
+                <label class="form-label" for="req-status">Neuer Status</label>
                 <select id="req-status" class="form-select">
-                    <option value="vollverdiener">${window.t('💼 Vollverdiener')}</option>
-                    <option value="geringverdiener">${window.t('📉 Geringverdiener')}</option>
-                    <option value="keinverdiener">${window.t('🎓 Keinverdiener')}</option>
-                    <option value="pausiert">${window.t('⏸️ Pausiert')}</option>
+                    <option value="vollverdiener">💼 Vollverdiener</option>
+                    <option value="geringverdiener">📉 Geringverdiener</option>
+                    <option value="keinverdiener">🎓 Keinverdiener</option>
+                    <option value="pausiert">⏸️ Pausiert</option>
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label" for="req-date">${window.t('Gültig ab')}</label>
+                <label class="form-label" for="req-date">Gültig ab</label>
                 <input type="date" id="req-date" class="form-input" value="${new Date().toISOString().split('T')[0]}">
             </div>
         `;
@@ -3068,7 +3070,7 @@ window.openUserRequestModal = (type) => {
         title.innerText = "Ausgabe melden";
         container.innerHTML = `
             <div class="form-group">
-                <label class="form-label" for="req-amount">${window.t('Betrag (€)')}</label>
+                <label class="form-label" for="req-amount">Betrag (€)</label>
                 <input type="text" inputmode="decimal" id="req-amount" class="form-input">
             </div>
             <div class="form-group">
@@ -3076,7 +3078,7 @@ window.openUserRequestModal = (type) => {
                 <input type="text" id="req-desc" class="form-input">
             </div>
             <div class="form-group">
-                <label class="form-label" for="req-date">${window.t('Datum')}</label>
+                <label class="form-label" for="req-date">Datum</label>
                 <input type="date" id="req-date" class="form-input" value="${new Date().toISOString().split('T')[0]}">
             </div>
             <div class="form-group">
@@ -3094,7 +3096,7 @@ window.submitUserRequest = async () => {
 
     // Find person ID linked to current user
     const person = people.find(p => p.uid === currentUser.uid);
-    if(!person) { alert(window.t("Kein Personenprofil gefunden.")); return; }
+    if(!person) { alert("Kein Personenprofil gefunden."); return; }
 
     const reqData = {};
     const date = document.getElementById('req-date').value;
@@ -3104,8 +3106,8 @@ window.submitUserRequest = async () => {
         const note = document.getElementById('req-note').value;
         const isStandingOrder = document.getElementById('req-is-standing-order') && document.getElementById('req-is-standing-order').checked;
 
-        if(!amount || !date) { alert(window.t("Bitte alle Felder ausfüllen")); return; }
-        if(isNaN(parseFloat(amount))) { alert(window.t("Ungültiger Betrag")); return; }
+        if(!amount || !date) { alert("Bitte alle Felder ausfüllen"); return; }
+        if(isNaN(parseFloat(amount))) { alert("Ungültiger Betrag"); return; }
 
         reqData.amount = amount;
         reqData.date = date;
@@ -3116,13 +3118,13 @@ window.submitUserRequest = async () => {
         }
     } else if(currentRequestType === 'status') {
         const status = document.getElementById('req-status').value;
-        if(!status || !date) { alert(window.t("Bitte alle Felder ausfüllen")); return; }
+        if(!status || !date) { alert("Bitte alle Felder ausfüllen"); return; }
         reqData.newStatus = status;
         reqData.date = date;
     } else if(currentRequestType === 'expense') {
         const amount = document.getElementById('req-amount').value.replace(',', '.');
         const desc = document.getElementById('req-desc').value;
-        if(!amount || !desc || !date) { alert(window.t("Bitte alle Felder ausfüllen")); return; }
+        if(!amount || !desc || !date) { alert("Bitte alle Felder ausfüllen"); return; }
         reqData.amount = amount;
         reqData.description = desc;
         reqData.date = date;
@@ -3156,7 +3158,7 @@ window.submitUserRequest = async () => {
     try {
         await set(ref(db, 'requests/' + newReq.id), newReq);
         closeModal('user-request-modal');
-        showToast(window.t("Anfrage erfolgreich gesendet"));
+        showToast("Anfrage erfolgreich gesendet");
         loadData();
 
         // Notify opted-in admins using the backend endpoint to avoid frontend permission denied errors
@@ -3176,7 +3178,7 @@ window.submitUserRequest = async () => {
 
     } catch (err) {
         console.error('Fehler beim Senden der Anfrage:', err);
-        alert(window.t('Anfrage konnte nicht gesendet werden. Bitte erneut versuchen.'));
+        alert('Anfrage konnte nicht gesendet werden. Bitte erneut versuchen.');
     } finally {
         setButtonLoading('btn-submit-request', false);
     }
@@ -3189,7 +3191,7 @@ window.generateNewCode = async () => {
         document.getElementById('admin-invite-code').value = newCode;
     } catch (err) {
         console.error('Fehler beim Generieren des Codes:', err);
-        alert(window.t('Neuer Code konnte nicht gespeichert werden.'));
+        alert('Neuer Code konnte nicht gespeichert werden.');
     }
 };
 
@@ -3373,12 +3375,12 @@ window.showTransactionDetails = async function(id, type) {
         </div>
         <div class="details-status-card" style="background:var(--surface-alt); border:1px solid var(--border);">
             <div class="details-row">
-                <span class="details-label">${window.t('Datum')}</span>
+                <span class="details-label">Datum</span>
                 <span class="details-value">${item.date ? dateFormatter.format(new Date(item.date)) : '-'}</span>
             </div>
             ${item.who ? `
             <div class="details-row">
-                <span class="details-label">${window.t('Person')}</span>
+                <span class="details-label">Person</span>
                 <span class="details-value">${escapeHtml(item.who)}</span>
             </div>` : ''}
              ${item.issuer ? `
@@ -3404,7 +3406,7 @@ window.showTransactionDetails = async function(id, type) {
             const imgUrl = await fetchReceiptImage(item.receipt);
             content.dataset.blobUrl = imgUrl;
             receiptContainer.innerHTML = `
-                <div style="font-weight:600; margin-bottom:10px;">${window.t('Beleg')}</div>
+                <div style="font-weight:600; margin-bottom:10px;">Beleg</div>
                 <img src="${imgUrl}" style="width:100%; border-radius:12px; border:1px solid var(--border); opacity:0; transition:opacity 0.3s ease-in;" onload="this.style.opacity=1" alt="Beleg">
             `;
         } catch (err) {
@@ -3477,10 +3479,10 @@ window.copyInviteCode = async () => {
 
     try {
         await navigator.clipboard.writeText(codeInput.value);
-        showToast(window.t("Code kopiert!"));
+        showToast("Code kopiert!");
     } catch (err) {
         console.error("Copy failed", err);
-        showToast(window.t("Kopieren fehlgeschlagen"), "error");
+        showToast("Kopieren fehlgeschlagen", "error");
     }
 };
 
