@@ -1068,8 +1068,8 @@ app.post('/api/admin/backups/rebuild', verifyToken, verifySuperAdmin, async (req
 
     // Ensure response is flushed
     setTimeout(() => {
-      console.log('Restore triggered, shutting down for Docker to restart...');
-      process.exit(0);
+      console.log('Restore triggered, restarting internally...');
+      process.exit(42);
     }, 1000);
 
   } catch (error) {

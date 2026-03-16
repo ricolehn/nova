@@ -34,11 +34,12 @@ run_as_runtime_user() {
     if [ "$(id -u)" -eq 0 ]; then
         current_dir=$(pwd)
         # Keep a placeholder for $0 so the preserved working directory stays in $1.
-        su "$runtime_user" -s /bin/sh -c 'cd "$1" && shift && exec "$@"' -- su-placeholder "$current_dir" "$@"
-        return
+        su "$runtime_user" -s /bin/sh -c 'cd "$1" && shift && "$@"' -- su-placeholder "$current_dir" "$@"
+        return $?
     fi
 
-    exec "$@"
+    "$@"
+    return $?
 }
 
 runtime_user_can_write_dir() {
@@ -71,17 +72,6 @@ ensure_writable_dir "$data_dir" "Data"
 ensure_writable_dir "$frontend_dir" "Frontend"
 ensure_writable_dir "$pocketbase_dir" "PocketBase"
 ensure_writable_dir "$backup_dir" "Backup"
-
-if [ -d "$pocketbase_dir-restore" ]; then
-    echo "Restore requested. Replacing $pocketbase_dir with $pocketbase_dir-restore..."
-    rm -rf "$pocketbase_dir"
-    mv "$pocketbase_dir-restore" "$pocketbase_dir"
-fi
-
-if [ -f "$data_dir/config-restore.json" ]; then
-    echo "Restore requested. Replacing config.json with config-restore.json..."
-    mv "$data_dir/config-restore.json" "$data_dir/config.json"
-fi
 
 # Always sync bundled frontend files into the (possibly mounted) frontend
 # directory so that image upgrades take effect without removing the volume.
@@ -145,8 +135,52 @@ wait_for_pocketbase() {
     done
 }
 
-if start_pocketbase; then
-    wait_for_pocketbase
-fi
+cleanup_and_exit() {
+    if [ -n "${node_pid:-}" ]; then
+        kill -TERM "$node_pid" 2>/dev/null || true
+        wait "$node_pid" 2>/dev/null || true
+    fi
+    if [ -x "$pocketbase_bin" ]; then
+        killall "$(basename "$pocketbase_bin")" 2>/dev/null || true
+    fi
+    exit 0
+}
 
-run_as_runtime_user "$@"
+trap cleanup_and_exit TERM INT
+
+while true; do
+    if [ -d "$pocketbase_dir-restore" ]; then
+        echo "Restore requested. Replacing $pocketbase_dir with $pocketbase_dir-restore..."
+        rm -rf "$pocketbase_dir"
+        mv "$pocketbase_dir-restore" "$pocketbase_dir"
+    fi
+
+    if [ -f "$data_dir/config-restore.json" ]; then
+        echo "Restore requested. Replacing config.json with config-restore.json..."
+        mv "$data_dir/config-restore.json" "$data_dir/config.json"
+    fi
+
+    if start_pocketbase; then
+        wait_for_pocketbase
+    fi
+
+    set +e
+    run_as_runtime_user "$@" &
+    node_pid=$!
+    wait "$node_pid"
+    exit_code=$?
+    set -e
+
+    # Clean up background PocketBase process
+    if [ -x "$pocketbase_bin" ]; then
+        killall "$(basename "$pocketbase_bin")" 2>/dev/null || true
+        sleep 1
+    fi
+
+    if [ "$exit_code" -eq 42 ]; then
+        echo "Restart requested (exit code 42). Rebooting internally..."
+        continue
+    else
+        exit "$exit_code"
+    fi
+done
