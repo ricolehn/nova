@@ -2634,7 +2634,13 @@ async function loadAdvancedSystemConfig() {
         document.getElementById('super-admin-smtp-secure').checked = !!data.smtp?.secure;
         document.getElementById('super-admin-smtp-user').value = data.smtp?.user || '';
         document.getElementById('super-admin-smtp-pass').value = data.smtp?.pass || '';
+
+        document.getElementById('super-admin-backup-cron').value = data.backup?.cron || '';
+        document.getElementById('super-admin-backup-max').value = data.backup?.maxCount || '';
+
         advancedConfigLoaded = true;
+
+        loadBackupsList();
     } catch (err) {
         console.error('Fehler beim Laden der erweiterten Konfiguration:', err);
         showToast('Erweiterte Konfiguration konnte nicht geladen werden', 'error');
@@ -2669,6 +2675,15 @@ window.saveAdvancedSystemConfig = async () => {
             }
         }
 
+        const backupCron = document.getElementById('super-admin-backup-cron').value.trim();
+        if (backupCron) {
+            const backupMaxRaw = document.getElementById('super-admin-backup-max').value.trim();
+            payload.backup = {
+                cron: backupCron,
+                maxCount: backupMaxRaw ? parseInt(backupMaxRaw, 10) : 10
+            };
+        }
+
         const response = await fetchWithAuth(`${config.apiBaseUrl}/admin/system-config`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -2690,6 +2705,66 @@ window.saveAdvancedSystemConfig = async () => {
     } catch (err) {
         console.error('Fehler beim Speichern der erweiterten Konfiguration:', err);
         alert(`Erweiterte Konfiguration konnte nicht gespeichert werden: ${err.message || 'Unbekannter Fehler'}`);
+    }
+};
+
+async function loadBackupsList() {
+    if (!isSuperAdminUser()) return;
+    const listContainer = document.getElementById('super-admin-backups-list');
+    try {
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/admin/backups`);
+        if (!response.ok) throw new Error(await response.text());
+        const data = await response.json();
+
+        if (!data.backups || data.backups.length === 0) {
+            listContainer.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.9rem;">Keine Backups vorhanden.</div>';
+            return;
+        }
+
+        let html = '';
+        for (const backup of data.backups) {
+            html += `
+                <div class="user-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="font-family: monospace; font-size: 0.9rem;">${escapeHtml(backup)}</div>
+                    <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="restoreBackup('${escapeHtml(backup)}')">Wiederherstellen</button>
+                </div>
+            `;
+        }
+        listContainer.innerHTML = html;
+    } catch (err) {
+        console.error('Fehler beim Laden der Backups:', err);
+        listContainer.innerHTML = '<div style="color: var(--danger); font-size: 0.9rem;">Fehler beim Laden der Backups.</div>';
+    }
+}
+
+window.restoreBackup = async (filename) => {
+    if (!isSuperAdminUser()) return;
+    if (!confirm(`Möchten Sie das Backup "${filename}" wirklich wiederherstellen?`)) {
+        return;
+    }
+    if (!confirm('Sind Sie GANZ sicher? Die aktuelle Datenbank und Konfiguration wird überschrieben. Der Server startet danach neu!')) {
+        return;
+    }
+
+    try {
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/admin/backups/rebuild`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || 'Fehler beim Wiederherstellen');
+        }
+
+        alert('Restore gestartet. Der Server startet in wenigen Sekunden neu. Die Seite wird gleich neu geladen.');
+        setTimeout(() => {
+            window.location.reload();
+        }, 5000);
+    } catch (err) {
+        console.error('Fehler beim Restore:', err);
+        alert(`Fehler beim Restore: ${err.message}`);
     }
 };
 

@@ -250,7 +250,27 @@
                             </div>
                         </div>
 
+                        <div style="font-weight:700; margin-bottom:15px; margin-top: 25px; font-size: 1rem;">Automatische Backups (/app/backups)</div>
+
+                        <div class="settings-flex-row">
+                            <div class="form-group" style="flex: 2; min-width: 150px;">
+                                <label class="form-label" for="super-admin-backup-cron" style="color: var(--text-secondary);">Cron-Intervall</label>
+                                <input type="text" id="super-admin-backup-cron" class="form-input super-admin-input" placeholder="z.B. 0 3 * * 0 (Jeden Sonntag um 3 Uhr)">
+                            </div>
+                            <div class="form-group" style="flex: 1; min-width: 80px;">
+                                <label class="form-label" for="super-admin-backup-max" style="color: var(--text-secondary);">Max. Anzahl</label>
+                                <input type="number" id="super-admin-backup-max" class="form-input super-admin-input" placeholder="10">
+                            </div>
+                        </div>
+
                         <button class="btn btn-block super-admin-btn" style="margin-top: 15px;" onclick="saveAdvancedSystemConfig()">Erweiterte System-Konfiguration speichern</button>
+                    </div>
+
+                    <!-- Backups verwalten -->
+                    <div class="super-admin-group">
+                        <div class="super-admin-group-title">Backups verwalten</div>
+                        <div class="super-admin-group-desc">Verfügbare Backups ansehen und wiederherstellen.</div>
+                        <div id="super-admin-backups-list" style="display:flex; flex-direction: column; gap:10px; width: 100%; margin-top: 10px;"></div>
                     </div>
                 </div>
             </div>

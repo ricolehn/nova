@@ -12,6 +12,10 @@ const { resolveTrustProxySetting } = require('./trustProxy');
 const cron = require('node-cron');
 const { runAutomatedStandingOrders } = require('./standingOrders');
 const { aggregateStats } = require('./stats');
+const { scheduleBackup } = require('./backup');
+
+// Make scheduleBackup globally available so the system-config PUT endpoint can call it
+global.scheduleBackup = scheduleBackup;
 const { getPaginatedTransactions } = require('./transactions');
 const {
   DEFAULT_SETTINGS,
@@ -119,7 +123,9 @@ function loadConfig() {
 
   try {
     const parsed = JSON.parse(fs.readFileSync(configFile, 'utf8'));
-    setRuntimeConfig(parsed).catch(() => {});
+    setRuntimeConfig(parsed).then(() => {
+      scheduleBackup(parsed);
+    }).catch(() => {});
   } catch (error) {
     console.error('Error reading config file:', error);
   }
@@ -914,6 +920,7 @@ app.get('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
   res.json({
     appName: appConfig.appName,
     smtp: appConfig.smtp || null,
+    backup: appConfig.backup || null,
     usesPocketBase: true
   });
 });
@@ -936,15 +943,31 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
       };
     }
 
+    let backup = null;
+    if (req.body?.backup && typeof req.body.backup === 'object' && String(req.body.backup.cron || '').trim()) {
+      backup = {
+        cron: String(req.body.backup.cron || '').trim(),
+        maxCount: Number.isFinite(Number(req.body.backup.maxCount)) ? parseInt(req.body.backup.maxCount, 10) : 10
+      };
+      if (backup.maxCount < 1) backup.maxCount = 1;
+    }
+
     const newConfig = {
       ...appConfig,
       appName,
-      smtp
+      smtp,
+      backup
     };
 
-    fs.writeFileSync(configFile, JSON.stringify(newConfig, null, 2), 'utf8');
+    await fs.promises.writeFile(configFile, JSON.stringify(newConfig, null, 2), 'utf8');
     appConfig = newConfig;
     transporter = buildSmtpTransport(newConfig.smtp || null);
+
+    // Refresh backup schedule
+    if (global.scheduleBackup) {
+      global.scheduleBackup(appConfig);
+    }
+
     res.json({ success: true });
   } catch (error) {
     console.error('Failed to update system config:', error);
@@ -971,6 +994,87 @@ app.put('/api/admin/users/:uid/admin', verifyToken, verifySuperAdmin, async (req
   } catch (error) {
     console.error('Failed to update admin role:', error);
     res.status(500).json({ error: 'Failed to update admin role' });
+  }
+});
+
+const unzipper = require('unzipper');
+const { resolveBackupDirectory, resolvePocketBaseDirectory } = require('./pathConfig');
+
+app.get('/api/admin/backups', verifyToken, verifySuperAdmin, async (req, res) => {
+  try {
+    const backupDir = resolveBackupDirectory();
+    if (!fs.existsSync(backupDir)) {
+      return res.json({ backups: [] });
+    }
+    const files = await fs.promises.readdir(backupDir);
+    const backupFiles = files.filter(f => f.startsWith('backup-') && f.endsWith('.zip'));
+    backupFiles.sort((a, b) => b.localeCompare(a));
+    res.json({ backups: backupFiles });
+  } catch (error) {
+    console.error('Failed to list backups:', error);
+    res.status(500).json({ error: 'Failed to list backups' });
+  }
+});
+
+app.post('/api/admin/backups/rebuild', verifyToken, verifySuperAdmin, async (req, res) => {
+  try {
+    const filename = req.body?.filename;
+    if (!filename || typeof filename !== 'string' || !filename.endsWith('.zip') || filename.includes('..') || filename.includes('/')) {
+      return res.status(400).json({ error: 'Invalid backup filename' });
+    }
+
+    const backupDir = resolveBackupDirectory();
+    const backupPath = path.join(backupDir, filename);
+
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ error: 'Backup not found' });
+    }
+
+    const dbDir = resolvePocketBaseDirectory();
+    const restoreDbDir = dbDir + '-restore';
+    const configRestorePath = path.join(dataDir, 'config-restore.json');
+
+    // Clean any existing restore directories
+    if (fs.existsSync(restoreDbDir)) {
+      await fs.promises.rm(restoreDbDir, { recursive: true, force: true });
+    }
+
+    await fs.promises.mkdir(restoreDbDir, { recursive: true });
+
+    // Extract backup
+    const zip = fs.createReadStream(backupPath).pipe(unzipper.Parse({ forceStream: true }));
+    for await (const entry of zip) {
+      const fileName = entry.path;
+      if (fileName.startsWith('db/')) {
+        const dest = path.join(restoreDbDir, fileName.substring(3));
+        const destDir = path.dirname(dest);
+        if (!fs.existsSync(destDir)) {
+          await fs.promises.mkdir(destDir, { recursive: true });
+        }
+        if (entry.type === 'Directory') {
+          entry.autodrain();
+        } else {
+          entry.pipe(fs.createWriteStream(dest));
+        }
+      } else if (fileName === 'config.json') {
+        entry.pipe(fs.createWriteStream(configRestorePath));
+      } else {
+        entry.autodrain();
+      }
+    }
+
+    // Acknowledge the request before killing the server
+    res.json({ success: true, message: 'Restore initiated. Server restarting...' });
+
+    // Ensure response is flushed
+    setTimeout(() => {
+      console.log('Restore triggered, shutting down for Docker to restart...');
+      process.exit(0);
+    }, 1000);
+
+  } catch (error) {
+    console.error('Failed to rebuild backup:', error);
+    res.status(500).json({ error: 'Failed to rebuild backup: ' + error.message });
   }
 });
 
