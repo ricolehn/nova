@@ -17,6 +17,7 @@ Nova is a web-based financial management application for small groups, clubs, or
 - **Payments & Standing Orders:** Record recurring and one-time payments efficiently.
 - **Donations:** Separate tracking for general donations.
 - **Expenses:** Log expenses with optional receipt uploads.
+- **Automated Backups:** Configurable scheduled backups of your database and configuration files.
 
 ## 🚀 Running the Application
 
@@ -28,6 +29,7 @@ To run Nova, pull the latest image and start a container. Nova now keeps general
 
 - `/app/data` for configuration, uploads, and the custom logo
 - `/app/db` for the PocketBase database files
+- `/app/backups` (optional) for automated scheduled backups
 
 That makes it easy to place `/app/db` on faster cache/SSD storage while keeping the rest on larger HDD-backed storage.
 
@@ -38,6 +40,7 @@ docker run -d \
   -p 3000:3000 \
   -v /path/to/your/storage:/app/data \
   -v /path/to/your/cache:/app/db \
+  -v /path/to/your/backups:/app/backups \
   --name nova-app \
   --restart unless-stopped \
   ghcr.io/ricouhd/nova:latest
@@ -45,7 +48,7 @@ docker run -d \
 
 *Replace `/path/to/your/storage` and `/path/to/your/cache` with directories on your host machine to ensure your data survives container restarts.*
 
-> **Unraid / Permission Note:** Nova starts as root only long enough to prepare bind-mounted `/app/data`, `/app/db`, and `/app/html` directories for the bundled `node` user (UID 1000), then drops back to `node` before starting the app. If your storage backend blocks ownership changes, make sure every mapped host directory is writable by UID 1000, e.g. `chown -R 1000:1000 /path/to/your/storage /path/to/your/cache /path/to/your/frontend`.
+> **Unraid / Permission Note:** Nova starts as root only long enough to prepare bind-mounted `/app/data`, `/app/db`, `/app/backups`, and `/app/html` directories for the bundled `node` user (UID 1000), then drops back to `node` before starting the app. If your storage backend blocks ownership changes, make sure every mapped host directory is writable by UID 1000, e.g. `chown -R 1000:1000 /path/to/your/storage /path/to/your/cache /path/to/your/backups /path/to/your/frontend`.
 
 ### Optional: Frontend Volume Mapping
 
@@ -56,6 +59,7 @@ docker run -d \
   -p 3000:3000 \
   -v /path/to/your/storage:/app/data \
   -v /path/to/your/cache:/app/db \
+  -v /path/to/your/backups:/app/backups \
   -v /path/to/your/frontend:/app/html \
   --name nova-app \
   --restart unless-stopped \
@@ -97,6 +101,7 @@ docker run -d \
   -p 3000:3000 \
   -v /path/to/your/storage:/app/data \
   -v /path/to/your/cache:/app/db \
+  -v /path/to/your/backups:/app/backups \
   --name nova-app \
   --restart unless-stopped \
   ghcr.io/ricouhd/nova:latest
