@@ -39,8 +39,17 @@ function resolveFrontendDirectory({ env = process.env, existsSync = fs.existsSyn
   return path.join(__dirname, '..');
 }
 
+function resolveBackupDirectory({ env = process.env } = {}) {
+  if (env.BACKUP_DIR) {
+    return path.resolve(env.BACKUP_DIR);
+  }
+
+  return path.join(__dirname, '..', 'backups');
+}
+
 module.exports = {
   resolveDataDirectory,
   resolvePocketBaseDirectory,
-  resolveFrontendDirectory
+  resolveFrontendDirectory,
+  resolveBackupDirectory
 };

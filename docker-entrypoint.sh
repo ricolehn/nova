@@ -4,6 +4,7 @@ set -eu
 
 data_dir="${DATA_DIR:-/app/data}"
 db_dir="${DB_DIR:-/app/db}"
+backup_dir="${BACKUP_DIR:-/app/backups}"
 frontend_dir="${FRONTEND_DIR:-/app/html}"
 frontend_seed_dir="${FRONTEND_SEED_DIR:-/app/html-seed}"
 runtime_user="${RUNTIME_USER:-node}"
@@ -69,6 +70,18 @@ ensure_writable_dir() {
 ensure_writable_dir "$data_dir" "Data"
 ensure_writable_dir "$frontend_dir" "Frontend"
 ensure_writable_dir "$pocketbase_dir" "PocketBase"
+ensure_writable_dir "$backup_dir" "Backup"
+
+if [ -d "$pocketbase_dir-restore" ]; then
+    echo "Restore requested. Replacing $pocketbase_dir with $pocketbase_dir-restore..."
+    rm -rf "$pocketbase_dir"
+    mv "$pocketbase_dir-restore" "$pocketbase_dir"
+fi
+
+if [ -f "$data_dir/config-restore.json" ]; then
+    echo "Restore requested. Replacing config.json with config-restore.json..."
+    mv "$data_dir/config-restore.json" "$data_dir/config.json"
+fi
 
 # Always sync bundled frontend files into the (possibly mounted) frontend
 # directory so that image upgrades take effect without removing the volume.
