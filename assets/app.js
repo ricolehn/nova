@@ -2992,15 +2992,6 @@ window.attemptRegister = async () => {
     }
 
     try {
-        const codeSnap = await get(ref(db, 'system/inviteCode'));
-        const validCode = codeSnap.exists() ? codeSnap.val() : '123456';
-
-        if(code !== String(validCode)) {
-            errDiv.innerText = "Ungültiger Registrierungscode.";
-            errDiv.style.display = 'block';
-            return;
-        }
-
         const userCredential = await createUserWithEmailAndPassword(auth, email, p1, {
             inviteCode: code,
             firstName: first,
@@ -3023,7 +3014,11 @@ window.attemptRegister = async () => {
         document.getElementById('login-modal').classList.remove('show');
     } catch (error) {
         console.error(error);
-        errDiv.innerText = "Registrierung fehlgeschlagen: " + error.message;
+        if (error.message && error.message.includes('Ungültiger Registrierungscode')) {
+            errDiv.innerText = "Ungültiger Registrierungscode.";
+        } else {
+            errDiv.innerText = "Registrierung fehlgeschlagen: " + error.message;
+        }
         errDiv.style.display = 'block';
     }
 };
