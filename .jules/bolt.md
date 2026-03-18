@@ -1,0 +1,3 @@
+## 2025-02-17 - Concurrent Data Fetching Latency Bottleneck
+**Learning:** In the Node.js backend, several aggregation and pagination endpoints (like `/api/stats` and `/api/transactions`) were executing multiple independent `await` calls to PocketBase sequentially. This caused the total endpoint latency to equal the sum of all individual query latencies, creating an N+1 query-style bottleneck when fetching the base collections needed to compute derived data.
+**Action:** Replace sequential asynchronous database queries for independent data collections with `Promise.all` arrays. This parallelizes the data fetching, reducing the total network/IO wait time to the duration of the single slowest query, significantly improving responsiveness on heavy read operations.
