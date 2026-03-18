@@ -1210,8 +1210,8 @@ function renderUnlinkedUsers() {
         return `
             <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
                 <div style="flex:1; min-width:200px;">
-                    <div style="font-weight:700;">${(u.firstName || '?')} ${(u.lastName || '')}</div>
-                    <div style="font-size:0.85rem; color:var(--text-secondary);">${u.email || ''}</div>
+                    <div style="font-weight:700;">${escapeHtml(u.firstName || '?')} ${escapeHtml(u.lastName || '')}</div>
+                    <div style="font-size:0.85rem; color:var(--text-secondary);">${escapeHtml(u.email || '')}</div>
                 </div>
                 <select id="link-select-${u.uid}" class="form-select" style="flex:1; min-width:220px;">
                     <option value="">Person auswählen</option>
