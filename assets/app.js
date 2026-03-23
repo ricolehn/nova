@@ -2163,7 +2163,16 @@ window.showTransactionModal = async function(resetLimit = true) {
     const container = document.getElementById('full-transaction-list');
 
     if (resetLimit) {
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Lade Buchungen...</div>';
+        const skeletonHtml = Array(6).fill(`
+            <div class="trans-item" style="pointer-events: none; border-bottom: 1px solid var(--border);">
+                <div class="trans-left" style="gap: 6px;">
+                    <div class="skeleton" style="width: 140px; height: 16px;"></div>
+                    <div class="skeleton" style="width: 100px; height: 12px; margin-top: 4px;"></div>
+                </div>
+                <div class="skeleton" style="width: 70px; height: 18px;"></div>
+            </div>
+        `).join('');
+        container.innerHTML = skeletonHtml;
     }
 
     if (!modal?.classList.contains('show')) {

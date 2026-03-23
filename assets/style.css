@@ -598,6 +598,18 @@ input:checked + .slider:before { transform: translateX(22px); }
     animation: spin 1.5s linear infinite;
 }
 
+/* Skeleton Loader */
+.skeleton {
+    background: linear-gradient(90deg, var(--surface-alt) 25%, var(--border) 50%, var(--surface-alt) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Desktop Nav (hidden by default) */
