@@ -257,9 +257,17 @@ window.toggleFab = function() {
     });
 };
 
+// Web History API tracking for modals
+window._modalStack = window._modalStack || [];
+window._programmaticBacks = window._programmaticBacks || 0;
+
 window.openModal = (id) => {
     const modal = document.getElementById(id);
     if (!modal) return;
+
+    // Web History API integration
+    window._modalStack.push(id);
+    history.pushState({ isModal: true, modalId: id }, "");
 
     // Store current focus on the modal instance itself to handle nesting
     modal._returnFocusTo = document.activeElement;
@@ -283,9 +291,25 @@ window.openModal = (id) => {
     modal._escHandler = handleEsc;
 };
 
-window.closeModal = (id) => {
+window.closeModal = (id, fromPopstate = false) => {
     const modal = document.getElementById(id);
     if (!modal) return;
+
+    // Web History API integration
+    const stackIndex = window._modalStack ? window._modalStack.indexOf(id) : -1;
+    if (stackIndex > -1) {
+        window._modalStack.splice(stackIndex, 1);
+        if (!fromPopstate) {
+            window._programmaticBacks = (window._programmaticBacks || 0) + 1;
+            history.back();
+            // Fallback if history.back() does not trigger popstate
+            setTimeout(() => {
+                if (window._programmaticBacks > 0) {
+                    window._programmaticBacks--;
+                }
+            }, 200);
+        }
+    }
 
     modal.classList.remove('show');
 
@@ -300,6 +324,20 @@ window.closeModal = (id) => {
     }
     delete modal._returnFocusTo;
 };
+
+// Web History API event listener for system back gesture
+window.addEventListener('popstate', (e) => {
+    if (window._programmaticBacks > 0) {
+        window._programmaticBacks--;
+        return;
+    }
+
+    if (window._modalStack && window._modalStack.length > 0) {
+        // Close the top-most modal
+        const topModal = window._modalStack[window._modalStack.length - 1];
+        closeModal(topModal, true);
+    }
+});
 
 // Improved Toggle Details
 window.toggleDetails = function(id) {
