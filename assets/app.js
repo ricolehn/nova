@@ -1598,7 +1598,9 @@ window.saveEditedPayment = async () => {
 
         closeModal('edit-payment-modal');
         currentEditedPayment = null;
-        await renderAll();
+        renderPeople();
+        renderStats();
+        renderSuperAdminPaymentEditor();
     } catch (err) {
         console.error('Fehler beim Bearbeiten:', err);
         showToast('Eintrag konnte nicht aktualisiert werden', 'error');
@@ -2324,8 +2326,14 @@ window.addPayment = async () => {
             return;
         }
 
-        await renderAll();
         closeModal('add-payment-modal');
+        if (currentUser && !currentUser.admin) {
+            renderUserView();
+        } else {
+            renderPeople();
+            renderStats();
+            renderSuperAdminPaymentEditor();
+        }
         document.getElementById('payment-is-standing-order').checked = false;
         const lbl = document.getElementById('payment-date-label');
         if(lbl) lbl.innerText = 'Datum';
@@ -2354,8 +2362,9 @@ window.addDonation = async () => {
         const nextDonations = [...safeList(currentData), newDonation];
         await set(ref(db, 'donations'), { ...nextDonations });
         donations = nextDonations;
-        await renderAll();
         closeModal('add-donation-modal');
+        renderStats();
+        renderSuperAdminPaymentEditor();
         showToast('Spende gespeichert');
     } catch (err) {
         console.error('Fehler beim Speichern der Spende:', err);
@@ -2407,8 +2416,9 @@ window.addExpense = async () => {
         const nextExpenses = [...safeList(currentData), newExpense];
         await set(ref(db, 'expenses'), { ...nextExpenses });
         expenses = nextExpenses;
-        await renderAll();
         closeModal('add-expense-modal');
+        renderStats();
+        renderSuperAdminPaymentEditor();
         document.getElementById('expense-amount').value = '';
         document.getElementById('expense-issuer').value = '';
         document.getElementById('expense-desc').value = '';
