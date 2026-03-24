@@ -148,15 +148,19 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
 }
 
 /* --- Tabs (Content only) --- */
-.tab-content { display: none; animation: fadeIn 0.3s ease; }
+.tab-content { display: none; animation: fadeIn 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
 .tab-content.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
 /* --- Cards & Settings --- */
 .card {
     background: var(--surface); border-radius: var(--radius);
     box-shadow: var(--shadow); border: 1px solid var(--border);
-    margin-bottom: 20px; overflow: hidden;
+    margin-bottom: 20px; overflow: hidden; transition: all 0.3s ease;
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
 }
 .card-settings { padding: 0; }
 .card-header {
@@ -203,6 +207,11 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     position: relative;
     z-index: 2;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.person-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 /* Active state for the main card */
@@ -344,6 +353,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
 }
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.btn:active { transform: scale(0.95); }
 .btn-block { width: 100%; }
 .btn-primary { background: linear-gradient(90deg, #06b6d4 0%, #10b981 100%); color: white; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
 .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
@@ -388,7 +398,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     justify-content: center;
     transition: 0.3s;
 }
-.desktop-fab:active { transform: scale(0.9); }
+.desktop-fab:active { transform: scale(0.95); }
 .desktop-fab.active { transform: rotate(45deg); }
 .desktop-fab svg { width: 32px; height: 32px; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
 
@@ -462,7 +472,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     cursor: pointer; transition: 0.3s;
     position: relative; z-index: 1001;
 }
-.nav-fab:active { transform: scale(0.9); }
+.nav-fab:active { transform: scale(0.95); }
 .nav-fab.active { transform: rotate(45deg); }
 .nav-fab svg { width: 32px; height: 32px; }
 
@@ -470,16 +480,31 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
 .fab-menu {
     position: fixed; bottom: 100px; left: 50%; right: auto;
     display: flex; flex-direction: column; gap: 12px;
-    z-index: 99; opacity: 0; pointer-events: none;
-    transform: translateX(-50%) translateY(20px);
+    z-index: 99; pointer-events: none;
+    transform: translateX(-50%);
     visibility: hidden;
-    transition: opacity 0.3s, transform 0.3s, visibility 0s 0.3s;
+    transition: visibility 0s 0.3s;
+}
+.fab-menu::before {
+    content: '';
+    position: absolute;
+    top: -20px; bottom: -20px; left: -20px; right: -20px;
+    z-index: -1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: radial-gradient(circle at bottom center, rgba(255, 255, 255, 0.4) 0%, transparent 80%);
+    mask-image: radial-gradient(circle at bottom center, black 0%, transparent 80%);
+    -webkit-mask-image: radial-gradient(circle at bottom center, black 0%, transparent 80%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 .fab-menu.show {
-    opacity: 1; pointer-events: all;
-    transform: translateX(-50%) translateY(0);
+    pointer-events: all;
     visibility: visible;
-    transition: opacity 0.3s, transform 0.3s, visibility 0s;
+    transition: visibility 0s;
+}
+.fab-menu.show::before {
+    opacity: 1;
 }
 .fab-item {
     background: var(--surface); color: var(--text);
@@ -490,12 +515,24 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     white-space: nowrap;
     font-size: 0.95rem; /* Match .btn size */
     width: auto; /* Reset width if button defaults differ */
+    opacity: 0;
+    transform: translateY(15px) scale(0.95);
+    transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
+.fab-menu.show .fab-item {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+.fab-menu.show .fab-item:nth-child(1) { transition-delay: 0.1s; }
+.fab-menu.show .fab-item:nth-child(2) { transition-delay: 0.05s; }
+.fab-menu.show .fab-item:nth-child(3) { transition-delay: 0s; }
 
 /* Modals */
 .modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     display: flex; align-items: center; justify-content: center;
     z-index: 1000; opacity: 0; pointer-events: none; transition: 0.2s;
 }
@@ -600,9 +637,9 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 /* Skeleton Loader */
 .skeleton {
-    background: linear-gradient(90deg, var(--surface-alt) 25%, var(--border) 50%, var(--surface-alt) 75%);
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s infinite;
+    background: linear-gradient(90deg, var(--surface-alt) 25%, rgba(6, 182, 212, 0.05) 50%, var(--surface-alt) 75%);
+    background-size: 400% 100%;
+    animation: skeleton-loading 2s ease-in-out infinite;
     border-radius: 4px;
 }
 @keyframes skeleton-loading {
@@ -1015,10 +1052,10 @@ input:checked + .slider:before { transform: translateX(22px); }
     padding: 12px 20px; border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 1px solid var(--border);
     display: flex; align-items: center; gap: 12px; font-weight: 600;
-    transform: translateY(-20px); opacity: 0; pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transform: translateY(-30px) scale(0.95); opacity: 0; pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.toast.show { transform: translateY(0); opacity: 1; pointer-events: all; }
+.toast.show { transform: translateY(0) scale(1); opacity: 1; pointer-events: all; }
 .toast-success { border-left: 5px solid var(--success); }
 .toast-error { border-left: 5px solid var(--danger); }
 
