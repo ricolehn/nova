@@ -1740,6 +1740,9 @@ function renderUserView() {
         statusIcon = '⏳';
     }
 
+    const currentMonthlyRate = currentStatus ? (settings[currentStatus] || 0) : 0;
+    const currentStatusLabel = statusLabels[currentStatus] || currentStatus;
+
     document.getElementById('user-status-card').innerHTML = `
         <!-- Status Hero Card -->
         <div class="user-hero-status ${statusClass}">
@@ -1748,7 +1751,9 @@ function renderUserView() {
                 ${statusMeta.isOverdue ? 'Zahlung überfällig' : (statusMeta.isSoonDue ? 'Bald fällig' : 'Alles in Ordnung')}
             </h2>
             ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `<div style="font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 8px;">Bezahlt bis <strong>${dateText}</strong></div>`}
-            <div style="font-size: 0.95rem; opacity: 0.75; color: var(--text);">${statusMeta.text}</div>
+            <div style="font-size: 0.95rem; opacity: 0.75; color: var(--text); margin-bottom: 8px;">${statusMeta.text}</div>
+            <div style="font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 5px;">Aktueller Status: <strong>${currentStatusLabel}</strong></div>
+            <div style="font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 15px;">Monatlicher Beitrag: <strong>${formatCurrency(currentMonthlyRate)} €</strong></div>
             ${statusMeta.isOverdue ? `
                 <div style="margin-top: 20px; padding: 15px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
                     <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 5px; color: var(--danger);">Offener Betrag</div>
