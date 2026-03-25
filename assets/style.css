@@ -313,10 +313,11 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
 .details-label { color: var(--text-secondary); font-weight: 500; }
 .details-value { font-weight: 700; color: var(--text); }
 
-.details-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px; }
-.details-actions .btn { font-size: 0.9rem; padding: 10px; }
+.details-actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+.details-actions .btn { font-size: 0.9rem; padding: 10px; width: 100%; justify-content: center; }
 .details-actions .btn-primary { box-shadow: none; }
-.details-actions .btn-span-all { grid-column: span 2; }
+.details-actions .secondary-actions { display: flex; gap: 10px; width: 100%; }
+.details-actions .secondary-actions .btn { flex: 1; margin: 0; }
 
 .history-header {
     font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary);
@@ -483,7 +484,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
 .fab-item {
     background: var(--surface); color: var(--text);
     padding: 12px 20px; border-radius: 16px;
-    box-shadow: var(--shadow-lg); font-weight: 600;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4); font-weight: 600;
     display: flex; align-items: center; gap: 10px;
     cursor: pointer; border: 1px solid var(--border);
     white-space: nowrap;
