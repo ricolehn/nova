@@ -273,13 +273,7 @@ window.openModal = (id) => {
     modal._returnFocusTo = document.activeElement;
     modal.classList.add('show');
 
-    // Focus management
-    const focusable = modal.querySelector('input:not([type="hidden"]), select, textarea') ||
-                      modal.querySelector('button, [href], [tabindex]:not([tabindex="-1"])');
-    if (focusable) {
-        // Small timeout to allow transition/visibility paint
-        setTimeout(() => focusable.focus(), 50);
-    }
+    // Removed automatic focus management to prevent soft keyboard from popping up on mobile devices
 
     // Escape to close
     const handleEsc = (e) => {
