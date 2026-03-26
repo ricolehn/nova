@@ -1740,21 +1740,33 @@ function renderUserView() {
         statusIcon = '⏳';
     }
 
+    const monthlyRate = settings[currentStatus] || 0;
+
     document.getElementById('user-status-card').innerHTML = `
         <!-- Status Hero Card -->
         <div class="user-hero-status ${statusClass}">
-            <div style="font-size: 4rem; margin-bottom: 15px; line-height: 1;">${statusIcon}</div>
-            <h2 style="color: ${statusColor}; font-size: 1.5rem; font-weight: 800; margin-bottom: 10px;">
+            <div style="font-size: 3rem; margin-bottom: 10px; line-height: 1;">${statusIcon}</div>
+            <h2 style="color: ${statusColor}; font-size: 1.25rem; font-weight: 800; margin-bottom: 5px;">
                 ${statusMeta.isOverdue ? 'Zahlung überfällig' : (statusMeta.isSoonDue ? 'Bald fällig' : 'Alles in Ordnung')}
             </h2>
-            ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `<div style="font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 8px;">Bezahlt bis <strong>${dateText}</strong></div>`}
-            <div style="font-size: 0.95rem; opacity: 0.75; color: var(--text);">${statusMeta.text}</div>
+            ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `<div style="font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 5px;">Bezahlt bis <strong>${dateText}</strong></div>`}
             ${statusMeta.isOverdue ? `
-                <div style="margin-top: 20px; padding: 15px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                <div style="margin-top: 15px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
                     <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 5px; color: var(--danger);">Offener Betrag</div>
-                    <div style="font-size: 1.8rem; font-weight: 800; color: var(--danger);">${formatCurrency(overdueAmount)} €</div>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">${formatCurrency(overdueAmount)} €</div>
                 </div>
             ` : ''}
+        </div>
+
+        <div class="user-info-boxes">
+            <div class="user-info-box">
+                <div class="user-info-box-label">Monatlicher Beitrag</div>
+                <div class="user-info-box-value">${formatCurrency(monthlyRate)} €</div>
+            </div>
+            <div class="user-info-box">
+                <div class="user-info-box-label">Aktueller Status</div>
+                <div class="user-info-box-value">${statusLabels[currentStatus] || currentStatus}</div>
+            </div>
         </div>
     `;
 
