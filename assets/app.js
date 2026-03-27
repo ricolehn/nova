@@ -635,16 +635,19 @@ function calculateCostRange(person, startDate, endDate) {
  * @param {Object} person - Die Person
  * @returns {Object} - { text, isOverdue, isSoonDue }
  */
-function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = null) {
+function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = null, preCalcCredit = null) {
     // START CHECK
     const standingOrders = safeList(person.standingOrders);
     const todayStr = todayStrArg || getTodayStr();
 
-    const hasActiveSO = standingOrders.some(so => {
+    let totalSOAmount = 0;
+    const activeSOs = standingOrders.filter(so => {
          if (so.startDate > todayStr) return false;
          if (so.endDate && so.endDate < todayStr) return false;
          return true;
     });
+    activeSOs.forEach(so => totalSOAmount += parseFloat(so.amount || 0));
+    const hasActiveSO = activeSOs.length > 0;
 
     const paidUntil = preCalculatedPaidUntil !== undefined ? preCalculatedPaidUntil : calculatePaidUntil(person);
     if (!paidUntil) {
@@ -660,14 +663,35 @@ function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = nu
     const paidTotal = paidUntil.getFullYear() * 12 + paidUntil.getMonth();
     const monthsDiff = paidTotal - currentTotal;
 
+    // CALCULATE TRUE MISSING AMOUNT FOR CURRENT MONTH
+    const targetDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // End of current month
+
+    const startCalc = new Date(paidUntil);
+    startCalc.setDate(1);
+    startCalc.setMonth(startCalc.getMonth() + 1);
+
+    let trueMissingAmount = 0;
+    if (startCalc <= targetDate) {
+        const missingCost = calculateCostRange(person, startCalc, targetDate);
+
+        let creditToUse = preCalcCredit;
+        if (creditToUse === null || creditToUse === undefined) {
+             const paymentStatus = calculatePaymentStatus(person);
+             creditToUse = paymentStatus.remainingCredit;
+        }
+
+        trueMissingAmount = missingCost - (creditToUse || 0);
+        if (trueMissingAmount < 0) trueMissingAmount = 0;
+    }
+
     if (monthsDiff < 0) {
         const overdueMonths = Math.abs(monthsDiff);
 
         if (hasActiveSO) {
-            // If there's an active standing order and they are only missing the current month's payment (monthsDiff === -1),
-            // they shouldn't be considered overdue yet because the standing order might just execute later in the month.
-            // If they are missing more than one month, then the standing order must have failed or wasn't enough, so they are overdue.
-            if (monthsDiff === -1) {
+            // Check if the standing order covers the missing amount
+            // Since the standing order will run this month, it will contribute `totalSOAmount`
+            // If trueMissingAmount <= totalSOAmount, then after SO executes, they will owe 0.
+            if (trueMissingAmount <= totalSOAmount) {
                 return {
                     text: 'Dauerauftrag aktiv',
                     isOverdue: false,
@@ -722,17 +746,20 @@ function calculateOverdueAmount(person, preCalcPaidUntil, preCalcCredit, todaySt
     // Check for active standing orders
     const standingOrders = safeList(person.standingOrders);
     const todayStr = todayStrArg || getTodayStr();
-    const hasActiveSO = standingOrders.some(so => {
+
+    let totalSOAmount = 0;
+    const activeSOs = standingOrders.filter(so => {
          if (so.startDate > todayStr) return false;
          if (so.endDate && so.endDate < todayStr) return false;
          return true;
     });
+    activeSOs.forEach(so => totalSOAmount += parseFloat(so.amount || 0));
+    const hasActiveSO = activeSOs.length > 0;
 
-    // Wenn es einen aktiven Dauerauftrag gibt, fehlt der Betrag für diesen Monat noch nicht (wird ja noch ausgeführt)
-    // Ziel: Ende des Vormonats, andernfalls Ende des aktuellen Monats
-    const targetDate = hasActiveSO
-        ? new Date(today.getFullYear(), today.getMonth(), 0)
-        : new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    // ALWAYS calculate up to the end of the current month
+    const targetDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    let finalMissing = 0;
 
     // ⚡ Bolt: Optimized path avoiding full history iteration
     if (preCalcPaidUntil) {
@@ -741,21 +768,32 @@ function calculateOverdueAmount(person, preCalcPaidUntil, preCalcCredit, todaySt
         startCalc.setDate(1);
         startCalc.setMonth(startCalc.getMonth() + 1);
 
-        // If startCalc > targetDate, we are ahead of payment (not overdue), return 0
-        if (startCalc > targetDate) return 0;
-
-        const missingCost = calculateCostRange(person, startCalc, targetDate);
-        const credit = preCalcCredit || 0;
-        const finalMissing = missingCost - credit;
-
-        return finalMissing > 0 ? finalMissing : 0;
+        if (startCalc <= targetDate) {
+             const missingCost = calculateCostRange(person, startCalc, targetDate);
+             const credit = preCalcCredit || 0;
+             finalMissing = missingCost - credit;
+        }
+    } else {
+        const totalCost = calculateTotalCostUntil(person, targetDate);
+        const totalPaid = person.totalPaid || 0;
+        finalMissing = totalCost - totalPaid;
     }
 
-    const totalCost = calculateTotalCostUntil(person, targetDate);
-    const totalPaid = person.totalPaid || 0;
+    if (finalMissing < 0) finalMissing = 0;
 
-    const missing = totalCost - totalPaid;
-    return missing > 0 ? missing : 0;
+    // Check if the active SO will cover the current month's debt
+    // if the user is completely covered by SO, their missing amount is 0.
+    if (hasActiveSO) {
+        if (finalMissing <= totalSOAmount) {
+             // The SO covers the missing amount (for the current month)
+             return 0;
+        } else {
+             // The SO does NOT cover the missing amount (they owe more)
+             return finalMissing;
+        }
+    }
+
+    return finalMissing > 0 ? finalMissing : 0;
 }
 
 /**
