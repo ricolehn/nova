@@ -687,7 +687,8 @@ function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = nu
     if (monthsDiff < 0) {
         const overdueMonths = Math.abs(monthsDiff);
 
-        if (hasActiveSO) {
+        // Only allow standing order buffer for the current month (monthsDiff === -1)
+        if (hasActiveSO && overdueMonths === 1) {
             // Check if the standing order covers the missing amount
             // Since the standing order will run this month, it will contribute `totalSOAmount`
             // If trueMissingAmount <= totalSOAmount, then after SO executes, they will owe 0.
@@ -781,9 +782,21 @@ function calculateOverdueAmount(person, preCalcPaidUntil, preCalcCredit, todaySt
 
     if (finalMissing < 0) finalMissing = 0;
 
+    // Calculate months difference to see if they are only overdue for the current month
+    const paidUntil = preCalcPaidUntil || calculatePaidUntil(person);
+    let monthsDiff = 0;
+    if (paidUntil) {
+        const currentTotal = today.getFullYear() * 12 + today.getMonth();
+        const paidTotal = paidUntil.getFullYear() * 12 + paidUntil.getMonth();
+        monthsDiff = paidTotal - currentTotal;
+    } else {
+        monthsDiff = -2; // Force no SO buffer if they have no paid history
+    }
+
     // Check if the active SO will cover the current month's debt
     // if the user is completely covered by SO, their missing amount is 0.
-    if (hasActiveSO) {
+    // Only apply the buffer if the user is not more than 1 month behind (monthsDiff >= -1)
+    if (hasActiveSO && monthsDiff >= -1) {
         if (finalMissing <= totalSOAmount) {
              // The SO covers the missing amount (for the current month)
              return 0;
