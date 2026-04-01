@@ -86,99 +86,112 @@
 
         <div id="settings" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-settings">
             
-            <div class="card card-settings" id="card-design">
-                <div class="card-header">Design</div>
-                <div class="card-body">
-                    <div class="form-group">
-                        <span class="form-label">Farbschema</span>
-                        <div class="settings-flex-row">
-                            <button class="btn btn-secondary" onclick="setTheme('light')">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                                Hell
-                            </button>
-                            <button class="btn btn-secondary" onclick="setTheme('dark')">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                                Dunkel
-                            </button>
-                            <button class="btn btn-secondary" onclick="setTheme('system')">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                                System
-                            </button>
+            <div class="settings-grid" style="display: grid; gap: 24px;">
+                <!-- Section 1: Preferences -->
+                <div>
+                    <h3 class="list-section-title">Präferenzen</h3>
+                    <div class="card card-settings" id="card-design">
+                        <div class="card-body" style="padding-top: 24px;">
+                            <div class="form-group">
+                                <span class="form-label">Farbschema</span>
+                                <div class="settings-flex-row">
+                                    <button class="btn btn-secondary" onclick="setTheme('light')">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                                        Hell
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="setTheme('dark')">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                                        Dunkel
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="setTheme('system')">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                        System
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="card card-settings" id="card-rates">
-                <div class="card-header">Monatliche Beiträge</div>
-                <div class="card-body">
-                    <div class="form-group">
-                        <label class="form-label" for="rate-vollverdiener">Vollverdiener (€)</label>
-                <input type="text" inputmode="decimal" id="rate-vollverdiener" class="form-input" value="50">
+                <!-- Section 2: Financial Configuration -->
+                <div>
+                    <h3 class="list-section-title">Finanzen & Berichte</h3>
+                    <div class="card card-settings" id="card-rates">
+                        <div class="card-header">Monatliche Beiträge</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label" for="rate-vollverdiener">Vollverdiener (€)</label>
+                        <input type="text" inputmode="decimal" id="rate-vollverdiener" class="form-input" value="50">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rate-geringverdiener">Geringverdiener (€)</label>
+                        <input type="text" inputmode="decimal" id="rate-geringverdiener" class="form-input" value="25">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="rate-keinverdiener">Keinverdiener (€)</label>
+                        <input type="text" inputmode="decimal" id="rate-keinverdiener" class="form-input" value="10">
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="rate-geringverdiener">Geringverdiener (€)</label>
-                <input type="text" inputmode="decimal" id="rate-geringverdiener" class="form-input" value="25">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="rate-keinverdiener">Keinverdiener (€)</label>
-                <input type="text" inputmode="decimal" id="rate-keinverdiener" class="form-input" value="10">
-                    </div>
-                </div>
-            </div>
 
-            <div class="card card-settings" id="card-report">
-                <div class="card-header">Berichtszeitraum</div>
-                <div class="card-body">
-                    <div class="form-group">
-                        <label class="form-label" for="report-start-date">Startdatum für Berechnung</label>
-                        <input type="date" id="report-start-date" class="form-input">
-                        <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
-                            Einnahmen und Ausgaben werden erst ab diesem Datum in der Übersicht gezählt.
+                    <div class="card card-settings" id="card-report">
+                        <div class="card-header">Berichtszeitraum</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label" for="report-start-date">Startdatum für Berechnung</label>
+                                <input type="date" id="report-start-date" class="form-input">
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
+                                    Einnahmen und Ausgaben werden erst ab diesem Datum in der Übersicht gezählt.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="card card-settings" id="card-invite">
-                <div class="card-header">Registrierungscode</div>
-                <div class="card-body">
-                    <div class="form-group">
-                        <label class="form-label" for="admin-invite-code">Aktueller Code</label>
-                        <div class="settings-flex-row">
-                            <input type="text" id="admin-invite-code" class="form-input" readonly>
-                            <button class="btn btn-secondary" onclick="copyInviteCode()" aria-label="Code kopieren" title="Code kopieren">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            </button>
-                            <button class="btn btn-secondary" onclick="generateNewCode()" aria-label="Neuen Code generieren">Neu</button>
-                        </div>
-                        <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
-                            Dieser Code wird für neue Registrierungen benötigt.
+                <!-- Section 3: Access & Security -->
+                <div>
+                    <h3 class="list-section-title">Zugang & Sicherheit</h3>
+                    <div class="card card-settings" id="card-invite">
+                        <div class="card-header">Registrierungscode</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label" for="admin-invite-code">Aktueller Code</label>
+                                <div class="settings-flex-row">
+                                    <input type="text" id="admin-invite-code" class="form-input" readonly>
+                                    <button class="btn btn-secondary" onclick="copyInviteCode()" aria-label="Code kopieren" title="Code kopieren">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="generateNewCode()" aria-label="Neuen Code generieren">Neu</button>
+                                </div>
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
+                                    Dieser Code wird für neue Registrierungen benötigt.
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div class="card card-settings" id="card-security">
-                <div class="card-header">Sicherheit & Benachrichtigungen</div>
-                <div class="card-body">
-                    <div class="form-group" style="display:flex; align-items:center; gap:10px;">
-                        <label class="switch">
-                            <input type="checkbox" id="admin-email-notifications">
-                            <span class="slider"></span>
-                        </label>
-                        <label for="admin-email-notifications" style="margin:0; font-weight:600; cursor:pointer">E-Mail Benachrichtigungen bei Anfragen</label>
-                    </div>
-                    <div class="form-group" style="margin-top:20px;">
-                        <label class="form-label" for="new-password">Passwort ändern</label>
-                        <div class="password-wrapper">
-                            <input type="password" id="new-password" class="form-input has-toggle" placeholder="Neues Passwort">
-                            <button type="button" class="password-toggle" onclick="togglePassword('new-password', this)" aria-label="Passwort anzeigen">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                            </button>
+                    <div class="card card-settings" id="card-security">
+                        <div class="card-header">Benachrichtigungen & Passwort</div>
+                        <div class="card-body">
+                            <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+                                <label class="switch">
+                                    <input type="checkbox" id="admin-email-notifications">
+                                    <span class="slider"></span>
+                                </label>
+                                <label for="admin-email-notifications" style="margin:0; font-weight:600; cursor:pointer">E-Mail Benachrichtigungen bei Anfragen</label>
+                            </div>
+                            <div class="form-group" style="margin-top:20px;">
+                                <label class="form-label" for="new-password">Passwort ändern</label>
+                                <div class="password-wrapper">
+                                    <input type="password" id="new-password" class="form-input has-toggle" placeholder="Neues Passwort">
+                                    <button type="button" class="password-toggle" onclick="togglePassword('new-password', this)" aria-label="Passwort anzeigen">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary btn-block" onclick="changePassword()">Passwort ändern</button>
                         </div>
                     </div>
-                    <button class="btn btn-secondary btn-block" onclick="changePassword()">Passwort ändern</button>
                 </div>
             </div>
 
@@ -378,17 +391,21 @@
 </div>
 
 <div class="fab-menu" id="fabMenu">
+    <button type="button" class="fab-item" onclick="switchTab('settings', document.querySelector('.nav-btn:last-child')); toggleFab()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        Einstellungen
+    </button>
     <button type="button" class="fab-item" onclick="openModal('add-person-modal'); toggleFab()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        Person
+        Neue Person
     </button>
     <button type="button" class="fab-item" onclick="openModal('add-donation-modal'); toggleFab()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
-        Spende
+        Spende erfassen
     </button>
     <button type="button" class="fab-item" onclick="openModal('add-expense-modal'); toggleFab()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        Ausgabe
+        Ausgabe buchen
     </button>
 </div>
 
