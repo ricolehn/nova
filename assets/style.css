@@ -77,6 +77,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     margin-bottom: 10px;
     cursor: pointer;
     transition: transform 0.2s;
+    will-change: transform;
 }
 .hero-card:active { transform: scale(0.98); }
 .hero-card:focus { outline: none; }
@@ -148,7 +149,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
 }
 
 /* --- Tabs (Content only) --- */
-.tab-content { display: none; animation: fadeIn 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+.tab-content { display: none; animation: fadeIn 0.4s cubic-bezier(0.25, 1, 0.5, 1); will-change: transform, opacity; }
 .tab-content.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -205,6 +206,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     position: relative;
     z-index: 2;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
 }
 
 /* Active state for the main card */
@@ -244,6 +246,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     transition: transform 0.3s ease;
     margin-left: 8px;
     display: inline-block;
+    will-change: transform;
 }
 .person-item.active .chevron {
     transform: rotate(90deg);
@@ -345,6 +348,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     padding: 12px 20px; border-radius: 12px; border: none; font-weight: 600;
     cursor: pointer; transition: 0.2s; font-size: 0.95rem; width: auto;
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    will-change: transform;
 }
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .btn:active { transform: scale(0.95); }
@@ -390,6 +394,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     align-items: center;
     justify-content: center;
     transition: 0.3s;
+    will-change: transform;
 }
 .desktop-fab:active { transform: scale(0.95); }
 .desktop-fab.active { transform: rotate(45deg); }
@@ -464,6 +469,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     box-shadow: none;
     cursor: pointer; transition: 0.3s;
     position: relative; z-index: 1001;
+    will-change: transform;
 }
 .nav-fab:active { transform: scale(0.95); }
 .nav-fab.active { transform: rotate(45deg); }
@@ -495,6 +501,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     opacity: 0;
     transform: translateY(15px) scale(0.95);
     transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform, opacity;
 }
 .fab-menu.show .fab-item {
     opacity: 1;
@@ -510,6 +517,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     background: rgba(0,0,0,0.5);
     display: flex; align-items: center; justify-content: center;
     z-index: 1000; opacity: 0; pointer-events: none; transition: 0.25s;
+    will-change: transform, opacity;
 }
 .modal.show { opacity: 1; pointer-events: all; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
 .modal-content {
@@ -518,6 +526,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     transform: scale(0.95); transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     max-height: 85vh; overflow-y: auto; border: 1px solid var(--border);
     scrollbar-gutter: stable;
+    will-change: transform;
 }
 .modal.show .modal-content { transform: scale(1); }
 
@@ -557,7 +566,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
 .switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .4s; border-radius: 34px; }
-.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; will-change: transform; }
 input:checked + .slider { background: var(--gradient-primary); }
 input:checked + .slider:before { transform: translateX(22px); }
 
@@ -588,6 +597,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     animation: spin 1s linear infinite;
     position: relative;
     margin-bottom: 15px;
+    will-change: transform;
 }
 
 .spinner::before {
@@ -598,6 +608,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     border-top-color: var(--secondary);
     border-radius: 50%;
     animation: spin 2s linear infinite reverse;
+    will-change: transform;
 }
 
 .spinner::after {
@@ -608,6 +619,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     border-right-color: var(--primary-dark);
     border-radius: 50%;
     animation: spin 1.5s linear infinite;
+    will-change: transform;
 }
 
 /* Skeleton Loader */
@@ -814,6 +826,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     border-color: var(--danger) !important;
     animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
     background-color: rgba(239, 68, 68, 0.05) !important;
+    will-change: transform;
 }
 
 /* --- Super Admin Zone --- */
@@ -1041,6 +1054,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     max-width: 350px;
     transform: translateX(30px) scale(0.95); opacity: 0; pointer-events: none;
     transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform, opacity;
 }
 .toast.show { transform: translateX(0) scale(1); opacity: 1; pointer-events: all; }
 .toast-success { border-left: 5px solid var(--success); }
@@ -1069,5 +1083,6 @@ input:checked + .slider:before { transform: translateX(22px); }
     align-items: center;
     justify-content: center;
     z-index: 2;
+    will-change: transform;
 }
 .form-input.has-toggle { padding-right: 40px; }
