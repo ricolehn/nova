@@ -37,6 +37,7 @@
         <nav id="admin-desktop-nav" class="desktop-nav">
             <button class="nav-btn active" onclick="switchTab('overview', this)">Startseite</button>
             <button class="nav-btn" onclick="switchTab('settings', this)">Einstellungen</button>
+            <button id="btn-ai-desktop" class="nav-btn" onclick="switchTab('ai-assistant', this)" style="display:none;">KI Assistent</button>
         </nav>
 
         <div id="overview" class="tab-content active" role="tabpanel" aria-labelledby="tab-btn-overview">
@@ -253,6 +254,11 @@
                             </div>
                         </div>
 
+                        <div class="form-group" style="margin-bottom: 15px; margin-top: 15px;">
+                            <label class="form-label" for="super-admin-openai-key" style="color: var(--text-secondary);">OpenAI API Key (für KI Assistent)</label>
+                            <input type="password" id="super-admin-openai-key" class="form-input super-admin-input" placeholder="sk-...">
+                        </div>
+
                         <button class="btn btn-block super-admin-btn" style="margin-top: 15px;" onclick="saveAdvancedSystemConfig()">Erweiterte System-Konfiguration speichern</button>
                     </div>
                 </div>
@@ -265,6 +271,20 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     Abmelden
                 </button>
+            </div>
+        </div>
+
+        <div id="ai-assistant" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-ai">
+            <div class="card">
+                <div class="card-header">KI Assistent</div>
+                <div class="card-body">
+                    <div id="ai-chat-log" style="height:300px; overflow-y:auto; margin-bottom:15px; background:var(--surface-alt); padding:10px; border-radius:8px;">
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="ai-question" class="form-input" placeholder="Frage zur Kasse stellen..." style="flex:1;" onkeydown="if(event.key==='Enter'){askAI()}">
+                        <button id="btn-ask-ai" class="btn btn-primary" onclick="askAI()">Fragen</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -409,6 +429,10 @@
     <button class="nav-item" onclick="switchTab('settings', this)">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         <span>Einstellungen</span>
+    </button>
+    <button id="btn-ai-mobile" class="nav-item" onclick="switchTab('ai-assistant', this)" style="display:none;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2 2 0 0 1 2 2c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2m0 4c-3.3 0-6 2.7-6 6v4h12v-4c0-3.3-2.7-6-6-6m-2 4h4m-4 4h4m-7 3v-2c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v2"></path></svg>
+        <span>KI</span>
     </button>
 </nav>
 

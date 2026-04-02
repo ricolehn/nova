@@ -1130,6 +1130,13 @@ async function loadData() {
         if(userBottomNav) userBottomNav.style.display = 'none';
 
         document.getElementById('settings').style.display = '';
+
+        if (config.aiEnabled && currentUser.superAdmin) {
+            const btnDesktop = document.getElementById('btn-ai-desktop');
+            const btnMobile = document.getElementById('btn-ai-mobile');
+            if (btnDesktop) btnDesktop.style.display = '';
+            if (btnMobile) btnMobile.style.display = 'flex';
+        }
     }
 
     // Normalize people data
@@ -2767,6 +2774,7 @@ async function loadAdvancedSystemConfig() {
         document.getElementById('super-admin-smtp-secure').checked = !!data.smtp?.secure;
         document.getElementById('super-admin-smtp-user').value = data.smtp?.user || '';
         document.getElementById('super-admin-smtp-pass').value = data.smtp?.pass || '';
+        document.getElementById('super-admin-openai-key').value = data.openaiApiKey || '';
         advancedConfigLoaded = true;
     } catch (err) {
         console.error('Fehler beim Laden der erweiterten Konfiguration:', err);
@@ -2784,7 +2792,8 @@ window.saveAdvancedSystemConfig = async () => {
 
         const payload = {
             appName,
-            smtp: null
+            smtp: null,
+            openaiApiKey: document.getElementById('super-admin-openai-key').value.trim()
         };
 
         const smtpHost = document.getElementById('super-admin-smtp-host').value.trim();
@@ -3636,4 +3645,39 @@ window.togglePassword = function(inputId, btn) {
     const eye = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
     btn.innerHTML = isPassword ? eyeOff : eye;
     btn.setAttribute('aria-label', isPassword ? 'Passwort verbergen' : 'Passwort anzeigen');
+};
+
+window.askAI = async () => {
+    const input = document.getElementById('ai-question');
+    const question = input.value.trim();
+    if (!question) return;
+
+    const log = document.getElementById('ai-chat-log');
+    log.innerHTML += `<div style="margin-bottom:10px; text-align:right;"><span style="background:var(--primary); color:white; padding:8px 12px; border-radius:12px; display:inline-block;">${escapeHtml(question)}</span></div>`;
+    input.value = '';
+
+    // Vanilla JS equivalent for setting loading state
+    const btn = document.getElementById('btn-ask-ai');
+    const originalText = btn.innerText;
+    btn.innerText = '...';
+    btn.disabled = true;
+
+    try {
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/ai/ask`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+        });
+
+        if (!response.ok) throw new Error('API Fehler');
+        const data = await response.json();
+
+        log.innerHTML += `<div style="margin-bottom:10px; text-align:left;"><span style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:12px; display:inline-block;">${escapeHtml(data.answer)}</span></div>`;
+    } catch (e) {
+        log.innerHTML += `<div style="margin-bottom:10px; text-align:left;"><span style="background:rgba(239, 68, 68, 0.1); color:var(--danger); padding:8px 12px; border-radius:12px; display:inline-block;">Fehler: ${e.message}</span></div>`;
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+        log.scrollTop = log.scrollHeight;
+    }
 };

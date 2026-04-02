@@ -175,7 +175,8 @@ app.get('/assets/config.js', async (req, res) => {
   const jsConfig = `
 export const config = {
     apiBaseUrl: window.location.origin + "/api",
-    appName: ${JSON.stringify(appConfig.appName)}
+    appName: ${JSON.stringify(appConfig.appName)},
+    aiEnabled: ${!!appConfig.openaiApiKey}
 };
 `;
   res.setHeader('Content-Type', 'application/javascript');
@@ -861,6 +862,52 @@ app.get('/api/transactions', dbRateLimit, verifyToken, async (req, res) => {
   }
 });
 
+app.post('/api/ai/ask', protectedActionRateLimit, verifyToken, verifySuperAdmin, async (req, res) => {
+  try {
+    if (!appConfig.openaiApiKey) {
+      return res.status(400).json({ error: 'OpenAI API key not configured' });
+    }
+    const question = String(req.body?.question || '').trim();
+    if (!question) {
+      return res.status(400).json({ error: 'Missing question' });
+    }
+
+    const people = await listPeopleRecords(appConfig);
+    const expensesRecord = await listExpenseRecords(appConfig);
+    const expenses = objectFromRecords(expensesRecord, 'expenseKey', (r) => r.data);
+    const donationsRecord = await getStateRecord(appConfig, 'donations');
+    const donations = donationsRecord?.value || {};
+    const stats = await aggregateStats(appConfig);
+
+    const dataContext = JSON.stringify({ stats, people, expenses, donations });
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${appConfig.openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant that analyzes financial data from a database. Base your answers strictly on the provided JSON data context.' },
+          { role: 'user', content: `Context: ${dataContext}\n\nQuestion: ${question}` }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const data = await response.json();
+    res.json({ answer: data.choices[0].message.content });
+  } catch (error) {
+    console.error('AI Ask Error:', error);
+    res.status(500).json({ error: 'Failed to process AI request' });
+  }
+});
+
 app.post('/api/db/transaction', dbRateLimit, verifyToken, async (req, res) => {
   try {
     const targetPath = normalizeDataPath(req.body?.path);
@@ -918,6 +965,7 @@ app.get('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
   res.json({
     appName: appConfig.appName,
     smtp: appConfig.smtp || null,
+    openaiApiKey: appConfig.openaiApiKey || null,
     usesPocketBase: true
   });
 });
@@ -928,6 +976,8 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
     if (!appName) {
       return res.status(400).json({ error: 'Missing required config fields' });
     }
+
+    const openaiApiKey = String(req.body?.openaiApiKey || '').trim();
 
     let smtp = null;
     if (req.body?.smtp && typeof req.body.smtp === 'object' && String(req.body.smtp.host || '').trim()) {
@@ -943,7 +993,8 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
     const newConfig = {
       ...appConfig,
       appName,
-      smtp
+      smtp,
+      openaiApiKey
     };
 
     // ⚡ Bolt Performance Optimization:
