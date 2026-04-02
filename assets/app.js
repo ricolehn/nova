@@ -3589,7 +3589,8 @@ window.showTransactionDetails = async function(id, type) {
 };
 
 function updateAiNavigation() {
-    if (isAdminUser() && config.aiEnabled) {
+    const isAnyAdmin = !!(currentUser && (currentUser.admin || currentUser.superAdmin));
+    if (isAnyAdmin && config.aiEnabled) {
         document.getElementById('nav-btn-ai').style.display = '';
         document.getElementById('nav-item-ai').style.display = 'flex';
         document.getElementById('nav-spacer-ai').style.display = 'flex';
