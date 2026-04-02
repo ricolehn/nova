@@ -428,11 +428,20 @@ function getAllowedAiBaseUrls() {
 function resolveAiBaseUrl(rawBaseUrl) {
   const normalizedRequestedUrl = validateAiBaseUrl(rawBaseUrl);
   const allowedBaseUrls = getAllowedAiBaseUrls();
-  const allowedUrl = allowedBaseUrls.find((url) => url === normalizedRequestedUrl);
+  const allowedUrl = allowedBaseUrls.find((url) => {
+    if (url === normalizedRequestedUrl) return true;
+    return normalizedRequestedUrl === `${url}/v1`;
+  });
   if (!allowedUrl) {
     throw new Error('AI base URL is not allowed');
   }
-  return allowedUrl;
+  return normalizedRequestedUrl;
+}
+
+function buildAiChatCompletionsUrl(baseUrl) {
+  const normalizedBaseUrl = String(baseUrl || '').replace(/\/+$/, '');
+  const withoutVersionSuffix = normalizedBaseUrl.replace(/\/v1$/i, '');
+  return `${withoutVersionSuffix}/v1/chat/completions`;
 }
 
 async function saveOptionalLogo(logoSvg) {
@@ -1027,7 +1036,7 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
     const apiKey = appConfig.ai.apiKey;
     const model = appConfig.ai.model;
 
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+    const response = await fetch(buildAiChatCompletionsUrl(baseUrl), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1103,6 +1112,17 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
     res.json({ success: true });
   } catch (error) {
     console.error('Failed to update system config:', error);
+    const validationMessages = new Set([
+      'Missing required config fields',
+      'AI base URL is required when AI is enabled',
+      'AI base URL is invalid',
+      'AI base URL must use HTTP or HTTPS protocol',
+      'AI base URL must not include credentials',
+      'AI base URL is not allowed'
+    ]);
+    if (validationMessages.has(error?.message)) {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Failed to update system config' });
   }
 });
