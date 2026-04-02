@@ -58,6 +58,11 @@ const configFile = path.join(dataDir, 'config.json');
 const resolvedFrontendDir = resolveFrontendDirectory();
 const bundledChurchLogoFile = path.join(resolvedFrontendDir, 'assets', 'church-logo.svg');
 const churchLogoFile = path.join(dataDir, 'church-logo.svg');
+const DEFAULT_ALLOWED_AI_BASE_URLS = [
+  'https://api.openai.com',
+  'https://openrouter.ai/api',
+  'http://host.docker.internal:11434'
+];
 
 let appConfig = null;
 let setupMode = true;
@@ -400,14 +405,34 @@ function validateAiBaseUrl(rawBaseUrl) {
   }
 
   if (!['http:', 'https:'].includes(parsed.protocol)) {
-    throw new Error('AI base URL must use http or https');
+    throw new Error('AI base URL must use HTTP or HTTPS protocol');
   }
 
   if (parsed.username || parsed.password) {
     throw new Error('AI base URL must not include credentials');
   }
 
-  return parsed.origin;
+  const normalizedPath = parsed.pathname && parsed.pathname !== '/' ? parsed.pathname.replace(/\/+$/, '') : '';
+  return `${parsed.origin}${normalizedPath}`;
+}
+
+function getAllowedAiBaseUrls() {
+  const configured = String(process.env.AI_ALLOWED_BASE_URLS || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const candidates = configured.length > 0 ? configured : DEFAULT_ALLOWED_AI_BASE_URLS;
+  return candidates.map(validateAiBaseUrl);
+}
+
+function resolveAiBaseUrl(rawBaseUrl) {
+  const normalizedRequestedUrl = validateAiBaseUrl(rawBaseUrl);
+  const allowedBaseUrls = getAllowedAiBaseUrls();
+  const allowedUrl = allowedBaseUrls.find((url) => url === normalizedRequestedUrl);
+  if (!allowedUrl) {
+    throw new Error('AI base URL is not allowed');
+  }
+  return allowedUrl;
 }
 
 async function saveOptionalLogo(logoSvg) {
@@ -998,7 +1023,7 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
 
     const apiMessages = [systemMessage, ...messages];
 
-    const baseUrl = appConfig.ai.baseUrl;
+    const baseUrl = resolveAiBaseUrl(appConfig.ai.baseUrl);
     const apiKey = appConfig.ai.apiKey;
     const model = appConfig.ai.model;
 
@@ -1050,9 +1075,10 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
     if (req.body?.ai && typeof req.body.ai === 'object') {
       const enabled = req.body.ai.enabled === true;
       const baseUrlInput = String(req.body.ai.baseUrl || '').trim();
+      const normalizedBaseUrl = baseUrlInput ? resolveAiBaseUrl(baseUrlInput) : '';
       ai = {
         enabled,
-        baseUrl: enabled ? validateAiBaseUrl(baseUrlInput) : baseUrlInput,
+        baseUrl: enabled ? normalizedBaseUrl : '',
         apiKey: String(req.body.ai.apiKey || '').trim(),
         model: String(req.body.ai.model || '').trim()
       };
