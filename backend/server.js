@@ -1076,6 +1076,9 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
       const enabled = req.body.ai.enabled === true;
       const baseUrlInput = String(req.body.ai.baseUrl || '').trim();
       const normalizedBaseUrl = baseUrlInput ? resolveAiBaseUrl(baseUrlInput) : '';
+      if (enabled && !normalizedBaseUrl) {
+        throw new Error('AI base URL is required when AI is enabled');
+      }
       ai = {
         enabled,
         baseUrl: enabled ? normalizedBaseUrl : '',
