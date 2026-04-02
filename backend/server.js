@@ -386,6 +386,30 @@ function validateSetupPayload(body = {}) {
   return { appName, smtp, logoSvg };
 }
 
+function validateAiBaseUrl(rawBaseUrl) {
+  const trimmed = String(rawBaseUrl || '').trim();
+  if (!trimmed) {
+    throw new Error('AI base URL is required when AI is enabled');
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error('AI base URL is invalid');
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('AI base URL must use http or https');
+  }
+
+  if (parsed.username || parsed.password) {
+    throw new Error('AI base URL must not include credentials');
+  }
+
+  return parsed.origin;
+}
+
 async function saveOptionalLogo(logoSvg) {
   if (!logoSvg) {
     return;
@@ -1024,9 +1048,11 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
 
     let ai = null;
     if (req.body?.ai && typeof req.body.ai === 'object') {
+      const enabled = req.body.ai.enabled === true;
+      const baseUrlInput = String(req.body.ai.baseUrl || '').trim();
       ai = {
-        enabled: req.body.ai.enabled === true,
-        baseUrl: String(req.body.ai.baseUrl || '').trim(),
+        enabled,
+        baseUrl: enabled ? validateAiBaseUrl(baseUrlInput) : baseUrlInput,
         apiKey: String(req.body.ai.apiKey || '').trim(),
         model: String(req.body.ai.model || '').trim()
       };
