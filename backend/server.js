@@ -440,7 +440,7 @@ function resolveAiBaseUrl(rawBaseUrl) {
   if (!allowedUrl) {
     throw new Error('AI base URL is not allowed');
   }
-  return normalizedRequestedUrl;
+  return allowedUrl;
 }
 
 function buildAiChatCompletionsUrl(baseUrl) {
