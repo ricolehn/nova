@@ -978,11 +978,11 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
     const apiKey = appConfig.ai.apiKey;
     const model = appConfig.ai.model;
 
-    const response = await fetch(\`\${baseUrl}/v1/chat/completions\`, {
+    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': \`Bearer \${apiKey}\`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: model,
