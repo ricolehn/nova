@@ -967,9 +967,9 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
 
     const systemMessage = {
       role: 'system',
-      content: \`Du bist ein hilfreicher KI-Assistent für das System 'Nova'. Du hast reinen Lesezugriff auf die aktuelle Datenbank-Zusammenfassung:
-\${JSON.stringify(dbContext, null, 2)}
-Bitte antworte kurz, prägnant und hilfreich auf Fragen zum System oder den Daten.\`
+      content: `Du bist ein hilfreicher KI-Assistent für das System 'Nova'. Du hast reinen Lesezugriff auf die aktuelle Datenbank-Zusammenfassung:
+      ${JSON.stringify(dbContext, null, 2)}
+      Bitte antworte kurz, prägnant und hilfreich auf Fragen zum System oder den Daten.`
     };
 
     const apiMessages = [systemMessage, ...messages];
