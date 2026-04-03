@@ -511,10 +511,12 @@ function isOwnFullNameMatch(user, name) {
 }
 
 function objectFromRecords(records, keyField, valueMapper) {
-  return records.reduce((acc, record) => {
+  const acc = {};
+  for (let i = 0, len = records.length; i < len; i++) {
+    const record = records[i];
     acc[record[keyField]] = valueMapper(record);
-    return acc;
-  }, {});
+  }
+  return acc;
 }
 
 async function readLogicalPath(targetPath, query, user) {
