@@ -92,6 +92,15 @@ function safeList(val) {
     return Object.values(val);
 }
 
+// ⚡ Bolt: Fast sum helper for payments, replacing expensive Array.reduce
+function calculateTotalPaidList(payments) {
+    let sum = 0;
+    for (let i = 0, len = payments.length; i < len; i++) {
+        sum += parseFloat(payments[i].amount || 0);
+    }
+    return sum;
+}
+
 function isSuperAdminUser() {
     return !!(currentUser && currentUser.superAdmin);
 }
@@ -122,7 +131,7 @@ function preprocessPerson(person) {
     person.payments = safeList(person.payments);
 
     // ⚡ Bolt: Ensure totalPaid is accurately cached in memory
-    person.totalPaid = person.payments.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0);
+    person.totalPaid = calculateTotalPaidList(person.payments);
 
     // Pre-process history for faster lookup (avoid Date creation in loops)
     // ⚡ Bolt: Fast string comparison for ISO dates
@@ -1141,7 +1150,7 @@ async function loadData() {
         people.forEach(person => {
             const result = checkAndExecuteStandingOrders(person);
             if (result) {
-                const newTotal = safeList(result.payments).reduce((acc, p) => acc + parseFloat(p.amount), 0);
+                const newTotal = calculateTotalPaidList(safeList(result.payments));
                 // Update in DB
                 updates.push(update(ref(db, 'people/' + person.id), {
                     payments: result.payments,
@@ -1612,7 +1621,7 @@ window.saveEditedPayment = async () => {
                     if (i !== currentEditedPayment.targetIndex) return entry;
                     return { ...entry, amount, date, description };
                 });
-                const totalPaid = nextPayments.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0);
+                const totalPaid = calculateTotalPaidList(nextPayments);
                 return { ...draft, payments: nextPayments, totalPaid };
             });
             showToast('Zahlung aktualisiert');
@@ -2570,7 +2579,7 @@ window.saveStandingOrderEnd = async () => {
                  standingOrders = standingOrders.filter(so => String(so.id) !== String(editingSoId));
             }
 
-            const totalPaid = payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
+            const totalPaid = calculateTotalPaidList(payments);
             return { ...person, standingOrders, payments, totalPaid };
         });
 

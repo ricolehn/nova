@@ -504,10 +504,13 @@ function toFiniteNumber(value) {
 }
 
 function calculateTotalPaid(payments) {
-  return normalizeRecordListInput(payments).reduce((sum, payment) => {
-    const amount = Number(payment?.amount);
-    return Number.isFinite(amount) ? sum + amount : sum;
-  }, 0);
+  const list = normalizeRecordListInput(payments);
+  let sum = 0;
+  for (let i = 0, len = list.length; i < len; i++) {
+    const amount = Number(list[i]?.amount);
+    if (Number.isFinite(amount)) sum += amount;
+  }
+  return sum;
 }
 
 function stableSerialize(value) {
