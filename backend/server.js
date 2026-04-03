@@ -43,6 +43,7 @@ const {
 } = require('./pocketbase');
 
 const app = express();
+app.disable('x-powered-by');
 app.set('trust proxy', resolveTrustProxySetting());
 
 const dataDir = resolveDataDirectory();
