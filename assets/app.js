@@ -20,6 +20,8 @@ let advancedConfigAppName = null;
 let superAdminPaymentRows = [];
 let superAdminUserRows = [];
 let currentEditedPayment = null;
+let aiEnabled = false;
+let aiChatHistory = [];
 
 // ⚡ Bolt: Global variable to handle paginated display of historical transactions
 let transactionPage = 1;
@@ -1139,6 +1141,8 @@ async function loadData() {
         if(userBottomNav) userBottomNav.style.display = 'none';
 
         document.getElementById('settings').style.display = '';
+
+        checkAiStatus();
     }
 
     // Normalize people data
@@ -2776,6 +2780,12 @@ async function loadAdvancedSystemConfig() {
         document.getElementById('super-admin-smtp-secure').checked = !!data.smtp?.secure;
         document.getElementById('super-admin-smtp-user').value = data.smtp?.user || '';
         document.getElementById('super-admin-smtp-pass').value = data.smtp?.pass || '';
+        if (data.ai) {
+            document.getElementById('super-admin-ai-enabled').checked = !!data.ai.enabled;
+            document.getElementById('super-admin-ai-base-url').value = data.ai.baseUrl || '';
+            document.getElementById('super-admin-ai-api-key').value = data.ai.apiKey || '';
+            document.getElementById('super-admin-ai-model').value = data.ai.model || '';
+        }
         advancedConfigLoaded = true;
     } catch (err) {
         console.error('Fehler beim Laden der erweiterten Konfiguration:', err);
@@ -2793,7 +2803,13 @@ window.saveAdvancedSystemConfig = async () => {
 
         const payload = {
             appName,
-            smtp: null
+            smtp: null,
+            ai: {
+                enabled: document.getElementById('super-admin-ai-enabled').checked,
+                apiKey: document.getElementById('super-admin-ai-api-key').value,
+                baseUrl: document.getElementById('super-admin-ai-base-url').value.trim() || 'https://api.openai.com/v1',
+                model: document.getElementById('super-admin-ai-model').value.trim() || 'gpt-4o'
+            }
         };
 
         const smtpHost = document.getElementById('super-admin-smtp-host').value.trim();
@@ -2829,9 +2845,93 @@ window.saveAdvancedSystemConfig = async () => {
         }
         advancedConfigAppName = appName;
         showToast('System-Konfiguration gespeichert');
+        await checkAiStatus();
     } catch (err) {
         console.error('Fehler beim Speichern der erweiterten Konfiguration:', err);
         alert(`Erweiterte Konfiguration konnte nicht gespeichert werden: ${err.message || 'Unbekannter Fehler'}`);
+    }
+};
+
+async function checkAiStatus() {
+    if (!currentUser?.admin) return;
+    try {
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/admin/ai-status`);
+        if (!response.ok) return;
+        const data = await response.json();
+        aiEnabled = !!data.enabled;
+    } catch (err) {
+        console.error('AI status check failed:', err);
+        aiEnabled = false;
+    }
+    const desktopBtn = document.getElementById('ai-chat-nav-btn');
+    const fabBtn = document.getElementById('ai-chat-fab-btn');
+    const display = aiEnabled ? '' : 'none';
+    if (desktopBtn) desktopBtn.style.display = display;
+    if (fabBtn) fabBtn.style.display = aiEnabled ? 'flex' : 'none';
+}
+
+function renderAiMessages() {
+    const container = document.getElementById('ai-chat-messages');
+    if (!container) return;
+    const emptyEl = document.getElementById('ai-chat-empty');
+
+    if (aiChatHistory.length === 0) {
+        if (emptyEl) emptyEl.style.display = '';
+        return;
+    }
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    const existingBubbles = container.querySelectorAll('.ai-bubble');
+    existingBubbles.forEach(el => el.remove());
+
+    aiChatHistory.forEach(msg => {
+        const div = document.createElement('div');
+        const isUser = msg.role === 'user';
+        div.className = `ai-bubble ${isUser ? 'ai-bubble-user' : 'ai-bubble-assistant'}`;
+        div.textContent = msg.content;
+        container.appendChild(div);
+    });
+
+    container.scrollTop = container.scrollHeight;
+}
+
+window.sendAiMessage = async () => {
+    const input = document.getElementById('ai-chat-input');
+    const sendBtn = document.getElementById('ai-chat-send-btn');
+    if (!input || !sendBtn) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    input.disabled = true;
+    sendBtn.disabled = true;
+
+    aiChatHistory.push({ role: 'user', content: text });
+    renderAiMessages();
+
+    try {
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/admin/ai-chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: aiChatHistory })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        aiChatHistory.push({ role: 'assistant', content: data.reply || '' });
+        renderAiMessages();
+    } catch (err) {
+        console.error('AI chat error:', err);
+        showToast(`AI Fehler: ${err.message || 'Unbekannter Fehler'}`, 'error');
+    } finally {
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.focus();
     }
 };
 

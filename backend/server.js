@@ -42,6 +42,8 @@ const {
   upsertRequestRecord
 } = require('./pocketbase');
 
+const AI_API_KEY_PLACEHOLDER = '••••••••';
+
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', resolveTrustProxySetting());
@@ -918,9 +920,16 @@ app.get('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
   if (!appConfig) {
     return res.status(404).json({ error: 'No config found' });
   }
+  const ai = appConfig.ai ? {
+    enabled: !!appConfig.ai.enabled,
+    apiKey: appConfig.ai.apiKey ? AI_API_KEY_PLACEHOLDER : '',
+    baseUrl: appConfig.ai.baseUrl || '',
+    model: appConfig.ai.model || ''
+  } : null;
   res.json({
     appName: appConfig.appName,
     smtp: appConfig.smtp || null,
+    ai,
     usesPocketBase: true
   });
 });
@@ -943,10 +952,22 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
       };
     }
 
+    let ai = appConfig.ai || null;
+    if (req.body?.ai && typeof req.body.ai === 'object') {
+      const incomingKey = String(req.body.ai.apiKey || '').trim();
+      ai = {
+        enabled: req.body.ai.enabled === true,
+        apiKey: incomingKey === AI_API_KEY_PLACEHOLDER ? (appConfig.ai?.apiKey || '') : incomingKey,
+        baseUrl: String(req.body.ai.baseUrl || '').trim() || 'https://api.openai.com/v1',
+        model: String(req.body.ai.model || '').trim() || 'gpt-4o'
+      };
+    }
+
     const newConfig = {
       ...appConfig,
       appName,
-      smtp
+      smtp,
+      ai
     };
 
     // ⚡ Bolt Performance Optimization:
@@ -959,6 +980,102 @@ app.put('/api/admin/system-config', verifyToken, verifySuperAdmin, async (req, r
   } catch (error) {
     console.error('Failed to update system config:', error);
     res.status(500).json({ error: 'Failed to update system config' });
+  }
+});
+
+app.get('/api/admin/ai-status', verifyToken, verifyAdmin, (req, res) => {
+  res.json({ enabled: !!(appConfig?.ai?.enabled && appConfig?.ai?.apiKey) });
+});
+
+app.post('/api/admin/ai-chat', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    if (!appConfig?.ai?.enabled || !appConfig?.ai?.apiKey) {
+      return res.status(503).json({ error: 'AI is not configured or disabled' });
+    }
+
+    const messages = req.body?.messages;
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: 'Missing or invalid messages array' });
+    }
+
+    const rawBaseUrl = (appConfig.ai.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+
+    // Validate that the configured baseUrl is a valid http/https URL to prevent SSRF
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(`${rawBaseUrl}/chat/completions`);
+    } catch {
+      return res.status(500).json({ error: 'Invalid AI base URL configured' });
+    }
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return res.status(500).json({ error: 'Invalid AI base URL configured' });
+    }
+    const apiEndpoint = parsedUrl.toString();
+
+    const model = appConfig.ai.model || 'gpt-4o';
+
+    // Fetch full DB snapshot for context
+    const [allUsers, allPeople, allExpenses, allRequests, settingsRecord, donationsRecord] = await Promise.all([
+      listUserRecords(appConfig),
+      listPeopleRecords(appConfig),
+      listExpenseRecords(appConfig),
+      listRequestRecords(appConfig),
+      getStateRecord(appConfig, 'settings'),
+      getStateRecord(appConfig, 'donations')
+    ]);
+
+    const dbSnapshot = {
+      settings: settingsRecord?.value || DEFAULT_SETTINGS,
+      users: allUsers.map(u => ({
+        uid: u.id,
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+        email: u.email,
+        admin: u.admin,
+        superAdmin: u.superAdmin
+      })),
+      people: allPeople.map(p => p.data || p),
+      expenses: allExpenses.map(e => e.data || e),
+      requests: allRequests,
+      donations: donationsRecord?.value ? Object.values(donationsRecord.value) : []
+    };
+
+    const systemPrompt = `You are an AI assistant for the Nova church management application. You have full read access to the database. Here is the current database snapshot:\n\n${JSON.stringify(dbSnapshot, null, 2)}\n\nAnswer questions about the data accurately. Be concise and helpful. When showing monetary values use the € currency symbol.`;
+
+    const payload = {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages.map(m => ({ role: String(m.role), content: String(m.content) }))
+      ]
+    };
+
+    let aiResponse;
+    try {
+      aiResponse = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${appConfig.ai.apiKey}`
+        },
+        body: JSON.stringify(payload)
+      });
+    } catch (fetchError) {
+      console.error('AI API connection error:', fetchError);
+      return res.status(502).json({ error: 'Could not connect to AI API', detail: fetchError.message });
+    }
+
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text().catch(() => '');
+      console.error('AI API error:', aiResponse.status, errText);
+      return res.status(502).json({ error: 'AI API request failed', detail: errText });
+    }
+
+    const aiData = await aiResponse.json();
+    const reply = aiData.choices?.[0]?.message?.content || '';
+    res.json({ reply });
+  } catch (error) {
+    console.error('AI chat error:', error);
+    res.status(500).json({ error: 'AI chat request failed' });
   }
 });
 
