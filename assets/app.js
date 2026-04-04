@@ -2919,7 +2919,7 @@ window.sendAiMessage = async () => {
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error || `HTTP ${response.status}`);
+            throw new Error(errData.detail || errData.error || `HTTP ${response.status}`);
         }
 
         const data = await response.json();
