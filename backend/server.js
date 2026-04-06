@@ -475,6 +475,8 @@ app.post('/api/auth/register', authRateLimit, async (req, res) => {
       return res.status(403).json({ error: 'Ungültiger Registrierungscode.' });
     }
     const auth = await registerUser({ email, password, firstName, lastName });
+    const newCode = String(Math.floor(100000 + Math.random() * 900000));
+    await upsertStateValue(appConfig, 'system', { ...system, inviteCode: newCode });
     setAuthCookie(res, auth.token);
     res.json(auth);
   } catch (error) {
