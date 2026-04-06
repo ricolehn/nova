@@ -2,6 +2,8 @@ function getTodayStr() {
     return new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 }
 
+const AMOUNT_COMPARISON_EPSILON = 0.0001;
+
 function findStatusInHistory(history, idx, currentTotal) {
     let newIdx = idx;
     let status = null;
@@ -321,7 +323,7 @@ function hasStandingOrderPaidThisMonth(person, standingOrder, today) {
         }
 
         const isAutoLike = payment.isAuto === true || String(payment.description || '').includes('(Auto)');
-        const amountMatches = Math.abs(parseFloat(payment.amount || 0) - soAmount) < 0.0001;
+        const amountMatches = Math.abs(parseFloat(payment.amount || 0) - soAmount) < AMOUNT_COMPARISON_EPSILON;
         return isAutoLike && amountMatches;
     });
 }
