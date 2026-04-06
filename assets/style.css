@@ -77,6 +77,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     margin-bottom: 10px;
     cursor: pointer;
     transition: transform 0.2s;
+    will-change: transform;
 }
 .hero-card:active { transform: scale(0.98); }
 .hero-card:focus { outline: none; }
@@ -242,6 +243,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     transition: transform 0.3s ease;
     margin-left: 8px;
     display: inline-block;
+    will-change: transform;
 }
 .person-item.active .chevron {
     transform: rotate(90deg);
@@ -388,6 +390,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     align-items: center;
     justify-content: center;
     transition: 0.3s;
+    will-change: transform;
 }
 .desktop-fab:active { transform: scale(0.95); }
 .desktop-fab.active { transform: rotate(45deg); }
@@ -448,6 +451,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     box-shadow: none;
     cursor: pointer; transition: 0.3s;
     position: relative; z-index: 1001;
+    will-change: transform;
 }
 .nav-fab:active { transform: scale(0.95); }
 .nav-fab.active { transform: rotate(45deg); }
@@ -479,6 +483,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     opacity: 0;
     transform: translateY(15px) scale(0.95);
     transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform, opacity;
 }
 .fab-menu.show .fab-item {
     opacity: 1;
@@ -494,6 +499,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     background: rgba(0,0,0,0.5);
     display: flex; align-items: center; justify-content: center;
     z-index: 1000; opacity: 0; pointer-events: none; transition: 0.25s;
+    will-change: opacity, backdrop-filter;
 }
 .modal.show { opacity: 1; pointer-events: all; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
 .modal-content {
@@ -502,6 +508,7 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     transform: scale(0.95); transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     max-height: 85vh; overflow-y: auto; border: 1px solid var(--border);
     scrollbar-gutter: stable;
+    will-change: transform, opacity;
 }
 .modal.show .modal-content { transform: scale(1); }
 
@@ -1025,6 +1032,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     max-width: 350px;
     transform: translateX(30px) scale(0.95); opacity: 0; pointer-events: none;
     transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform, opacity;
 }
 .toast.show { transform: translateX(0) scale(1); opacity: 1; pointer-events: all; }
 .toast-success { border-left: 5px solid var(--success); }
