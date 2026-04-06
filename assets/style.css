@@ -410,41 +410,15 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.5);
 }
 
-[data-theme="dark"] #admin-bottom-nav {
-    box-shadow: none;
-}
-
-#admin-bottom-nav {
-    background-color: transparent;
-    border-top: none;
-    box-shadow: none;
-}
-
-#admin-bottom-nav::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAwIDYwIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIj48cGF0aCBkPSJNIDAgMC41IEggOTUwLjAwIEEgMTIgMTIgMCAwIDEgOTYyLjAwIDEyLjUwIEEgMzggMzggMCAwIDAgMTAzOC4wMCAxMi41MCBBIDEyIDEyIDAgMCAxIDEwNTAuMDAgMC41IEggMjAwMCBWIDYwIEggMCBaIiBmaWxsPSJ3aGl0ZSIgLz48cGF0aCBkPSJNIDAgMC41IEggOTUwLjAwIEEgMTIgMTIgMCAwIDEgOTYyLjAwIDEyLjUwIEEgMzggMzggMCAwIDAgMTAzOC4wMCAxMi41MCBBIDEyIDEyIDAgMCAxIDEwNTAuMDAgMC41IEggMjAwMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZTJlOGYwIiBzdHJva2Utd2lkdGg9IjEiIC8+PC9zdmc+");
-    background-position: center top;
-    background-repeat: no-repeat;
-    background-size: 2000px 60px;
-    z-index: -1;
-    filter: drop-shadow(0 -5px 5px rgba(0,0,0,0.15));
-}
-
-[data-theme="dark"] #admin-bottom-nav::before {
-    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAwIDYwIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIj48cGF0aCBkPSJNIDAgMC41IEggOTUwLjAwIEEgMTIgMTIgMCAwIDEgOTYyLjAwIDEyLjUwIEEgMzggMzggMCAwIDAgMTAzOC4wMCAxMi41MCBBIDEyIDEyIDAgMCAxIDEwNTAuMDAgMC41IEggMjAwMCBWIDYwIEggMCBaIiBmaWxsPSIjMWUyOTNiIiAvPjxwYXRoIGQ9Ik0gMCAwLjUgSCA5NTAuMDAgQSAxMiAxMiAwIDAgMSA5NjIuMDAgMTIuNTAgQSAzOCAzOCAwIDAgMCAxMDM4LjAwIDEyLjUwIEEgMTIgMTIgMCAwIDEgMTA1MC4wMCAwLjUgSCAyMDAwIiBmaWxsPSJub25lIiBzdHJva2U9IiMzMzQxNTUiIHN0cm9rZS13aWR0aD0iMSIgLz48L3N2Zz4=");
-}
-
 .nav-item {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
     background: none; border: none; cursor: pointer;
     color: var(--text-secondary); font-size: 0.7rem; font-weight: 600;
     gap: 2px; padding: 4px;
 }
-.nav-item svg { width: 20px; height: 20px; opacity: 0.7; transition: 0.2s; }
-.nav-item.active { color: var(--primary); }
-.nav-item.active svg { opacity: 1; stroke: var(--primary); }
+.nav-item svg { width: 24px; height: 24px; opacity: 0.7; transition: 0.2s; }
+.nav-item.active { color: var(--secondary); }
+.nav-item.active svg { opacity: 1; stroke: var(--secondary); }
 
 .nav-center {
     position: absolute; width: 64px; height: 64px;
