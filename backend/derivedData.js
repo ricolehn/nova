@@ -339,6 +339,7 @@ function calculateAnticipatedStandingOrderPayment(person, today = new Date()) {
     const todayStr = getTodayStr();
     const activeSOs = getActiveStandingOrders(person, todayStr);
     let anticipated = 0;
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
     for (const so of activeSOs) {
         if (hasStandingOrderPaidThisMonth(person, so, today)) {
@@ -351,7 +352,7 @@ function calculateAnticipatedStandingOrderPayment(person, today = new Date()) {
         const dueDate = new Date(today.getFullYear(), today.getMonth(), dueDay);
 
         // Grace period only for upcoming (or today) executions in the current month.
-        if (dueDate >= new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+        if (dueDate >= todayStart) {
             anticipated += parseFloat(so.amount || 0);
         }
     }
