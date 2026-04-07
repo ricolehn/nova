@@ -47,7 +47,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
 body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; transition: background-color 0.3s ease; }
 
-.container { max-width: 800px; margin: 0 auto; padding: 20px; padding-bottom: 100px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.container { max-width: 800px; margin: 0 auto; padding: 20px; padding-bottom: 100px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: none; }
 
 .app-layout {
     position: relative;
