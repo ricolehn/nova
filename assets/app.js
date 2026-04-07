@@ -264,7 +264,7 @@ window.toggleFab = function() {
     menu.classList.toggle('show');
     const isExpanded = menu.classList.contains('show');
 
-    const fabs = document.querySelectorAll('.nav-fab, .desktop-fab');
+    const fabs = document.querySelectorAll('.nav-fab, .desktop-fab, .mobile-fab');
     fabs.forEach(fab => {
         if (isExpanded) {
             fab.classList.add('active');
