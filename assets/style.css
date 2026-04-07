@@ -381,20 +381,30 @@ body { background-color: var(--bg); color: var(--text); min-height: 100vh; paddi
     right: 30px;
     width: 60px;
     height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #06b6d4 0%, #10b981 100%);
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     border: none;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     cursor: pointer;
     align-items: center;
     justify-content: center;
-    transition: 0.3s;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform;
 }
 .desktop-fab:active { transform: scale(0.95); }
-.desktop-fab.active { transform: rotate(45deg); }
-.desktop-fab svg { width: 32px; height: 32px; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.desktop-fab.active svg { transform: rotate(45deg); }
+.desktop-fab svg {
+    width: 32px;
+    height: 32px;
+    stroke: white;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+}
 
 /* --- Bottom Navigation --- */
 .bottom-nav {
