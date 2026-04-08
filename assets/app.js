@@ -2673,14 +2673,20 @@ window.sendStatusEmail = async (personId) => {
     const subject = 'Dein aktueller Kassenstatus - Nova';
     const text = `Hallo ${person.name},\n\ndein aktueller Status ist: ${readableStatus}.\nDu bist aktuell ${statusMeta.text}.\nOffener Betrag: ${formatCurrency(overdueAmount)} €.\n\nViele Grüße,\nDein Nova Team`;
     const html = `
-        <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
-            <h2>Hallo ${escapeHtml(person.name)},</h2>
-            <p>dein aktueller Status ist: <strong>${escapeHtml(readableStatus)}</strong>.</p>
-            <p>Du bist aktuell: <strong>${escapeHtml(statusMeta.text)}</strong>.</p>
-            ${statusMeta.isOverdue ? `<p style="color: red; font-size: 1.1em; font-weight: bold;">Offener Betrag: ${formatCurrency(overdueAmount)} €</p>` : `<p style="color: green;">Dein Konto ist ausgeglichen.</p>`}
-            <br>
-            <p>Viele Grüße,</p>
-            <p>Dein Nova Team</p>
+        <div style="font-family: sans-serif; color: #2D3748; background-color: #F8FAFC; padding: 40px 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                <div style="padding: 30px; text-align: center; border-bottom: 1px solid #E2E8F0;">
+                    <h1 style="margin: 0; color: #14B8A6; font-size: 24px; font-weight: 600;">Nova</h1>
+                </div>
+                <div style="padding: 40px 30px;">
+                    <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 20px; font-weight: 600; color: #1A202C;">Hallo ${escapeHtml(person.name)},</h2>
+                    <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Dein aktueller Status ist: <strong style="color: #14B8A6;">${escapeHtml(readableStatus)}</strong>.</p>
+                    <p style="margin: 0 0 25px 0; font-size: 16px; line-height: 1.5;">Du bist aktuell: <strong style="color: #4A5568;">${escapeHtml(statusMeta.text)}</strong>.</p>
+                    ${statusMeta.isOverdue ? `<div style="background-color: #FEF2F2; border-left: 4px solid #EF4444; padding: 15px; border-radius: 8px; margin-bottom: 25px;"><p style="margin: 0; color: #B91C1C; font-size: 16px; font-weight: 600;">Offener Betrag: ${formatCurrency(overdueAmount)} €</p></div>` : `<div style="background-color: #F0FDF4; border-left: 4px solid #22C55E; padding: 15px; border-radius: 8px; margin-bottom: 25px;"><p style="margin: 0; color: #15803D; font-size: 16px; font-weight: 600;">Dein Konto ist ausgeglichen.</p></div>`}
+                    <p style="margin: 0 0 5px 0; font-size: 16px; color: #4A5568;">Viele Grüße,</p>
+                    <p style="margin: 0; font-size: 16px; font-weight: 600; color: #2D3748;">Dein Nova Team</p>
+                </div>
+            </div>
         </div>
     `;
 
