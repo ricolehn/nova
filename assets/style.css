@@ -448,6 +448,7 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
 }
 .mobile-fab.active svg {
     transform: rotate(45deg);
+    stroke: white !important;
 }
 .nav-action-bg svg {
     opacity: 1 !important;
