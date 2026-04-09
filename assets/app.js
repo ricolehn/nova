@@ -28,7 +28,7 @@ function connectSSE() {
     sseConnection.addEventListener('data_update', () => {
         console.log("SSE: Data updated remotely, refreshing...");
         if (isAuthenticated) {
-            loadData();
+            loadData(true);
         }
     });
     sseConnection.onerror = () => {
@@ -987,10 +987,10 @@ function checkAndExecuteStandingOrders(person) {
 
 let requests = [];
 
-async function loadData() {
+async function loadData(silent = false) {
     // Ladebildschirm anzeigen
     const loader = document.getElementById('loading-overlay');
-    if(loader) loader.style.display = 'flex';
+    if(loader && !silent) loader.style.display = 'flex';
 
     const dbRef = ref(db);
 
@@ -1173,13 +1173,31 @@ async function loadData() {
         if (updates.length > 0) await Promise.all(updates);
     }
 
-    await renderAll();
+    if (!silent) {
+        await renderAll();
+    } else {
+        await updateActiveViews();
+    }
     } catch (err) {
         console.error("Ladefehler:", err);
         alert("Fehler beim Laden der Daten. Bitte Seite neu laden.");
     } finally {
         // Ladebildschirm ausblenden
-        if(loader) loader.style.display = 'none';
+        if(loader && !silent) loader.style.display = 'none';
+    }
+}
+
+async function updateActiveViews() {
+    if (currentUser && !currentUser.admin) {
+        renderUserView();
+    } else {
+        renderPeople();
+        await renderStats();
+        renderAdminRequests();
+        renderUnlinkedUsers();
+        if (typeof isSuperAdminUser === 'function' && isSuperAdminUser()) {
+            renderSuperAdminUserManagement();
+        }
     }
 }
 
