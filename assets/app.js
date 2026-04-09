@@ -3380,6 +3380,39 @@ async function fetchWithTimeout(resource, options = {}) {
     }
 }
 
+async function compressImage(file, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                let newName = file.name;
+                if (!newName.toLowerCase().endsWith('.jpg') && !newName.toLowerCase().endsWith('.jpeg')) {
+                    newName = newName.replace(/\.[^/.]+$/, "") + ".jpg";
+                }
+
+                canvas.toBlob(blob => {
+                    if (blob) {
+                        resolve(new File([blob], newName, { type: 'image/jpeg' }));
+                    } else {
+                        reject(new Error('Canvas to Blob failed'));
+                    }
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = error => reject(error);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
 window.uploadReceipt = async function(file, transactionName, transactionDate) {
     const user = auth.currentUser;
     if (!user) throw new Error('Not authenticated');
@@ -3409,6 +3442,16 @@ window.uploadReceipt = async function(file, transactionName, transactionDate) {
         } catch (e) {
             console.error("HEIC conversion failed:", e);
             // fallback to uploading original if conversion fails
+        }
+    }
+
+    // 1.5. Apply image compression based on size
+    if (uploadFile.type.startsWith('image/') && uploadFile.type !== 'image/gif' && uploadFile.type !== 'image/svg+xml') {
+        const sizeBytes = uploadFile.size;
+        if (sizeBytes > 2 * 1024 * 1024) {
+            try { uploadFile = await compressImage(uploadFile, 0.65); } catch (e) { console.error("Compression failed:", e); }
+        } else if (sizeBytes >= 500 * 1024) {
+            try { uploadFile = await compressImage(uploadFile, 0.75); } catch (e) { console.error("Compression failed:", e); }
         }
     }
 
