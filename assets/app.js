@@ -3369,7 +3369,9 @@ window.submitUserRequest = async () => {
 };
 
 window.generateNewCode = async () => {
-    const newCode = Math.floor(100000 + Math.random() * 900000);
+    const array = new Uint32Array(1);
+    window.crypto.getRandomValues(array);
+    const newCode = 100000 + (array[0] % 900000);
     try {
         await set(ref(db, 'system/inviteCode'), newCode);
         document.getElementById('admin-invite-code').value = newCode;

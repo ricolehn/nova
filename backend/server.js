@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const multer = require('multer');
 const cors = require('cors');
 const path = require('path');
@@ -483,7 +484,7 @@ app.post('/api/auth/register', authRateLimit, async (req, res) => {
       return res.status(403).json({ error: 'Ungültiger Registrierungscode.' });
     }
     const auth = await registerUser({ email, password, firstName, lastName });
-    const newCode = String(Math.floor(100000 + Math.random() * 900000));
+    const newCode = String(crypto.randomInt(100000, 1000000));
     await upsertStateValue(appConfig, 'system', { ...system, inviteCode: newCode });
     broadcastDataUpdate();
     setAuthCookie(res, auth.token);
