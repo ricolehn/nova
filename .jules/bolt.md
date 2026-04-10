@@ -1,3 +1,0 @@
-## 2025-02-12 - Array.prototype.reduce Performance Overhead
-**Learning:** In Node.js backend processing and high-frequency frontend aggregation, using `Array.prototype.reduce()` for hot-path data aggregations/hydrations (like mapping PocketBase records or calculating totals) over large arrays incurs a massive CPU overhead due to callback execution and accumulator manipulation, taking up to 50% longer than a traditional `for` loop.
-**Action:** Pre-allocate local variables and use classic `for` loops instead of `Array.prototype.reduce()` to minimize CPU overhead and reduce blocking execution time on large datasets.
