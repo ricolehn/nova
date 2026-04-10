@@ -521,11 +521,14 @@ function isOwnFullNameMatch(user, name) {
   return !!fullName && fullName === String(name || '').trim().toLowerCase();
 }
 
+// ⚡ Bolt: Replaced Array.reduce with a for loop to minimize callback overhead on large dataset hydration
 function objectFromRecords(records, keyField, valueMapper) {
-  return records.reduce((acc, record) => {
+  const acc = {};
+  for (let i = 0; i < records.length; i++) {
+    const record = records[i];
     acc[record[keyField]] = valueMapper(record);
-    return acc;
-  }, {});
+  }
+  return acc;
 }
 
 async function readLogicalPath(targetPath, query, user) {
