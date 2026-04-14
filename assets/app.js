@@ -3068,12 +3068,11 @@ window.sendAiMessage = async () => {
             assistantBubble.textContent = `Fehler: ${err.message || 'Unbekannter Fehler'}`;
             assistantBubble.classList.add('ai-chat-bubble-error');
         } else {
-            appendAiMessage('error', `Fehler: ${err.message || 'Unbekannter Fehler'}`);
+            const errBubble = appendAiMessage('assistant', `Fehler: ${err.message || 'Unbekannter Fehler'}`);
+            if (errBubble) errBubble.classList.add('ai-chat-bubble-error');
         }
         // Remove the failed user message from history so the user can retry
-        if (aiMessages.length > 0 && aiMessages[aiMessages.length - 1].role === 'user') {
-            aiMessages.pop();
-        }
+        aiMessages.pop();
     } finally {
         aiStreaming = false;
         if (sendBtn) sendBtn.disabled = false;

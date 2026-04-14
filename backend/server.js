@@ -14,7 +14,7 @@ const cron = require('node-cron');
 const { runAutomatedStandingOrders } = require('./standingOrders');
 const { aggregateStats } = require('./stats');
 const { getPaginatedTransactions } = require('./transactions');
-const { getAiSettings, setAiSettings, buildDatabaseSnapshot } = require('./ai');
+const { getAiSettings, setAiSettings, buildDatabaseSnapshot, buildSystemPrompt } = require('./ai');
 
 const sseClients = new Set();
 function broadcastDataUpdate() {
@@ -1203,7 +1203,8 @@ app.get('/api/admin/ai-config', verifyToken, verifySuperAdmin, async (req, res) 
     res.json({
       enabled: aiSettings.enabled,
       baseUrl: aiSettings.baseUrl || '',
-      apiKey: aiSettings.apiKey ? '***' : '',
+      // Always return '***' as a consistent placeholder – do not reveal whether a key is set
+      apiKey: '***',
       model: aiSettings.model || ''
     });
   } catch (err) {
@@ -1246,17 +1247,17 @@ app.post('/api/ai/chat', aiChatRateLimit, verifyToken, verifyAdmin, async (req, 
     }
 
     const MAX_MESSAGES = 50;
-    const messages = rawMessages.slice(-MAX_MESSAGES).map((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: String(m.content || '').slice(0, 8000)
-    }));
+    const messages = rawMessages.slice(-MAX_MESSAGES).map((m) => {
+      const role = m.role === 'assistant' ? 'assistant' : 'user';
+      return { role, content: String(m.content || '').slice(0, 8000) };
+    });
 
     const baseUrl = (aiSettings.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
     const apiKey = aiSettings.apiKey || '';
     const model = aiSettings.model || 'gpt-4o-mini';
 
     const dbSnapshot = await buildDatabaseSnapshot(appConfig);
-    const systemPrompt = `You are a helpful support assistant for the ${appConfig.appName || 'Nova'} church management application. Answer admin questions about the application data, members, finances, and settings. Be concise and helpful.\n\nCurrent database context:\n${dbSnapshot}`;
+    const systemContent = buildSystemPrompt(appConfig.appName, dbSnapshot);
 
     const aiRes = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
@@ -1266,7 +1267,7 @@ app.post('/api/ai/chat', aiChatRateLimit, verifyToken, verifyAdmin, async (req, 
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'system', content: systemPrompt }, ...messages],
+        messages: [{ role: 'system', content: systemContent }, ...messages],
         stream: true
       })
     });

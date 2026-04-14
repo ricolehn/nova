@@ -13,6 +13,10 @@ async function getAiSettings(appConfig) {
   return getStateValue(appConfig, AI_STATE_KEY, AI_CONFIG_DEFAULTS);
 }
 
+/**
+ * Persists AI settings to the app_state collection.
+ * Pass `apiKey: '***'` as a sentinel to keep the existing key unchanged.
+ */
 async function setAiSettings(appConfig, patch) {
   const current = await getAiSettings(appConfig);
   const next = {
@@ -116,4 +120,13 @@ async function buildDatabaseSnapshot(appConfig) {
   }
 }
 
-module.exports = { getAiSettings, setAiSettings, buildDatabaseSnapshot };
+/**
+ * Builds the system prompt injected at the start of every chat request.
+ * @param {string} appName - The configured application name.
+ * @param {string} dbSnapshot - JSON string from buildDatabaseSnapshot.
+ */
+function buildSystemPrompt(appName, dbSnapshot) {
+  return `You are a helpful support assistant for the ${appName || 'Nova'} church management application. Answer admin questions about the application data, members, finances, and settings. Be concise and helpful.\n\nCurrent database context:\n${dbSnapshot}`;
+}
+
+module.exports = { getAiSettings, setAiSettings, buildDatabaseSnapshot, buildSystemPrompt };
