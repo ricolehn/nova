@@ -1246,11 +1246,16 @@ app.post('/api/ai/chat', aiChatRateLimit, verifyToken, verifyAdmin, async (req, 
       return res.status(400).json({ error: 'messages array is required' });
     }
 
+    const ALLOWED_ROLES = new Set(['user', 'assistant']);
+    if (rawMessages.some((m) => !ALLOWED_ROLES.has(m.role))) {
+      return res.status(400).json({ error: 'Invalid message role. Only "user" and "assistant" are allowed.' });
+    }
+
     const MAX_MESSAGES = 50;
-    const messages = rawMessages.slice(-MAX_MESSAGES).map((m) => {
-      const role = m.role === 'assistant' ? 'assistant' : 'user';
-      return { role, content: String(m.content || '').slice(0, 8000) };
-    });
+    const messages = rawMessages.slice(-MAX_MESSAGES).map((m) => ({
+      role: m.role,
+      content: String(m.content || '').slice(0, 8000)
+    }));
 
     const baseUrl = (aiSettings.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
     const apiKey = aiSettings.apiKey || '';

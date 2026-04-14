@@ -3072,7 +3072,9 @@ window.sendAiMessage = async () => {
             if (errBubble) errBubble.classList.add('ai-chat-bubble-error');
         }
         // Remove the failed user message from history so the user can retry
-        aiMessages.pop();
+        if (aiMessages.length > 0 && aiMessages[aiMessages.length - 1].role === 'user') {
+            aiMessages.pop();
+        }
     } finally {
         aiStreaming = false;
         if (sendBtn) sendBtn.disabled = false;
