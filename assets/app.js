@@ -3000,14 +3000,14 @@ function buildThinkingElement(thinkingText) {
 
 /**
  * Finalises an assistant bubble after streaming is complete.
- * Extracts <think>…</think> blocks, renders thinking dropdown + markdown body.
+ * Extracts <think>…</think> or <thought>…</thought> blocks, renders thinking dropdown + markdown body.
  */
 function finalizeAssistantBubble(bubble, rawContent, reasoningContent) {
     if (!bubble) return;
 
-    // Extract <think>…</think> blocks from content (some models embed thinking inline)
+    // Extract <think>…</think> or <thought>…</thought> blocks from content (some models embed thinking inline)
     let thinkingFromContent = '';
-    const mainContent = rawContent.replace(/<think>([\s\S]*?)<\/think>/gi, (_, inner) => {
+    const mainContent = rawContent.replace(/<(?:think|thought)>([\s\S]*?)(?:<\/?(?:think|thought)>|$)/gi, (_, inner) => {
         thinkingFromContent += inner;
         return '';
     }).trim();
