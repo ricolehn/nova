@@ -272,6 +272,17 @@ window.toggleProfileMenu = function() {
     btn.setAttribute('aria-expanded', menu.classList.contains('show'));
 };
 
+window.openSystemSettingsTab = function() {
+    const menu = document.getElementById('profileDropdown');
+    if (menu) {
+        menu.classList.remove('show');
+        document.querySelector('.profile-btn')?.setAttribute('aria-expanded', 'false');
+    }
+    if (isSuperAdminUser()) {
+        switchTab('super-admin-settings', null);
+    }
+};
+
 window.openSettingsTab = function() {
     // Close the profile menu
     const menu = document.getElementById('profileDropdown');
@@ -1306,19 +1317,22 @@ async function renderAll() {
 
 async function renderSuperAdminTools() {
     const card = document.getElementById('card-super-admin');
+    const sysSettingsBtn = document.getElementById('profile-sys-settings-btn');
     const sysNavBtnDesktop = document.getElementById('admin-sys-nav-btn-desktop');
     const sysNavBtnBottom = document.getElementById('admin-sys-nav-btn');
 
     if (!isSuperAdminUser()) {
         if (card) card.style.display = 'none';
+        if (sysSettingsBtn) sysSettingsBtn.style.display = 'none';
         if (sysNavBtnDesktop) sysNavBtnDesktop.style.display = 'none';
         if (sysNavBtnBottom) sysNavBtnBottom.style.display = 'none';
         return;
     }
 
     if (card) card.style.display = '';
+    if (sysSettingsBtn) sysSettingsBtn.style.display = '';
     if (sysNavBtnDesktop) sysNavBtnDesktop.style.display = 'block';
-    if (sysNavBtnBottom) sysNavBtnBottom.style.display = 'block';
+    if (sysNavBtnBottom) sysNavBtnBottom.style.display = 'flex'; // Bottom nav uses flex
 
     renderSuperAdminUserManagement();
     await renderSuperAdminPaymentEditor();
@@ -3014,7 +3028,7 @@ function updateAiNavVisibility() {
     const spacer = document.getElementById('admin-nav-spacer');
     if (bottomBtn) bottomBtn.style.display = show ? '' : 'none';
     if (desktopBtn) desktopBtn.style.display = show ? '' : 'none';
-    if (spacer) spacer.style.display = show ? '' : 'none';
+    if (spacer) spacer.style.display = !show ? '' : 'none'; // Show spacer when AI is off to keep 5-item flex balanced (History is always right, so we need a spacer if AI is missing)
 }
 
 window.clearAiChat = () => {
