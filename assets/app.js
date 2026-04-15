@@ -2935,8 +2935,10 @@ function updateAiNavVisibility() {
     const show = aiEnabled && !!(currentUser && currentUser.admin);
     const bottomBtn = document.getElementById('admin-ai-nav-btn');
     const desktopBtn = document.getElementById('admin-ai-nav-btn-desktop');
+    const spacer = document.getElementById('admin-nav-spacer');
     if (bottomBtn) bottomBtn.style.display = show ? '' : 'none';
     if (desktopBtn) desktopBtn.style.display = show ? '' : 'none';
+    if (spacer) spacer.style.display = show ? '' : 'none';
 }
 
 window.clearAiChat = () => {
