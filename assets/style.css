@@ -57,13 +57,93 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
 
 .header {
     display: flex;
-    align-items: center; justify-content: center; gap: 12px;
+    align-items: center; justify-content: space-between;
     padding: 20px 0 30px;
+    position: relative;
+    z-index: 50;
 }
-.header img { height: 32px; width: auto; }
-.header h1 {
+.header-left {
+    display: flex;
+    align-items: center; gap: 12px;
+}
+.header-left img { height: 32px; width: auto; }
+.header-left h1 {
     font-size: 2rem; font-weight: 800;
     background: var(--gradient-primary); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+/* Profile Menu */
+.profile-menu-container {
+    position: relative;
+}
+.profile-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+.profile-btn:active {
+    transform: scale(0.95);
+}
+
+.profile-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    min-width: 200px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 100;
+}
+.profile-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+.dropdown-item:active {
+    background: var(--bg);
+}
+.dropdown-item.text-danger {
+    color: var(--danger);
 }
 
 /* --- Hero & Stats --- */
@@ -159,7 +239,7 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
 .card {
     background: var(--surface); border-radius: var(--radius);
     box-shadow: var(--shadow); border: 1px solid var(--border);
-    margin-bottom: 20px; overflow: hidden; transition: all 0.3s ease;
+    margin-bottom: 20px; overflow: hidden; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .card-settings { padding: 0; }
 .card-header {
@@ -183,16 +263,17 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
 /* Wrapper for the whole card item */
 .person-wrapper {
     margin-bottom: 12px;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     /* ⚡ Bolt: Optimizes rendering performance for long lists */
 }
 
 .person-wrapper.active {
     background: var(--surface);
     border-radius: 16px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
     margin-bottom: 25px;
     overflow: hidden;
+    transform: scale(1.02);
 }
 
 /* The Main Clickable Card */
@@ -201,7 +282,7 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
     border-radius: 16px;
     padding: 16px;
     border: none;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow);
     cursor: pointer;
     position: relative;
     z-index: 2;
@@ -218,8 +299,8 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
     border-bottom: 1px solid var(--border-light);
 }
 
-.person-item:active { transform: scale(0.99); }
-.person-item:focus { outline: none; border-color: var(--text-secondary); }
+.person-item:active { transform: scale(0.97); }
+.person-item:focus { outline: none; box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3); }
 
 .person-pill { display: flex; justify-content: space-between; align-items: center; width: 100%; }
 .person-left { display: flex; flex-direction: column; gap: 4px; }
@@ -345,7 +426,7 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
 /* --- Buttons --- */
 .btn {
     padding: 12px 20px; border-radius: 12px; border: none; font-weight: 600;
-    cursor: pointer; transition: 0.2s; font-size: 0.95rem; width: auto;
+    cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); font-size: 0.95rem; width: auto;
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
 }
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
@@ -521,14 +602,14 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5);
     display: flex; align-items: center; justify-content: center;
-    z-index: 1000; opacity: 0; pointer-events: none; transition: 0.25s;
+    z-index: 1000; opacity: 0; pointer-events: none; transition: 0.3s;
     will-change: opacity, backdrop-filter;
 }
 .modal.show { opacity: 1; pointer-events: all; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
 .modal-content {
     background: var(--surface); width: 90%; max-width: 400px;
     border-radius: 24px; padding: 0 24px 24px 24px;
-    transform: scale(0.95); transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: scale(0.95); transition: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     max-height: 85vh; overflow-y: auto; border: 1px solid var(--border);
     will-change: transform, opacity;
 }

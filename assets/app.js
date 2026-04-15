@@ -235,7 +235,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 window.switchTab = function(tabName, btn) {
-    const isUserNav = !!btn.closest('#user-bottom-nav') || !!btn.closest('#user-desktop-nav');
+    // Some buttons might not pass `btn` or it might not be in a nav, determine scope by string
+    const isUserNav = (btn && (!!btn.closest('#user-bottom-nav') || !!btn.closest('#user-desktop-nav'))) || tabName.startsWith('user-');
     const scope = isUserNav ? document.getElementById('user-view') : document.getElementById('admin-view');
     if (!scope) return;
 
@@ -248,17 +249,86 @@ window.switchTab = function(tabName, btn) {
         targetContent.classList.add('active');
     }
 
-    // Update buttons in the same nav container
-    const container = btn.closest('.bottom-nav') || btn.closest('.desktop-nav');
-    if (container) {
-        container.querySelectorAll('.nav-item, .nav-btn').forEach(el => {
-            el.classList.remove('active');
-            el.setAttribute('aria-selected', 'false');
-        });
-        btn.classList.add('active');
-        btn.setAttribute('aria-selected', 'true');
+    if (btn) {
+        // Update buttons in the same nav container
+        const container = btn.closest('.bottom-nav') || btn.closest('.desktop-nav');
+        if (container) {
+            container.querySelectorAll('.nav-item, .nav-btn').forEach(el => {
+                el.classList.remove('active');
+                el.setAttribute('aria-selected', 'false');
+            });
+            btn.classList.add('active');
+            btn.setAttribute('aria-selected', 'true');
+        }
     }
 };
+
+window.toggleProfileMenu = function() {
+    const menu = document.getElementById('profileDropdown');
+    const btn = document.querySelector('.profile-btn');
+    if (!menu || !btn) return;
+
+    menu.classList.toggle('show');
+    btn.setAttribute('aria-expanded', menu.classList.contains('show'));
+};
+
+window.openSettingsTab = function() {
+    // Close the profile menu
+    const menu = document.getElementById('profileDropdown');
+    if (menu) {
+        menu.classList.remove('show');
+        document.querySelector('.profile-btn')?.setAttribute('aria-expanded', 'false');
+    }
+
+    // Determine current view mode
+    const isAdmin = currentUser && currentUser.admin;
+
+    // Find the corresponding nav button and trigger switchTab
+    let btn;
+    if (isAdmin) {
+        btn = document.querySelector('#admin-desktop-nav button[onclick="switchTab(\'settings\', this)"]') ||
+              document.querySelector('#admin-bottom-nav button[onclick="switchTab(\'settings\', this)"]');
+        if(btn) switchTab('settings', btn);
+    } else {
+        btn = document.querySelector('#user-desktop-nav button[onclick="switchTab(\'user-settings\', this)"]');
+        if(btn) switchTab('user-settings', btn);
+    }
+};
+
+window.openHomeTab = function() {
+    // Close the profile menu
+    const menu = document.getElementById('profileDropdown');
+    if (menu) {
+        menu.classList.remove('show');
+        document.querySelector('.profile-btn')?.setAttribute('aria-expanded', 'false');
+    }
+
+    // Determine current view mode
+    const isAdmin = currentUser && currentUser.admin;
+
+    // Find the corresponding nav button and trigger switchTab
+    let btn;
+    if (isAdmin) {
+        btn = document.querySelector('#admin-desktop-nav button[onclick="switchTab(\'overview\', this)"]') ||
+              document.querySelector('#admin-bottom-nav button[onclick="switchTab(\'overview\', this)"]');
+        if(btn) switchTab('overview', btn);
+    } else {
+        btn = document.querySelector('#user-desktop-nav button[onclick="switchTab(\'user-overview\', this)"]');
+        if(btn) switchTab('user-overview', btn);
+    }
+};
+
+// Close profile menu when clicking outside
+document.addEventListener('click', (e) => {
+    const container = document.querySelector('.profile-menu-container');
+    if (container && !container.contains(e.target)) {
+        const menu = document.getElementById('profileDropdown');
+        if (menu && menu.classList.contains('show')) {
+            menu.classList.remove('show');
+            document.querySelector('.profile-btn')?.setAttribute('aria-expanded', 'false');
+        }
+    }
+});
 
 window.toggleFab = function() {
     const menu = document.getElementById('fabMenu');
@@ -1097,7 +1167,7 @@ async function loadData(silent = false) {
         const adminBottomNav = document.getElementById('admin-bottom-nav');
         if(adminBottomNav) adminBottomNav.style.display = 'none';
         const userBottomNav = document.getElementById('user-bottom-nav');
-        if(userBottomNav) userBottomNav.style.display = 'flex';
+        if(userBottomNav) userBottomNav.style.display = 'none'; // Replaced by profile dropdown
 
         document.getElementById('settings').style.display = 'none';
 
@@ -1236,14 +1306,20 @@ async function renderAll() {
 
 async function renderSuperAdminTools() {
     const card = document.getElementById('card-super-admin');
-    if (!card) return;
+    const sysNavBtnDesktop = document.getElementById('admin-sys-nav-btn-desktop');
+    const sysNavBtnBottom = document.getElementById('admin-sys-nav-btn');
 
     if (!isSuperAdminUser()) {
-        card.style.display = 'none';
+        if (card) card.style.display = 'none';
+        if (sysNavBtnDesktop) sysNavBtnDesktop.style.display = 'none';
+        if (sysNavBtnBottom) sysNavBtnBottom.style.display = 'none';
         return;
     }
 
-    card.style.display = '';
+    if (card) card.style.display = '';
+    if (sysNavBtnDesktop) sysNavBtnDesktop.style.display = 'block';
+    if (sysNavBtnBottom) sysNavBtnBottom.style.display = 'block';
+
     renderSuperAdminUserManagement();
     await renderSuperAdminPaymentEditor();
     if (!advancedConfigLoaded) {
