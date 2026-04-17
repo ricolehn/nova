@@ -267,13 +267,13 @@ window.switchTab = function(tabName, btn) {
         : '#admin-desktop-nav [data-tab], #admin-bottom-nav [data-tab]';
     const navButtons = document.querySelectorAll(navSelector);
     navButtons.forEach(el => {
-        el.classList.remove('active');
-        el.setAttribute('aria-selected', 'false');
-    });
-    navButtons.forEach(el => {
-        if (el.dataset.tab === tabName) {
+        const isActive = el.dataset.tab === tabName;
+        if (isActive) {
             el.classList.add('active');
             el.setAttribute('aria-selected', 'true');
+        } else {
+            el.classList.remove('active');
+            el.setAttribute('aria-selected', 'false');
         }
     });
 
