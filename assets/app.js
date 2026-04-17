@@ -3090,6 +3090,55 @@ function renderMarkdown(text) {
             continue;
         }
 
+        // Tables
+        if (/^[ \t]*\|/.test(line)) {
+            const tableWrap = document.createElement('div');
+            tableWrap.className = 'ai-table-wrapper';
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+            let isFirstRow = true;
+
+            while (i < lines.length && /^[ \t]*\|/.test(lines[i])) {
+                const rowLine = lines[i].trim();
+
+                // Skip separator rows like |:---|:---|
+                if (/^[ \t]*\|(?:[ \t]*:?-+:?[ \t]*\|)+[ \t]*$/.test(rowLine)) {
+                    i++;
+                    isFirstRow = false;
+                    continue;
+                }
+
+                const tr = document.createElement('tr');
+                const cells = rowLine.split('|');
+
+                // Remove empty first and last elements if the line starts/ends with |
+                if (cells.length > 0 && cells[0].trim() === '') cells.shift();
+                if (cells.length > 0 && cells[cells.length - 1].trim() === '') cells.pop();
+
+                for (const cell of cells) {
+                    const cellEl = document.createElement(isFirstRow ? 'th' : 'td');
+                    appendInlineNodes(cellEl, cell.trim());
+                    tr.appendChild(cellEl);
+                }
+
+                if (isFirstRow) {
+                    thead.appendChild(tr);
+                    isFirstRow = false;
+                } else {
+                    tbody.appendChild(tr);
+                }
+                i++;
+            }
+            if (thead.childNodes.length > 0) table.appendChild(thead);
+            if (tbody.childNodes.length > 0) table.appendChild(tbody);
+            tableWrap.appendChild(table);
+            frag.appendChild(tableWrap);
+            // Adjust iterator to correctly process the next line without skipping
+            i--;
+            continue;
+        }
+
         // Horizontal rule
         if (/^---+$/.test(line.trim())) {
             frag.appendChild(document.createElement('hr'));

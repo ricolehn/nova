@@ -1414,6 +1414,29 @@ details[open] .ai-thinking-summary::before {
     margin: 10px 0;
 }
 
+.ai-table-wrapper {
+    overflow-x: auto;
+    margin: 10px 0;
+}
+
+.ai-chat-bubble-assistant table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.ai-chat-bubble-assistant th,
+.ai-chat-bubble-assistant td {
+    padding: 8px 12px;
+    border: 1px solid var(--border-light);
+}
+
+.ai-chat-bubble-assistant th {
+    background: var(--surface-alt);
+    font-weight: 600;
+}
+
 .ai-code-block {
     background: var(--surface);
     border: 1px solid var(--border-light);
