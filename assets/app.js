@@ -1377,41 +1377,58 @@ function renderAdminRequests() {
 
     const renderReq = (req) => {
         let typeLabel = '';
+        let typeIcon = '';
         let details = '';
 
         if (req.type === 'payment') {
-            typeLabel = '💰 Zahlung';
+            typeLabel = 'Zahlung';
+            typeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>';
             details = `${formatCurrency(req.data.amount)} € am ${dateFormatter.format(new Date(req.data.date))}`;
-            if (req.data.note) details += `<br><small>"${escapeHtml(req.data.note)}"</small>`;
+            if (req.data.note) details += `<br><small style="color: var(--text-secondary);"><span style="opacity: 0.7;">"</span>${escapeHtml(req.data.note)}<span style="opacity: 0.7;">"</span></small>`;
         } else if (req.type === 'status') {
-            typeLabel = '🔄 Statusänderung';
+            typeLabel = 'Statusänderung';
+            typeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
             details = `Neu: <strong>${escapeHtml(req.data.newStatus)}</strong> ab ${dateFormatter.format(new Date(req.data.date))}`;
         } else if (req.type === 'expense') {
-            typeLabel = '💸 Ausgabe';
+            typeLabel = 'Ausgabe';
+            typeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 14h-8"/><path d="M16 18h-8"/><path d="M16 10h-8"/></svg>';
             details = `${formatCurrency(req.data.amount)} € für "${escapeHtml(req.data.description)}" am ${dateFormatter.format(new Date(req.data.date))}`;
             if (req.data.receipt) {
                 const safeReceipt = escapeHtml(req.data.receipt.replace(/\\/g, "\\\\").replace(/'/g, "\\'"));
                 const safeId = escapeHtml(req.id);
                 details += `<div id="receipt-container-${safeId}" style="margin-top:10px;">
-                    <button class="btn btn-secondary btn-small" onclick="viewRequestReceipt('${safeReceipt}', 'receipt-container-${safeId}')">📷 Beleg anzeigen</button>
+                    <button class="btn btn-small" style="background: transparent; border: 1px solid var(--border); color: var(--text); display: flex; align-items: center; gap: 6px;" onclick="viewRequestReceipt('${safeReceipt}', 'receipt-container-${safeId}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        Beleg anzeigen
+                    </button>
                 </div>`;
             }
         } else if (req.type === 'standing_order') {
-            typeLabel = '🔄 Dauerauftrag';
+            typeLabel = 'Dauerauftrag';
+            typeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>';
             details = `${formatCurrency(req.data.amount)} € / Monat<br>Start: ${dateFormatter.format(new Date(req.data.date))}`;
-            if (req.data.note) details += `<br><small>"${escapeHtml(req.data.note)}"</small>`;
+            if (req.data.note) details += `<br><small style="color: var(--text-secondary);"><span style="opacity: 0.7;">"</span>${escapeHtml(req.data.note)}<span style="opacity: 0.7;">"</span></small>`;
         }
 
         return `
-            <div style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin: 8px 0;">
-                <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:8px; align-items:flex-start;">
-                    <span style="font-weight:800;">${typeLabel}</span>
-                    <span style="font-size:0.8rem; color:var(--text-secondary); white-space:nowrap;">${dateTimeFormatter.format(new Date(req.timestamp))}</span>
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:12px; align-items:center;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--text);">
+                        ${typeIcon}
+                        <span>${typeLabel}</span>
+                    </div>
+                    <span style="font-size:0.75rem; color:var(--text-secondary); white-space:nowrap; background: var(--surface-alt); padding: 4px 8px; border-radius: 12px;">${dateTimeFormatter.format(new Date(req.timestamp))}</span>
                 </div>
-                <div style="margin-bottom:10px;">${details}</div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn btn-primary btn-small" style="width:auto;" onclick="approveRequest('${req.id}')">Genehmigen</button>
-                    <button class="btn btn-danger btn-small" style="width:auto;" onclick="rejectRequest('${req.id}')">Ablehnen</button>
+                <div style="margin-bottom:16px; font-size: 0.95rem; color: var(--text); line-height: 1.5;">${details}</div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-primary btn-small" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; border-radius: 12px; padding: 8px 0;" onclick="approveRequest('${req.id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        Genehmigen
+                    </button>
+                    <button class="btn btn-small" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; background: transparent; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 8px 0;" onclick="rejectRequest('${req.id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        Ablehnen
+                    </button>
                 </div>
             </div>
         `;
@@ -1422,8 +1439,11 @@ function renderAdminRequests() {
         .map(([personName, items]) => {
             const sorted = items.slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             return `
-                <div style="margin-top: 12px;">
-                    <div style="font-weight: 900; margin-bottom: 6px;">${escapeHtml(personName)}</div>
+                <div style="margin-top: 16px;">
+                    <div style="font-weight: 600; margin-bottom: 10px; color: var(--text); font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary);"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        ${escapeHtml(personName)}
+                    </div>
                     ${sorted.map(renderReq).join('')}
                 </div>
             `;
@@ -1432,8 +1452,11 @@ function renderAdminRequests() {
 
     target.innerHTML = `
         <div class="card" style="margin-bottom: 20px;">
-            <div class="card-header">📥 Offene Anfragen (${pending.length})</div>
-            <div class="card-body">${groupBlocks}</div>
+            <div class="card-header" style="display: flex; align-items: center; gap: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.9rem; color: var(--text-secondary);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Offene Anfragen (${pending.length})
+            </div>
+            <div class="card-body" style="padding-top: 10px;">${groupBlocks}</div>
         </div>
     `;
 }
