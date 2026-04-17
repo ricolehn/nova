@@ -136,6 +136,15 @@ function getTodayStr() {
     return new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 }
 
+// ⚡ Bolt: Replaced Array.reduce with a for loop to eliminate callback execution overhead and reduce CPU time
+function calculateTotalPaidLoop(payments) {
+    let sum = 0;
+    for (let i = 0; i < payments.length; i++) {
+        sum += parseFloat(payments[i].amount || 0);
+    }
+    return sum;
+}
+
 // ⚡ Bolt: Helper to normalize and pre-calculate person data for performance
 function preprocessPerson(person) {
     if (!person.memberSince) person.memberSince = getTodayStr();
@@ -143,7 +152,7 @@ function preprocessPerson(person) {
     person.payments = safeList(person.payments);
 
     // ⚡ Bolt: Ensure totalPaid is accurately cached in memory
-    person.totalPaid = person.payments.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0);
+    person.totalPaid = calculateTotalPaidLoop(person.payments);
 
     // Pre-process history for faster lookup (avoid Date creation in loops)
     // ⚡ Bolt: Fast string comparison for ISO dates
@@ -1253,7 +1262,7 @@ async function loadData(silent = false) {
         people.forEach(person => {
             const result = checkAndExecuteStandingOrders(person);
             if (result) {
-                const newTotal = safeList(result.payments).reduce((acc, p) => acc + parseFloat(p.amount), 0);
+                const newTotal = calculateTotalPaidLoop(safeList(result.payments));
                 // Update in DB
                 updates.push(update(ref(db, 'people/' + person.id), {
                     payments: result.payments,
@@ -1751,7 +1760,7 @@ window.saveEditedPayment = async () => {
                     if (i !== currentEditedPayment.targetIndex) return entry;
                     return { ...entry, amount, date, description };
                 });
-                const totalPaid = nextPayments.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0);
+                const totalPaid = calculateTotalPaidLoop(nextPayments);
                 return { ...draft, payments: nextPayments, totalPaid };
             });
             showToast('Zahlung aktualisiert');
@@ -2709,7 +2718,7 @@ window.saveStandingOrderEnd = async () => {
                  standingOrders = standingOrders.filter(so => String(so.id) !== String(editingSoId));
             }
 
-            const totalPaid = payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
+            const totalPaid = calculateTotalPaidLoop(payments);
             return { ...person, standingOrders, payments, totalPaid };
         });
 
