@@ -263,7 +263,7 @@ window.switchTab = function(tabName, btn) {
     }
 
     const navSelector = isUserNav
-        ? '#user-desktop-nav [data-tab]'
+        ? '#user-desktop-nav [data-tab], #user-bottom-nav [data-tab]'
         : '#admin-desktop-nav [data-tab], #admin-bottom-nav [data-tab]';
     const navButtons = document.querySelectorAll(navSelector);
     navButtons.forEach(el => {

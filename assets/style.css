@@ -30,13 +30,6 @@
     /* Removed glow effect from shadow-lg */
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     --desktop-header-offset: 108px;
-    --desktop-header-bg: #ffffff;
-    --desktop-header-border: #e5e7eb;
-    --desktop-nav-text: #475569;
-    --desktop-nav-active: #0f172a;
-    --desktop-nav-underline: #06b6d4;
-    --desktop-profile-border: #d1d5db;
-    --desktop-profile-text: #0f172a;
 }
 
 [data-theme="dark"] {
