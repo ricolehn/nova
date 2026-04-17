@@ -1365,13 +1365,13 @@ function renderAdminRequests() {
         if (req.type === 'payment') {
             typeLabel = '💰 Zahlung';
             details = `${formatCurrency(req.data.amount)} € am ${dateFormatter.format(new Date(req.data.date))}`;
-            if (req.data.note) details += `<br><small>"${req.data.note}"</small>`;
+            if (req.data.note) details += `<br><small>"${escapeHtml(req.data.note)}"</small>`;
         } else if (req.type === 'status') {
             typeLabel = '🔄 Statusänderung';
-            details = `Neu: <strong>${req.data.newStatus}</strong> ab ${dateFormatter.format(new Date(req.data.date))}`;
+            details = `Neu: <strong>${escapeHtml(req.data.newStatus)}</strong> ab ${dateFormatter.format(new Date(req.data.date))}`;
         } else if (req.type === 'expense') {
             typeLabel = '💸 Ausgabe';
-            details = `${formatCurrency(req.data.amount)} € für "${req.data.description}" am ${dateFormatter.format(new Date(req.data.date))}`;
+            details = `${formatCurrency(req.data.amount)} € für "${escapeHtml(req.data.description)}" am ${dateFormatter.format(new Date(req.data.date))}`;
             if (req.data.receipt) {
                 const safeReceipt = escapeHtml(req.data.receipt.replace(/\\/g, "\\\\").replace(/'/g, "\\'"));
                 const safeId = escapeHtml(req.id);
@@ -1982,7 +1982,7 @@ function renderUserView() {
 
             let details = '';
             if(req.status === 'rejected') {
-                details = `<div style="color:var(--danger); font-size:0.85rem; margin-top:8px; padding:10px; background:var(--danger)10; border-radius:8px;">⚠️ ${req.rejectionReason || 'Keine Begründung'}</div>`;
+                details = `<div style="color:var(--danger); font-size:0.85rem; margin-top:8px; padding:10px; background:var(--danger)10; border-radius:8px;">⚠️ ${escapeHtml(req.rejectionReason) || 'Keine Begründung'}</div>`;
             }
 
             return `
