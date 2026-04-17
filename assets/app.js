@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 window.switchTab = function(tabName, btn) {
     // Some buttons might not pass `btn` or it might not be in a nav, determine scope by string
-    const isUserNav = (btn && (!!btn.closest('#user-bottom-nav') || !!btn.closest('#user-desktop-nav'))) || tabName.startsWith('user-');
+    const isUserNav = (btn && !!btn.closest('#user-desktop-nav')) || tabName.startsWith('user-');
     const scope = isUserNav ? document.getElementById('user-view') : document.getElementById('admin-view');
     if (!scope) return;
 
@@ -263,7 +263,7 @@ window.switchTab = function(tabName, btn) {
     }
 
     const navSelector = isUserNav
-        ? '#user-desktop-nav [data-tab], #user-bottom-nav [data-tab]'
+        ? '#user-desktop-nav [data-tab]'
         : '#admin-desktop-nav [data-tab], #admin-bottom-nav [data-tab]';
     const navButtons = document.querySelectorAll(navSelector);
     navButtons.forEach(el => {
