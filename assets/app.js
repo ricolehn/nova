@@ -2354,8 +2354,13 @@ window.renderHistoryTab = async function(resetLimit = true) {
 
             const paymentPayload = t.payment ? JSON.stringify(t.payment).replace(/"/g, '&quot;') : '{}';
 
+            let mappedType = t.type;
+            if (t.type === 'pay') mappedType = 'payment';
+            else if (t.type === 'don') mappedType = 'donation';
+            else if (t.type === 'exp') mappedType = 'expense';
+
             const editBtn = isSuperAdmin ? `
-                <button class="btn btn-secondary btn-small" style="padding: 6px; border-radius: 8px; margin-left: 10px;" data-payload="${paymentPayload}" onclick="event.stopPropagation(); editRecordedPayment('${escapeHtml(String(t.personId || ''))}', '${escapeHtml(String(t.paymentId || ''))}', ${t.paymentIndex}, '${escapeHtml(String(t.personName || ''))}', '${escapeHtml(String(t.type || ''))}', JSON.parse(this.dataset.payload))" aria-label="Bearbeiten">
+                <button class="btn btn-secondary btn-small" style="padding: 6px; border-radius: 8px; margin-left: 10px;" data-payload="${paymentPayload}" onclick="event.stopPropagation(); editRecordedPayment('${escapeHtml(String(t.personId || ''))}', '${escapeHtml(String(t.paymentId || ''))}', ${t.paymentIndex !== undefined ? t.paymentIndex : -1}, '${escapeHtml(String(t.personName || ''))}', '${mappedType}', JSON.parse(this.dataset.payload))" aria-label="Bearbeiten">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
             ` : '';
