@@ -1403,12 +1403,37 @@ input:checked + .slider:before { transform: translateX(22px); }
         margin-bottom: 0;
         min-height: 0;
     }
-    .ai-chat-input-row {
-        padding: 16px 20px 85px 20px;
-        margin: 0 -20px -100px -20px;
+
+    #ai-chat.active .ai-chat-messages {
+        padding-bottom: 96px;
+    }
+
+    #ai-chat.active .ai-chat-input-row {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(55px + env(safe-area-inset-bottom));
+        padding: 10px 16px;
+        margin: 0;
+        gap: 8px;
         background: var(--surface);
         border-top: 1px solid var(--border-light);
-        z-index: 10;
+        border-radius: 18px 18px 0 0;
+        box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.08);
+        z-index: 1001;
+    }
+
+    #ai-chat.active .ai-chat-input {
+        min-height: 46px;
+        border-radius: 999px;
+        padding: 11px 16px;
+    }
+
+    #ai-chat.active .ai-chat-send-btn {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        border-radius: 999px;
     }
 }
 
