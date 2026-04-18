@@ -622,10 +622,15 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
 .modal.show { opacity: 1; pointer-events: all; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
 .modal-content {
     background: var(--surface); width: 90%; max-width: 400px;
-    border-radius: 24px; padding: 0 24px 24px 24px;
+    border-radius: 28px; padding: 0 24px 24px 24px;
     transform: scale(0.95); transition: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-    max-height: 85vh; overflow-y: auto; border: 1px solid var(--border);
+    max-height: 85vh; overflow-y: auto; border: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     will-change: transform, opacity;
+}
+[data-theme="dark"] .modal-content {
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 .modal.show .modal-content { transform: scale(1); }
 
@@ -1581,4 +1586,84 @@ details[open] .ai-thinking-summary::before {
     padding: 1px 5px;
     font-size: 0.875em;
     font-family: monospace;
+}
+
+/* --- Login UI Beautification --- */
+.login-header {
+    text-align: center;
+    margin-bottom: 24px;
+    padding-top: 10px;
+}
+.login-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.login-brand img {
+    height: 40px;
+    width: auto;
+}
+.login-brand h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.login-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 500;
+}
+.auth-tabs {
+    display: flex;
+    background: var(--surface-alt);
+    padding: 4px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+}
+.auth-tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    border-radius: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.auth-tab-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow);
+}
+.input-with-icon {
+    position: relative;
+}
+.input-with-icon .input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    transition: color 0.2s ease;
+    z-index: 2;
+}
+.input-with-icon .form-input {
+    padding-left: 44px;
+}
+.input-with-icon:focus-within .input-icon {
+    color: var(--primary);
 }

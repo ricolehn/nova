@@ -62,6 +62,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update visual elements
     const headerEl = document.getElementById('app-name-header');
     if (headerEl) headerEl.textContent = appName;
+    const loginHeaderEl = document.getElementById('login-app-name');
+    if (loginHeaderEl) loginHeaderEl.textContent = appName;
 
     // Update document title
     document.title = appName;
@@ -70,22 +72,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.showLogin = () => {
     document.getElementById('login-form').style.display = 'block';
     document.getElementById('register-form').style.display = 'none';
-    document.getElementById('auth-title').innerText = 'Anmelden';
-    document.getElementById('btn-show-login').classList.add('btn-primary');
-    document.getElementById('btn-show-login').classList.remove('btn-secondary');
-    document.getElementById('btn-show-register').classList.add('btn-secondary');
-    document.getElementById('btn-show-register').classList.remove('btn-primary');
+    document.getElementById('btn-show-login').classList.add('active');
+    document.getElementById('btn-show-register').classList.remove('active');
+    document.getElementById('auth-subtitle').innerText = 'Melden Sie sich an, um fortzufahren';
     document.getElementById('auth-error').style.display = 'none';
 };
 
 window.showRegister = () => {
     document.getElementById('login-form').style.display = 'none';
     document.getElementById('register-form').style.display = 'block';
-    document.getElementById('auth-title').innerText = 'Registrieren';
-    document.getElementById('btn-show-register').classList.add('btn-primary');
-    document.getElementById('btn-show-register').classList.remove('btn-secondary');
-    document.getElementById('btn-show-login').classList.add('btn-secondary');
-    document.getElementById('btn-show-login').classList.remove('btn-primary');
+    document.getElementById('btn-show-register').classList.add('active');
+    document.getElementById('btn-show-login').classList.remove('active');
+    document.getElementById('auth-subtitle').innerText = 'Erstellen Sie ein neues Konto';
     document.getElementById('auth-error').style.display = 'none';
     setButtonLoading('btn-login', false, null); // Reset login button state
 };
