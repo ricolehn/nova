@@ -115,12 +115,40 @@
 
                     <div class="stats-grid">
                         <div class="stat-box">
-                            <div class="stat-label">Einnahmen</div>
-                            <div class="stat-value text-success" id="totalIncome">0,00 €</div>
+                            <div class="stat-icon success">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                            </div>
+                            <div>
+                                <div class="stat-label">Einnahmen</div>
+                                <div class="stat-value text-success" id="totalIncome">0,00 €</div>
+                            </div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">Ausgaben</div>
-                            <div class="stat-value text-danger" id="totalExpenses">0,00 €</div>
+                            <div class="stat-icon danger">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                            </div>
+                            <div>
+                                <div class="stat-label">Ausgaben</div>
+                                <div class="stat-value text-danger" id="totalExpenses">0,00 €</div>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon info">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            </div>
+                            <div>
+                                <div class="stat-label">Mitglieder</div>
+                                <div class="stat-value text-info" id="totalMembers">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon warning">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            </div>
+                            <div>
+                                <div class="stat-label">Überfällig</div>
+                                <div class="stat-value text-warning" id="totalOverdue">0,00 €</div>
+                            </div>
                         </div>
                     </div>
                 </div>

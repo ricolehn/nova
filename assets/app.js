@@ -2198,6 +2198,15 @@ async function renderStats() {
         document.getElementById('totalIncome').textContent = currencyFormatter.format(data.totalIncome || 0);
         document.getElementById('totalExpenses').textContent = currencyFormatter.format(data.totalExpenses || 0);
 
+        const totalMembers = people.length;
+        let totalOverdue = 0;
+        people.forEach(p => {
+            totalOverdue += (p._overdueAmount || 0);
+        });
+
+        document.getElementById('totalMembers').textContent = totalMembers;
+        document.getElementById('totalOverdue').textContent = currencyFormatter.format(totalOverdue);
+
         if (data.chartData && Array.isArray(data.chartData.dataPoints)) {
             chartDataCache = {
                 dataPoints: data.chartData.dataPoints.map(dp => ({ ...dp, date: new Date(dp.date) })),
