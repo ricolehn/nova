@@ -260,6 +260,12 @@ window.switchTab = function(tabName, btn) {
         if (tabName === 'payment-history' || tabName === 'user-history' || tabName === 'user-requests') targetContent.style.display = 'block';
     }
 
+    const appContainer = document.querySelector('.container');
+    if (appContainer) {
+        const isAiChatActive = !isUserNav && tabName === 'ai-chat';
+        appContainer.classList.toggle('ai-chat-active', isAiChatActive);
+    }
+
     const navSelector = isUserNav
         ? '#user-desktop-nav [data-tab], #user-bottom-nav [data-tab]'
         : '#admin-desktop-nav [data-tab], #admin-bottom-nav [data-tab]';

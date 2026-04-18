@@ -1395,20 +1395,24 @@ input:checked + .slider:before { transform: translateX(22px); }
 }
 
 @media (max-width: 767px) {
-    .container:has(#ai-chat.active) {
+    .container:has(#ai-chat.active),
+    .container.ai-chat-active {
         overflow: hidden;
         padding-bottom: 0;
         display: flex;
         flex-direction: column;
     }
-    .container:has(#ai-chat.active) .app-layout {
+    .container:has(#ai-chat.active) .app-layout,
+    .container.ai-chat-active .app-layout {
         display: flex;
         flex-direction: column;
         flex: 1;
         min-height: 0;
     }
     .container:has(#ai-chat.active) #admin-view,
-    .container:has(#ai-chat.active) #user-view {
+    .container:has(#ai-chat.active) #user-view,
+    .container.ai-chat-active #admin-view,
+    .container.ai-chat-active #user-view {
         display: flex;
         flex-direction: column;
         flex: 1;
@@ -1433,17 +1437,17 @@ input:checked + .slider:before { transform: translateX(22px); }
     #ai-chat.active .ai-chat-messages {
         flex: 1;
         overflow-y: auto;
-        padding-bottom: 20px;
+        padding-bottom: calc(140px + env(safe-area-inset-bottom));
+        scroll-padding-bottom: calc(140px + env(safe-area-inset-bottom));
     }
 
     #ai-chat.active .ai-chat-input-row {
-        position: relative;
-        bottom: auto;
-        left: auto;
-        right: auto;
-        padding: 10px 16px;
-        margin: 0 -20px;
-        padding-bottom: calc(10px + 60px + env(safe-area-inset-bottom)); /* Add bottom nav padding */
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(60px + env(safe-area-inset-bottom));
+        margin: 0;
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
         background: var(--surface);
         border-top: 1px solid var(--border-light);
         border-radius: 18px 18px 0 0;
