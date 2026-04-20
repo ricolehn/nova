@@ -264,6 +264,14 @@ window.switchTab = function(tabName, btn) {
     if (appContainer) {
         const isAiChatActive = !isUserNav && tabName === 'ai-chat';
         appContainer.classList.toggle('ai-chat-active', isAiChatActive);
+        if (isAiChatActive) {
+            requestAnimationFrame(() => {
+                const inputEl = document.getElementById('ai-chat-input');
+                adjustAiInputHeight(inputEl);
+                const messagesEl = document.getElementById('ai-chat-messages');
+                if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+            });
+        }
     }
 
     const navSelector = isUserNav
@@ -3010,6 +3018,16 @@ window.clearAiChat = () => {
         </div>`;
 };
 
+function adjustAiInputHeight(inputEl) {
+    if (!inputEl) return;
+    inputEl.style.height = 'auto';
+    inputEl.style.height = `${Math.min(inputEl.scrollHeight, 120)}px`;
+}
+
+window.handleAiChatInput = (event) => {
+    adjustAiInputHeight(event?.target);
+};
+
 window.handleAiChatKey = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
@@ -3269,7 +3287,7 @@ window.sendAiMessage = async () => {
     if (!text) return;
 
     inputEl.value = '';
-    inputEl.style.height = '';
+    adjustAiInputHeight(inputEl);
 
     aiMessages.push({ role: 'user', content: text });
     appendAiMessage('user', text);
@@ -3371,6 +3389,10 @@ window.sendAiMessage = async () => {
         if (sendBtn) sendBtn.disabled = false;
     }
 };
+
+document.addEventListener('DOMContentLoaded', () => {
+    adjustAiInputHeight(document.getElementById('ai-chat-input'));
+});
 
 window.uploadChurchLogo = async () => {
     if (!isSuperAdminUser()) return;
