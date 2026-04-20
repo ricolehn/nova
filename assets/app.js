@@ -3472,19 +3472,27 @@ window.saveSettings = async () => {
 
 window.changePassword = async (isUser = false) => {
     const inputId = isUser ? 'user-new-password' : 'new-password';
+    const oldInputId = isUser ? 'user-old-password' : 'old-password';
     const pw = document.getElementById(inputId).value;
+    const oldPw = document.getElementById(oldInputId).value;
+
+    if(!oldPw) {
+        alert("Bitte geben Sie Ihr altes Passwort ein.");
+        return;
+    }
 
     if(!pw || pw.length < 6) {
-        alert("Passwort muss mindestens 6 Zeichen lang sein.");
+        alert("Neues Passwort muss mindestens 6 Zeichen lang sein.");
         return;
     }
 
     try {
         const user = auth.currentUser;
         if(user) {
-            await updatePassword(user, pw);
+            await updatePassword(user, oldPw, pw);
             showToast("Passwort erfolgreich geändert");
             document.getElementById(inputId).value = '';
+            document.getElementById(oldInputId).value = '';
         } else {
             alert("Kein Benutzer angemeldet.");
         }
