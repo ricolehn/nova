@@ -505,13 +505,19 @@ app.post('/api/auth/logout', authRateLimit, (req, res) => {
 });
 
 app.post('/api/auth/password', authRateLimit, verifyToken, async (req, res) => {
+  const oldPassword = String(req.body?.oldPassword || '');
   const password = String(req.body?.password || '');
+
+  if (!oldPassword) {
+    return res.status(400).json({ error: 'Altes Passwort erforderlich.' });
+  }
+
   if (!password || password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
   }
 
   try {
-    await updateOwnPassword(req.authToken, req.user.uid, password);
+    await updateOwnPassword(req.authToken, req.user.uid, oldPassword, password);
     res.json({ success: true });
   } catch (error) {
     res.status(error.status || 400).json({ error: error.message || 'Failed to update password.' });

@@ -273,7 +273,13 @@
                         <label for="admin-email-notifications" style="margin:0; font-weight:600; cursor:pointer">E-Mail Benachrichtigungen bei Anfragen</label>
                     </div>
                     <div class="form-group" style="margin-top:20px;">
-                        <label class="form-label" for="new-password">Passwort ändern</label>
+                        <label class="form-label">Passwort ändern</label>
+                        <div class="password-wrapper" style="margin-bottom: 12px;">
+                            <input type="password" id="old-password" class="form-input has-toggle" placeholder="Altes Passwort">
+                            <button type="button" class="password-toggle" onclick="togglePassword('old-password', this)" aria-label="Passwort anzeigen">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            </button>
+                        </div>
                         <div class="password-wrapper">
                             <input type="password" id="new-password" class="form-input has-toggle" placeholder="Neues Passwort">
                             <button type="button" class="password-toggle" onclick="togglePassword('new-password', this)" aria-label="Passwort anzeigen">
@@ -520,7 +526,13 @@
                         </div>
                     </div>
                     <div class="form-group" style="margin-top:20px;">
-                        <label class="form-label" for="user-new-password">Passwort ändern</label>
+                        <label class="form-label">Passwort ändern</label>
+                        <div class="password-wrapper" style="margin-bottom: 12px;">
+                            <input type="password" id="user-old-password" class="form-input has-toggle" placeholder="Altes Passwort">
+                            <button type="button" class="password-toggle" onclick="togglePassword('user-old-password', this)" aria-label="Passwort anzeigen">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            </button>
+                        </div>
                         <div class="password-wrapper">
                             <input type="password" id="user-new-password" class="form-input has-toggle" placeholder="Neues Passwort">
                             <button type="button" class="password-toggle" onclick="togglePassword('user-new-password', this)" aria-label="Passwort anzeigen">
