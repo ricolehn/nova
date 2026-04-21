@@ -1286,13 +1286,6 @@ input:checked + .slider:before { transform: translateX(22px); }
     border-radius: 999px;
 }
 
-.ai-chat-messages-styled {
-    padding: 8px 0 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
 .ai-chat-welcome {
     display: flex;
     flex-direction: column;
