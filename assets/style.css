@@ -326,7 +326,6 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
 
 .person-item:active { transform: scale(0.97); }
 .person-item:focus { outline: none; }
-.person-item:focus-visible { box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3); }
 
 .person-pill { display: flex; justify-content: space-between; align-items: center; width: 100%; }
 .person-left { display: flex; flex-direction: column; gap: 4px; }
