@@ -1363,19 +1363,19 @@ async function renderSuperAdminTools() {
     const sysSettingsBtn = document.getElementById('profile-sys-settings-btn');
     const sysNavBtnDesktop = document.getElementById('admin-sys-nav-btn-desktop');
     const sysNavBtnBottom = document.getElementById('admin-sys-nav-btn');
+    const isAdmin = !!(currentUser && currentUser.admin);
+
+    if (sysNavBtnDesktop) sysNavBtnDesktop.style.display = isAdmin ? 'block' : 'none';
+    if (sysNavBtnBottom) sysNavBtnBottom.style.display = isAdmin ? 'flex' : 'none';
 
     if (!isSuperAdminUser()) {
         if (card) card.style.display = 'none';
         if (sysSettingsBtn) sysSettingsBtn.style.display = 'none';
-        if (sysNavBtnDesktop) sysNavBtnDesktop.style.display = 'none';
-        if (sysNavBtnBottom) sysNavBtnBottom.style.display = 'none';
         return;
     }
 
     if (card) card.style.display = '';
     if (sysSettingsBtn) sysSettingsBtn.style.display = '';
-    if (sysNavBtnDesktop) sysNavBtnDesktop.style.display = 'block';
-    if (sysNavBtnBottom) sysNavBtnBottom.style.display = 'flex'; // Bottom nav uses flex
 
     renderSuperAdminUserManagement();
     await renderSuperAdminPaymentEditor();
