@@ -980,28 +980,6 @@ input:checked + .slider:before { transform: translateX(22px); }
 }
 
 /* --- Super Admin Zone --- */
-.super-admin-zone {
-    border: 2px solid rgba(239, 68, 68, 0.3);
-    background: rgba(239, 68, 68, 0.02);
-    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.1);
-}
-
-.super-admin-header {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
-    color: var(--danger);
-    padding: 15px 20px;
-    font-weight: 800;
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.super-admin-body {
-    padding: 20px;
-}
-
 .super-admin-group {
     background: var(--surface);
     border: 1px solid var(--border);
