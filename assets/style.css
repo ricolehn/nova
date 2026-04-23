@@ -1400,6 +1400,10 @@ input:checked + .slider:before { transform: translateX(22px); }
 }
 
 @media (max-width: 767px) {
+    #ai-chat.tab-content {
+        animation: none;
+    }
+
     #ai-chat.active {
         display: flex;
         flex-direction: column;
