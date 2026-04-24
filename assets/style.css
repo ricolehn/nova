@@ -61,7 +61,7 @@
 html { overscroll-behavior: none; }
 body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; overscroll-behavior: none; transition: background-color 0.3s ease; }
 
-.container { max-width: 800px; margin: 0 auto; padding: 20px; padding-bottom: 100px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.container { max-width: none; margin: 0; padding: 20px calc(max(20px, (100% - 800px) / 2)); padding-bottom: 100px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 .app-layout {
     position: relative;
@@ -791,9 +791,11 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 @media (min-width: 769px) {
     .container {
-        max-width: 1200px;
+        max-width: none;
         display: block; /* Reset grid */
         padding-top: var(--desktop-header-offset);
+        padding-left: calc(max(20px, (100% - 1200px) / 2));
+        padding-right: calc(max(20px, (100% - 1200px) / 2));
     }
 
     .header {
