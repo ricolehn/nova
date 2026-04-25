@@ -403,7 +403,7 @@ function preprocessPersonServerSide(person, settings) {
             isActiveStandingOrder: hasActiveSO
         }
         : {
-            text: 'Zahlung überfällig',
+            text: hasActiveSO ? 'Zahlung überfällig (Dauerauftrag aktiv)' : 'Zahlung überfällig',
             isOverdue: true,
             isSoonDue: false,
             isActiveStandingOrder: hasActiveSO
