@@ -178,11 +178,11 @@
             </div>
             <div class="form-group">
                 <label for="people-search" class="sr-only">Mitglieder suchen</label>
-                <div class="input-with-icon">
+                <div class="input-with-icon search-bar-wrapper">
                     <div class="input-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     </div>
-                    <input type="text" id="people-search" class="form-input" placeholder="Suche..." oninput="window.filterPeople()" style="margin-bottom: 10px;">
+                    <input type="text" id="people-search" class="form-input search-input" placeholder="Suche..." oninput="window.filterPeople()">
                 </div>
             </div>
             <div id="unlinkedUsers"></div>
@@ -413,11 +413,11 @@
                 <div class="card-body" style="flex: 1; overflow-y: auto; padding: 0;">
                     <div style="padding: 15px 15px 0 15px;">
                         <label for="history-search" class="sr-only">Historie suchen</label>
-                        <div class="input-with-icon">
+                        <div class="input-with-icon search-bar-wrapper">
                             <div class="input-icon">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </div>
-                            <input type="text" id="history-search" class="form-input" placeholder="Suche..." oninput="window.filterHistory()" style="margin-bottom: 0;">
+                            <input type="text" id="history-search" class="form-input search-input" placeholder="Suche..." oninput="window.filterHistory()">
                         </div>
                     </div>
                     <div id="history-page-list"></div>
