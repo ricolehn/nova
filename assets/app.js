@@ -857,14 +857,14 @@ function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = nu
             // If trueMissingAmount <= totalSOAmount, then after SO executes, they will owe 0.
             if (trueMissingAmount <= totalSOAmount) {
                 return {
-                    text: 'Dauerauftrag aktiv',
+                    text: 'Alles in Ordnung',
                     isOverdue: false,
                     isSoonDue: true, // Mark them as soon due since the standing order is expected this month
                     isActiveStandingOrder: true
                 };
             } else {
                 return {
-                    text: 'Dauerauftrag aktiv (Betrag fehlt)',
+                    text: 'Zahlung überfällig',
                     isOverdue: true,
                     isSoonDue: false,
                     isActiveStandingOrder: true
@@ -881,7 +881,7 @@ function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = nu
 
     if (hasActiveSO) {
         return {
-            text: 'Dauerauftrag aktiv',
+            text: 'Alles in Ordnung',
             isOverdue: false,
             isSoonDue: false,
             isActiveStandingOrder: true
@@ -1914,7 +1914,7 @@ function renderUserView() {
             ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `<div style="font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 5px;">Bezahlt bis <strong>${dateText}</strong></div>`}
             ${statusMeta.isOverdue ? `
                 <div style="margin-top: 15px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
-                    <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 5px; color: var(--danger);">Offener Betrag${statusMeta.isActiveStandingOrder ? ' (Dauerauftrag aktiv)' : ''}</div>
+                    <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 5px; color: var(--danger);">Offener Betrag</div>
                     <div style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">${formatCurrency(overdueAmount)} €</div>
                 </div>
             ` : ''}
