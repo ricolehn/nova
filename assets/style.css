@@ -70,6 +70,66 @@
 html { overscroll-behavior: none; }
 body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; overscroll-behavior: none; transition: background-color 0.3s ease; }
 
+/* --- App Background Shapes --- */
+.app-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background-color: transparent;
+}
+
+.bg-shape {
+    position: absolute;
+    filter: blur(80px);
+    opacity: 0.15;
+    mix-blend-mode: multiply;
+    transition: all 0.3s ease;
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+}
+
+[data-theme="dark"] .bg-shape {
+    opacity: 0.08;
+    mix-blend-mode: screen;
+}
+
+.shape-1 {
+    width: 80vw;
+    height: 80vw;
+    min-width: 600px;
+    min-height: 600px;
+    background: var(--primary);
+    top: -20%;
+    left: -10%;
+    transform: rotate(35deg);
+}
+
+.shape-2 {
+    width: 90vw;
+    height: 90vw;
+    min-width: 700px;
+    min-height: 700px;
+    background: var(--primary-dark);
+    bottom: -30%;
+    right: -20%;
+    transform: rotate(-20deg);
+}
+
+.shape-3 {
+    width: 60vw;
+    height: 60vw;
+    min-width: 450px;
+    min-height: 450px;
+    background: var(--secondary);
+    top: 30%;
+    left: 20%;
+    transform: rotate(15deg);
+}
+
 .container { max-width: none; margin: 0; padding: 20px calc(max(20px, (100% - 800px) / 2)); padding-bottom: 100px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 .app-layout {
