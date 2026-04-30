@@ -3537,6 +3537,134 @@ window.saveSettings = async () => {
     }
 };
 
+let currentCropper = null;
+
+window.addEventListener('DOMContentLoaded', () => {
+    const avatarInput = document.getElementById('avatar-upload-input');
+    if (avatarInput) {
+        avatarInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            openModal('avatar-crop-modal');
+            const cropContainer = document.getElementById('avatar-crop-container');
+            const loadingText = document.getElementById('avatar-crop-loading');
+            const imageEl = document.getElementById('avatar-crop-image');
+
+            cropContainer.style.display = 'none';
+            loadingText.style.display = 'block';
+
+            if (currentCropper) {
+                currentCropper.destroy();
+                currentCropper = null;
+            }
+
+            let fileToCrop = file;
+            const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
+
+            if (isHeic) {
+                try {
+                    const blob = await heic2any({
+                        blob: file,
+                        toType: "image/jpeg",
+                        quality: 0.8
+                    });
+                    const convertedBlob = Array.isArray(blob) ? blob[0] : blob;
+                    fileToCrop = new File([convertedBlob], file.name.replace(/\.hei[cf]$/i, '.jpg'), { type: "image/jpeg" });
+                } catch (err) {
+                    console.error("HEIC conversion failed:", err);
+                    showToast("HEIC Konvertierung fehlgeschlagen", "error");
+                    closeModal('avatar-crop-modal');
+                    avatarInput.value = '';
+                    return;
+                }
+            }
+
+            const objectUrl = URL.createObjectURL(fileToCrop);
+            imageEl.src = objectUrl;
+
+            imageEl.onload = () => {
+                loadingText.style.display = 'none';
+                cropContainer.style.display = 'flex';
+
+                currentCropper = new Cropper(imageEl, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 0.8,
+                    restore: false,
+                    guides: false,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                });
+            };
+        });
+    }
+});
+
+window.saveAvatarCrop = async () => {
+    if (!currentCropper) return;
+
+    const btn = document.getElementById('btn-save-avatar');
+    const originalText = btn.innerText;
+    btn.innerText = "Speichere...";
+    btn.disabled = true;
+
+    try {
+        const canvas = currentCropper.getCroppedCanvas({
+            width: 400,
+            height: 400
+        });
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
+
+        const token = await currentUser.getIdToken();
+        const formData = new FormData();
+        formData.append('avatar', blob, 'avatar.jpg');
+
+        const res = await fetch(config.backendUrl + '/api/upload-avatar', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Upload fehlgeschlagen');
+        }
+
+        showToast("Profilbild erfolgreich aktualisiert");
+        closeModal('avatar-crop-modal');
+        const avatarInput = document.getElementById('avatar-upload-input');
+        if (avatarInput) avatarInput.value = '';
+
+        // Ensure cache busting
+        const ts = Date.now();
+        const currentAvatarSrc = `${config.backendUrl}/api/avatars/avatar-${currentUser.uid}.jpg?t=${ts}`;
+
+        const profileImg = document.querySelector('.profile-btn img');
+        if (profileImg) {
+            profileImg.src = currentAvatarSrc;
+            profileImg.style.display = 'block';
+            if (profileImg.nextElementSibling) {
+                profileImg.nextElementSibling.style.display = 'none';
+            }
+        }
+
+    } catch (err) {
+        console.error("Avatar upload error:", err);
+        showToast("Fehler beim Speichern: " + err.message, "error");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
+
 window.changePassword = async (isUser = false) => {
     const inputId = isUser ? 'user-new-password' : 'new-password';
     const oldInputId = isUser ? 'user-old-password' : 'old-password';
@@ -3688,6 +3816,16 @@ onAuthStateChanged(auth, async (user) => {
             currentUser = { role: 'user', email: user.email, uid: user.uid };
         }
         await bootstrapSuperAdmin(user);
+
+        // Load User Avatar into Profile Button
+        const profileImg = document.querySelector('.profile-btn img');
+        if (profileImg) {
+            profileImg.src = `${config.backendUrl}/api/avatars/avatar-${currentUser.uid}.jpg?t=${Date.now()}`;
+            profileImg.style.display = 'block';
+            if (profileImg.nextElementSibling) {
+                profileImg.nextElementSibling.style.display = 'none'; // hide the fallback svg immediately to prevent flash
+            }
+        }
 
         document.getElementById('login-modal').classList.remove('show');
         isAuthenticated = true;

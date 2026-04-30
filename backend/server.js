@@ -301,6 +301,26 @@ const logoUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    // Overwrite the existing avatar or create a new one using a standard naming convention
+    cb(null, `avatar-${req.user.uid}.jpg`);
+  }
+});
+
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid avatar image format (JPG/PNG/WEBP only)'));
+    }
+  }
+});
+
 const adminRateLimit = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
@@ -1074,6 +1094,19 @@ app.post('/api/admin/logo', verifyToken, verifySuperAdmin, (req, res) => {
   });
 });
 
+app.post('/api/upload-avatar', protectedActionRateLimit, verifyToken, (req, res) => {
+  avatarUpload.single('avatar')(req, res, (error) => {
+    if (error) {
+      if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Avatar image too large (max 5MB)' });
+      }
+      return res.status(400).json({ error: error.message || 'Avatar upload failed' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded.' });
+    res.json({ filename: req.file.filename });
+  });
+});
+
 app.post('/api/upload', protectedActionRateLimit, verifyToken, (req, res) => {
   upload.single('receipt')(req, res, (error) => {
     if (error) {
@@ -1092,6 +1125,25 @@ app.get('/api/receipts/:filename', protectedActionRateLimit, verifyToken, (req, 
   const normalizedUploadDir = path.resolve(uploadDir);
 
   if (!filePath.startsWith(normalizedUploadDir + path.sep)) {
+    return res.status(403).send('Forbidden: Path traversal detected');
+  }
+
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('File not found');
+  }
+});
+
+app.get('/api/avatars/:filename', protectedActionRateLimit, (req, res) => {
+  const filePath = path.resolve(path.join(uploadDir, req.params.filename));
+  const normalizedUploadDir = path.resolve(uploadDir);
+
+  if (req.params.filename.includes('/') || req.params.filename.includes('\\')) {
+    return res.status(403).send('Forbidden: Path traversal detected');
+  }
+
+  if (!filePath.startsWith(normalizedUploadDir + path.sep) || !path.basename(filePath).startsWith('avatar-')) {
     return res.status(403).send('Forbidden: Path traversal detected');
   }
 

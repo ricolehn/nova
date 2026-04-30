@@ -11,6 +11,8 @@
     <link rel="modulepreload" href="assets/pocketbase-compat.js">
     <link rel="stylesheet" href="assets/style.css">
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 </head>
 <body>
 
@@ -78,6 +80,7 @@
             <div class="header-right">
                 <div class="profile-menu-container">
                     <button class="profile-btn" onclick="toggleProfileMenu()" aria-label="Profil Menü" aria-expanded="false" aria-haspopup="true">
+                        <img style="display: none;" alt="Profilbild" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                     </button>
                     <div id="profileDropdown" class="profile-dropdown">
@@ -516,6 +519,16 @@
 
         <div id="user-settings" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-user-settings">
             <div class="card">
+                <div class="card-header">Profilbild</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label" for="avatar-upload-input" style="color: var(--text-secondary);">Neues Profilbild auswählen</label>
+                        <input type="file" id="avatar-upload-input" class="form-input" accept="image/*,.heic,.heif" style="margin-bottom: 10px;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
                 <div class="card-header">Einstellungen</div>
                 <div class="card-body">
                     <div class="form-group">
@@ -909,6 +922,28 @@
         });
     }
 </script>
+
+<!-- Avatar Crop Modal -->
+<div id="avatar-crop-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="avatar-crop-modal-title">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 class="modal-title" id="avatar-crop-modal-title">Profilbild zuschneiden</h2>
+            <button class="close-modal" aria-label="Schließen" onclick="closeModal('avatar-crop-modal')">&times;</button>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+            <div id="avatar-crop-container" style="max-height: 400px; width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #eee;">
+                <img id="avatar-crop-image" style="max-width: 100%; display: block;">
+            </div>
+            <div id="avatar-crop-loading" style="display: none; padding: 20px; font-weight: bold; color: var(--text-secondary);">
+                Bild wird verarbeitet...
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('avatar-crop-modal'); document.getElementById('avatar-upload-input').value = '';">Abbrechen</button>
+            <button type="button" class="btn btn-primary" id="btn-save-avatar" onclick="saveAvatarCrop()">Übernehmen</button>
+        </div>
+    </div>
+</div>
 
 <script type="module" src="assets/app.js"></script>
 </body>
