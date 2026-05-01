@@ -201,16 +201,6 @@
 
         <div id="settings" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-settings">
             
-            <div class="card card-settings" id="card-admin-avatar">
-                <div class="card-header">Profilbild</div>
-                <div class="card-body">
-                    <div class="form-group">
-                        <label class="form-label" for="avatar-upload-input-admin" style="color: var(--text-secondary);">Neues Profilbild auswählen</label>
-                        <input type="file" id="avatar-upload-input-admin" class="form-input avatar-upload-input" accept="image/*,.heic,.heif" style="margin-bottom: 10px;">
-                    </div>
-                </div>
-            </div>
-
             <div class="card card-settings" id="card-design">
                 <div class="card-header">Design</div>
                 <div class="card-body">
@@ -532,8 +522,8 @@
                 <div class="card-header">Profilbild</div>
                 <div class="card-body">
                     <div class="form-group">
-                        <label class="form-label" for="avatar-upload-input-user" style="color: var(--text-secondary);">Neues Profilbild auswählen</label>
-                        <input type="file" id="avatar-upload-input-user" class="form-input avatar-upload-input" accept="image/*,.heic,.heif" style="margin-bottom: 10px;">
+                        <label class="form-label" for="avatar-upload-input" style="color: var(--text-secondary);">Neues Profilbild auswählen</label>
+                        <input type="file" id="avatar-upload-input" class="form-input" accept="image/*,.heic,.heif" style="margin-bottom: 10px;">
                     </div>
                 </div>
             </div>
@@ -949,7 +939,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('avatar-crop-modal'); document.querySelectorAll('.avatar-upload-input').forEach(el => el.value = '');">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('avatar-crop-modal'); document.getElementById('avatar-upload-input').value = '';">Abbrechen</button>
             <button type="button" class="btn btn-primary" id="btn-save-avatar" onclick="saveAvatarCrop()">Übernehmen</button>
         </div>
     </div>

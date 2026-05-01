@@ -3554,8 +3554,8 @@ window.saveSettings = async () => {
 let currentCropper = null;
 
 window.addEventListener('DOMContentLoaded', () => {
-    const avatarInputs = document.querySelectorAll('.avatar-upload-input');
-    avatarInputs.forEach(avatarInput => {
+    const avatarInput = document.getElementById('avatar-upload-input');
+    if (avatarInput) {
         avatarInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -3616,7 +3616,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 });
             };
         });
-    });
+    }
 });
 
 window.saveAvatarCrop = async () => {
@@ -3635,7 +3635,7 @@ window.saveAvatarCrop = async () => {
 
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
 
-        const token = await auth.currentUser.getIdToken();
+        const token = await currentUser.getIdToken();
         const formData = new FormData();
         formData.append('avatar', blob, 'avatar.jpg');
 
@@ -3654,8 +3654,8 @@ window.saveAvatarCrop = async () => {
 
         showToast("Profilbild erfolgreich aktualisiert");
         closeModal('avatar-crop-modal');
-        const avatarInputs = document.querySelectorAll('.avatar-upload-input');
-        avatarInputs.forEach(input => input.value = '');
+        const avatarInput = document.getElementById('avatar-upload-input');
+        if (avatarInput) avatarInput.value = '';
 
         // Ensure cache busting
         const ts = Date.now();
