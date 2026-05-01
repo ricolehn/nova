@@ -295,7 +295,21 @@ window.switchTab = function(tabName, btn) {
     }
 };
 
-window.filterPeople = function() {
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// ⚡ Bolt: Debounce search to prevent synchronous layout thrashing on every keystroke
+// Expected impact: Removes main thread blocking during fast typing, especially for large lists
+window.filterPeople = debounce(function() {
     const query = document.getElementById('people-search')?.value.toLowerCase() || '';
     const items = document.querySelectorAll('.person-wrapper');
     items.forEach(item => {
@@ -306,9 +320,9 @@ window.filterPeople = function() {
             item.style.display = 'none';
         }
     });
-};
+}, 300);
 
-window.filterHistory = function() {
+window.filterHistory = debounce(function() {
     const query = document.getElementById('history-search')?.value.toLowerCase() || '';
     const container = document.getElementById('history-page-list');
     if (!container) return;
@@ -322,7 +336,7 @@ window.filterHistory = function() {
             item.style.display = 'none';
         }
     });
-};
+}, 300);
 
 window.toggleProfileMenu = function() {
     const menu = document.getElementById('profileDropdown');
