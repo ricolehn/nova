@@ -903,7 +903,8 @@ app.get('/api/transactions', dbRateLimit, verifyToken, async (req, res) => {
     }
     const page = parseInt(req.query.page, 10) || 1;
     const perPage = parseInt(req.query.perPage, 10) || 150;
-    const transactions = await getPaginatedTransactions(appConfig, page, perPage);
+    const search = req.query.search || '';
+    const transactions = await getPaginatedTransactions(appConfig, page, perPage, search);
     res.json(transactions);
   } catch (error) {
     res.status(500).json({ error: error.message || 'Failed to fetch transactions' });

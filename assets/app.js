@@ -48,6 +48,7 @@ let transactionPage = 1;
 const transactionPerPage = 150;
 let cachedTransactions = null;
 let transactionTotalItems = 0;
+let transactionSearchQuery = '';
 
 // ⚡ Bolt: Global formatters for improved performance (avoiding re-initialization)
 const numberFormatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -323,19 +324,11 @@ window.filterPeople = debounce(function() {
 }, 300);
 
 window.filterHistory = debounce(function() {
-    const query = document.getElementById('history-search')?.value.toLowerCase() || '';
-    const container = document.getElementById('history-page-list');
-    if (!container) return;
-
-    const items = container.querySelectorAll('.trans-item');
-    items.forEach(item => {
-        const leftEl = item.querySelector('.trans-left');
-        if (leftEl && leftEl.textContent.toLowerCase().includes(query)) {
-            item.style.display = 'flex';
-        } else {
-            item.style.display = 'none';
-        }
-    });
+    const query = document.getElementById('history-search')?.value.trim() || '';
+    if (transactionSearchQuery !== query) {
+        transactionSearchQuery = query;
+        window.renderHistoryTab(true);
+    }
 }, 300);
 
 window.toggleProfileMenu = function() {
@@ -2399,7 +2392,8 @@ window.renderHistoryTab = async function(resetLimit = true) {
     }
 
     try {
-        const response = await fetchWithAuth(`${config.apiBaseUrl}/transactions?page=${transactionPage}&perPage=${transactionPerPage}`);
+        const queryParam = transactionSearchQuery ? `&search=${encodeURIComponent(transactionSearchQuery)}` : '';
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/transactions?page=${transactionPage}&perPage=${transactionPerPage}${queryParam}`);
         if (!response.ok) throw new Error('Failed to fetch transactions');
         const data = await response.json();
 
