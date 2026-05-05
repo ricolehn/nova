@@ -4253,7 +4253,15 @@ async function loadCurrentProfilePicture() {
     }
 }
 
+let _profilePictureObjectUrl = null;
+
 function _applyProfilePicture(url) {
+    if (_profilePictureObjectUrl) {
+        URL.revokeObjectURL(_profilePictureObjectUrl);
+        _profilePictureObjectUrl = null;
+    }
+    if (url) _profilePictureObjectUrl = url;
+
     const adminPreview = document.getElementById('admin-profile-pic-preview');
     const adminPlaceholder = document.getElementById('admin-profile-pic-placeholder');
     const userPreview = document.getElementById('user-profile-pic-preview');
