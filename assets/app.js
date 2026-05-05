@@ -911,6 +911,40 @@ function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = nu
  * @param {number} [preCalcCredit] - Optional: Vorberechnetes Restguthaben
  * @returns {number} - Fehlender Betrag (0 wenn ausgeglichen oder Guthaben)
  */
+function isPaymentInCurrentMonth(paymentDate, today) {
+    if (!paymentDate) return false;
+    const parsed = new Date(paymentDate);
+    if (Number.isNaN(parsed.getTime())) return false;
+    return parsed.getFullYear() === today.getFullYear() && parsed.getMonth() === today.getMonth();
+}
+
+function hasStandingOrderPaidThisMonth(person, standingOrder, today) {
+    const payments = safeList(person.payments);
+    const soAmount = parseFloat(standingOrder.amount || 0);
+    const soIdPrefix = standingOrder.id ? `auto_${standingOrder.id}_` : null;
+
+    return payments.some((payment) => {
+        if (!isPaymentInCurrentMonth(payment.date, today)) {
+            return false;
+        }
+
+        if (soIdPrefix && typeof payment.id === 'string' && payment.id.startsWith(soIdPrefix)) {
+            return true;
+        }
+
+        const isAutoLike = payment.isAuto === true || String(payment.description || '').includes('(Auto)');
+        const amountMatches = Math.abs(parseFloat(payment.amount || 0) - soAmount) < 0.0001;
+        return isAutoLike && amountMatches;
+    });
+}
+
+/**
+ * Berechnet den fehlenden Betrag in Euro bis zum Ende des aktuellen Monats.
+ * @param {Object} person - Die Person
+ * @param {Date} [preCalcPaidUntil] - Optional: Vorberechnetes "Bezahlt bis" Datum
+ * @param {number} [preCalcCredit] - Optional: Vorberechnetes Restguthaben
+ * @returns {number} - Fehlender Betrag (0 wenn ausgeglichen oder Guthaben)
+ */
 function calculateOverdueAmount(person, preCalcPaidUntil, preCalcCredit, todayStrArg = null) {
     const today = new Date();
 
@@ -918,13 +952,19 @@ function calculateOverdueAmount(person, preCalcPaidUntil, preCalcCredit, todaySt
     const standingOrders = safeList(person.standingOrders);
     const todayStr = todayStrArg || getTodayStr();
 
-    let totalSOAmount = 0;
+    let anticipatedSOAmount = 0;
     const activeSOs = standingOrders.filter(so => {
          if (so.startDate > todayStr) return false;
          if (so.endDate && so.endDate < todayStr) return false;
          return true;
     });
-    activeSOs.forEach(so => totalSOAmount += parseFloat(so.amount || 0));
+
+    activeSOs.forEach(so => {
+        // Only consider it an anticipated buffer if it hasn't been executed yet this month
+        if (!hasStandingOrderPaidThisMonth(person, so, today)) {
+            anticipatedSOAmount += parseFloat(so.amount || 0);
+        }
+    });
     const hasActiveSO = activeSOs.length > 0;
 
     // ALWAYS calculate up to the end of the current month
@@ -956,7 +996,7 @@ function calculateOverdueAmount(person, preCalcPaidUntil, preCalcCredit, todaySt
     // we subtract that anticipated payment from the total missing amount
     // so it doesn't show as an overdue sum yet.
     if (hasActiveSO && finalMissing > 0) {
-        finalMissing = finalMissing - totalSOAmount;
+        finalMissing = finalMissing - anticipatedSOAmount;
     }
 
     return finalMissing > 0 ? finalMissing : 0;
