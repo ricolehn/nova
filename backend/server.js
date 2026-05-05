@@ -1133,8 +1133,10 @@ app.post('/api/profile/picture', protectedActionRateLimit, verifyToken, (req, re
 
     try {
       const uid = req.user.uid;
-      const safeUid = uid.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const destPath = path.join(profilesDir, `${safeUid}.jpg`);
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(uid)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+      }
+      const destPath = path.join(profilesDir, `${uid}.jpg`);
       await fs.promises.writeFile(destPath, req.file.buffer);
       res.json({ success: true });
     } catch (err) {
@@ -1145,9 +1147,12 @@ app.post('/api/profile/picture', protectedActionRateLimit, verifyToken, (req, re
 });
 
 app.get('/api/profile/picture/:uid', protectedActionRateLimit, verifyToken, (req, res) => {
-  const safeUid = req.params.uid.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const uid = req.params.uid;
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(uid)) {
+    return res.status(400).send('Invalid user ID');
+  }
   const normalizedProfilesDir = path.resolve(profilesDir);
-  const filePath = path.resolve(path.join(normalizedProfilesDir, `${safeUid}.jpg`));
+  const filePath = path.resolve(path.join(normalizedProfilesDir, `${uid}.jpg`));
 
   if (path.relative(normalizedProfilesDir, filePath).startsWith('..')) {
     return res.status(403).send('Forbidden: Path traversal detected');

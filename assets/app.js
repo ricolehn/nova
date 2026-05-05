@@ -4059,7 +4059,7 @@ async function fetchWithTimeout(resource, options = {}) {
 }
 
 // Profile picture: crop state
-let _profileCropObjectUrl = null;
+let _profileCropDataUrl = null;
 let _profileCropContext = null; // { imgEl, naturalW, naturalH, cropSize, offsetX, offsetY, isDragging, dragStartX, dragStartY, source }
 
 function _profileCropClamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
@@ -4082,16 +4082,20 @@ window.openProfileCrop = async function(input, source) {
         }
     }
 
-    if (_profileCropObjectUrl) URL.revokeObjectURL(_profileCropObjectUrl);
-    _profileCropObjectUrl = URL.createObjectURL(imageFile);
+    // Use FileReader to produce a data: URL (guaranteed safe scheme, no XSS risk)
+    const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+    });
+    _profileCropDataUrl = dataUrl;
 
     const viewport = document.getElementById('profileCropViewport');
     const imgEl = document.getElementById('profileCropImage');
     const overlay = document.getElementById('profileCropOverlay');
 
-    // Guard: only blob: URLs are valid here to prevent XSS via javascript: scheme
-    if (!_profileCropObjectUrl.startsWith('blob:')) return;
-    imgEl.src = _profileCropObjectUrl;
+    imgEl.src = _profileCropDataUrl;
     await new Promise(resolve => { imgEl.onload = resolve; });
 
     const vw = viewport.clientWidth || 360;
@@ -4171,7 +4175,7 @@ window.openProfileCrop = async function(input, source) {
 };
 
 window.cancelProfileCrop = function() {
-    if (_profileCropObjectUrl) { URL.revokeObjectURL(_profileCropObjectUrl); _profileCropObjectUrl = null; }
+    _profileCropDataUrl = null;
     _profileCropContext = null;
     closeModal('profile-crop-modal');
 };
@@ -4207,7 +4211,7 @@ window.confirmProfileCrop = async function() {
     try {
         await uploadProfilePicture(jpegFile);
         closeModal('profile-crop-modal');
-        if (_profileCropObjectUrl) { URL.revokeObjectURL(_profileCropObjectUrl); _profileCropObjectUrl = null; }
+        _profileCropDataUrl = null;
         showToast('Profilbild gespeichert!', 'success');
         await loadCurrentProfilePicture();
     } catch (e) {
