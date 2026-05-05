@@ -2403,10 +2403,13 @@ window.renderHistoryTab = async function(resetLimit = true) {
 
     if (resetLimit) {
         const skeletonHtml = Array(15).fill(`
-            <div class="trans-item" style="pointer-events: none; border-bottom: 1px solid var(--border); padding: 15px;">
-                <div class="trans-left" style="gap: 6px;">
-                    <div class="skeleton" style="width: 140px; height: 16px;"></div>
-                    <div class="skeleton" style="width: 100px; height: 12px; margin-top: 4px;"></div>
+            <div class="trans-item" style="pointer-events: none;">
+                <div style="display: flex; align-items: center; flex: 1;">
+                    <div class="skeleton" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 16px; flex-shrink: 0;"></div>
+                    <div class="trans-left" style="gap: 6px; flex: 1;">
+                        <div class="skeleton" style="width: 140px; height: 16px;"></div>
+                        <div class="skeleton" style="width: 100px; height: 12px; margin-top: 4px;"></div>
+                    </div>
                 </div>
                 <div class="skeleton" style="width: 70px; height: 18px;"></div>
             </div>
@@ -2438,7 +2441,20 @@ window.renderHistoryTab = async function(resetLimit = true) {
             const isExp = t.type === 'exp';
             const color = isExp ? 'text-danger' : 'text-success';
             const sign = isExp ? '-' : '+';
-            const icon = t.type === 'pay' ? '👤' : (t.type === 'don' ? '💝' : '💸');
+
+            let iconSvg = '';
+            let iconClass = '';
+            if (t.type === 'pay') {
+                iconClass = 'pay';
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+            } else if (t.type === 'don') {
+                iconClass = 'don';
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
+            } else {
+                iconClass = 'exp';
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>';
+            }
+
             const hasReceipt = t.receipt ? '<span style="margin-left:5px" title="Beleg vorhanden">📷</span>' : '';
 
             const paymentPayload = t.payment ? JSON.stringify(t.payment).replace(/"/g, '&quot;') : '{}';
@@ -2455,10 +2471,15 @@ window.renderHistoryTab = async function(resetLimit = true) {
             ` : '';
 
             return `
-                <div class="trans-item" role="button" tabindex="0" onclick="showTransactionDetails('${t.id}', '${t.type}')" onkeydown="if(event.key==='Enter'||event.key===' '){showTransactionDetails('${t.id}', '${t.type}')}" style="cursor:pointer; padding: 15px; border-bottom: 1px solid var(--border);">
-                    <div class="trans-left" style="flex: 1;">
-                        <span style="font-weight:600;">${icon} ${t.who}</span>
-                        <div class="trans-meta">${t.description || '-'} ${hasReceipt} • ${t.date ? dateFormatter.format(new Date(t.date)) : 'Kein Datum'}</div>
+                <div class="trans-item" role="button" tabindex="0" onclick="showTransactionDetails('${t.id}', '${t.type}')" onkeydown="if(event.key==='Enter'||event.key===' '){showTransactionDetails('${t.id}', '${t.type}')}" style="cursor:pointer;">
+                    <div style="display: flex; align-items: center; flex: 1;">
+                        <div class="trans-icon-wrapper ${iconClass}">
+                            ${iconSvg}
+                        </div>
+                        <div class="trans-left" style="flex: 1;">
+                            <span style="font-weight:600;">${t.who}</span>
+                            <div class="trans-meta">${t.description || '-'} ${hasReceipt} • ${t.date ? dateFormatter.format(new Date(t.date)) : 'Kein Datum'}</div>
+                        </div>
                     </div>
                     <div style="display: flex; align-items: center;">
                         <div class="trans-amount ${color}" style="font-size: 1.1rem;">${sign}${formatCurrency(t.amount)}€</div>
