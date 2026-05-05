@@ -257,6 +257,9 @@ app.get('/api/status', (req, res) => {
 const uploadDir = path.join(dataDir, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
+const profilesDir = path.join(dataDir, 'profiles');
+if (!fs.existsSync(profilesDir)) fs.mkdirSync(profilesDir);
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
@@ -303,6 +306,17 @@ const upload = multer({
 const logoUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }
+});
+const profileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG files are accepted for profile pictures.'));
+    }
+  }
 });
 
 const adminRateLimit = rateLimit({
@@ -1104,6 +1118,46 @@ app.get('/api/receipts/:filename', protectedActionRateLimit, verifyToken, (req, 
     res.sendFile(filePath);
   } else {
     res.status(404).send('File not found');
+  }
+});
+
+app.post('/api/profile/picture', protectedActionRateLimit, verifyToken, (req, res) => {
+  profileUpload.single('picture')(req, res, async (uploadError) => {
+    if (uploadError) {
+      if (uploadError instanceof multer.MulterError && uploadError.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File too large (max 5MB)' });
+      }
+      return res.status(400).json({ error: uploadError.message || 'Upload failed' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+
+    try {
+      const uid = req.user.uid;
+      const safeUid = uid.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const destPath = path.join(profilesDir, `${safeUid}.jpg`);
+      await fs.promises.writeFile(destPath, req.file.buffer);
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Failed to save profile picture:', err);
+      res.status(500).json({ error: 'Failed to save profile picture' });
+    }
+  });
+});
+
+app.get('/api/profile/picture/:uid', protectedActionRateLimit, verifyToken, (req, res) => {
+  const safeUid = req.params.uid.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const filePath = path.resolve(path.join(profilesDir, `${safeUid}.jpg`));
+  const normalizedProfilesDir = path.resolve(profilesDir);
+
+  if (!filePath.startsWith(normalizedProfilesDir + path.sep)) {
+    return res.status(403).send('Forbidden: Path traversal detected');
+  }
+
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('Not found');
   }
 });
 

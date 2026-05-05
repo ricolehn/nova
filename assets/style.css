@@ -1745,3 +1745,67 @@ details[open] .ai-thinking-summary::before {
     height: 18px;
     stroke-width: 2.5;
 }
+
+/* Profile picture */
+.profile-pic-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.profile-pic-preview-wrap {
+    flex-shrink: 0;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--surface-alt);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.profile-pic-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+.profile-pic-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    width: 100%;
+    height: 100%;
+}
+.header-profile-pic {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Profile crop modal */
+.profile-crop-container {
+    margin-top: 12px;
+}
+.profile-crop-viewport {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #111;
+    border-radius: 10px;
+    user-select: none;
+}
+.profile-crop-viewport img {
+    pointer-events: none;
+    display: block;
+}
+.profile-crop-overlay {
+    position: absolute;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+    cursor: move;
+    touch-action: none;
+}

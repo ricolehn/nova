@@ -3745,6 +3745,7 @@ onAuthStateChanged(auth, async (user) => {
         isAuthenticated = true;
         connectSSE();
         loadData();
+        loadCurrentProfilePicture();
     } else {
         // Hide spinner if we are not logged in (e.g. session expired)
         const loader = document.getElementById('loading-overlay');
@@ -3770,6 +3771,7 @@ window.logout = async () => {
             sseConnection.close();
             sseConnection = null;
         }
+        _applyProfilePicture(null);
         await signOut(auth);
     } catch (error) {
         console.error("Logout Error:", error);
@@ -4053,6 +4055,214 @@ async function fetchWithTimeout(resource, options = {}) {
     } catch (error) {
         clearTimeout(id);
         throw error;
+    }
+}
+
+// Profile picture: crop state
+let _profileCropObjectUrl = null;
+let _profileCropContext = null; // { imgEl, naturalW, naturalH, cropSize, offsetX, offsetY, isDragging, dragStartX, dragStartY, source }
+
+function _profileCropClamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+window.openProfileCrop = async function(input, source) {
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+
+    // HEIC/HEIF conversion using existing heic2any
+    let imageFile = file;
+    const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
+    if (isHeic) {
+        try {
+            const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+            const convertedBlob = Array.isArray(blob) ? blob[0] : blob;
+            imageFile = new File([convertedBlob], file.name.replace(/\.hei[cf]$/i, '.jpg'), { type: 'image/jpeg' });
+        } catch (e) {
+            console.error('HEIC conversion failed:', e);
+        }
+    }
+
+    if (_profileCropObjectUrl) URL.revokeObjectURL(_profileCropObjectUrl);
+    _profileCropObjectUrl = URL.createObjectURL(imageFile);
+
+    const viewport = document.getElementById('profileCropViewport');
+    const imgEl = document.getElementById('profileCropImage');
+    const overlay = document.getElementById('profileCropOverlay');
+
+    imgEl.src = _profileCropObjectUrl;
+    await new Promise(resolve => { imgEl.onload = resolve; });
+
+    const vw = viewport.clientWidth || 360;
+    const vh = Math.round(vw * 0.75);
+    viewport.style.height = vh + 'px';
+
+    const nw = imgEl.naturalWidth;
+    const nh = imgEl.naturalHeight;
+
+    // Scale image to fit inside viewport
+    const scale = Math.min(vw / nw, vh / nh);
+    const dispW = Math.round(nw * scale);
+    const dispH = Math.round(nh * scale);
+    imgEl.style.width = dispW + 'px';
+    imgEl.style.height = dispH + 'px';
+    imgEl.style.position = 'absolute';
+    imgEl.style.left = Math.round((vw - dispW) / 2) + 'px';
+    imgEl.style.top = Math.round((vh - dispH) / 2) + 'px';
+
+    const cropSize = Math.min(dispW, dispH, Math.min(vw, vh) - 20);
+    overlay.style.width = cropSize + 'px';
+    overlay.style.height = cropSize + 'px';
+
+    let offsetX = Math.round((vw - cropSize) / 2);
+    let offsetY = Math.round((vh - cropSize) / 2);
+    overlay.style.left = offsetX + 'px';
+    overlay.style.top = offsetY + 'px';
+
+    let isDragging = false, dragStartX = 0, dragStartY = 0, dragStartOX = 0, dragStartOY = 0;
+
+    function onPointerDown(e) {
+        e.preventDefault();
+        isDragging = true;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        dragStartX = clientX; dragStartY = clientY;
+        dragStartOX = offsetX; dragStartOY = offsetY;
+    }
+    function onPointerMove(e) {
+        if (!isDragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const imgL = parseInt(imgEl.style.left);
+        const imgT = parseInt(imgEl.style.top);
+        offsetX = _profileCropClamp(dragStartOX + (clientX - dragStartX), imgL, imgL + dispW - cropSize);
+        offsetY = _profileCropClamp(dragStartOY + (clientY - dragStartY), imgT, imgT + dispH - cropSize);
+        overlay.style.left = offsetX + 'px';
+        overlay.style.top = offsetY + 'px';
+    }
+    function onPointerUp() { isDragging = false; }
+
+    overlay.removeEventListener('mousedown', overlay._md);
+    overlay.removeEventListener('touchstart', overlay._td);
+    overlay._md = onPointerDown; overlay._td = onPointerDown;
+    overlay.addEventListener('mousedown', overlay._md);
+    overlay.addEventListener('touchstart', overlay._td, { passive: false });
+    document.removeEventListener('mousemove', overlay._mm);
+    document.removeEventListener('mouseup', overlay._mu);
+    document.removeEventListener('touchmove', overlay._tm);
+    document.removeEventListener('touchend', overlay._tu);
+    overlay._mm = onPointerMove; overlay._mu = onPointerUp;
+    overlay._tm = onPointerMove; overlay._tu = onPointerUp;
+    document.addEventListener('mousemove', overlay._mm);
+    document.addEventListener('mouseup', overlay._mu);
+    document.addEventListener('touchmove', overlay._tm, { passive: false });
+    document.addEventListener('touchend', overlay._tu);
+
+    _profileCropContext = {
+        imgEl, nw, nh, dispW, dispH,
+        imgLeft: parseInt(imgEl.style.left), imgTop: parseInt(imgEl.style.top),
+        cropSize, vw, vh,
+        getOffset: () => ({ x: offsetX, y: offsetY }),
+        source
+    };
+
+    openModal('profile-crop-modal');
+};
+
+window.confirmProfileCrop = async function() {
+    const ctx = _profileCropContext;
+    if (!ctx) return;
+
+    const { imgEl, nw, nh, dispW, dispH, imgLeft, imgTop, cropSize, getOffset, source } = ctx;
+    const { x: offsetX, y: offsetY } = getOffset();
+
+    // Crop relative to displayed image
+    const relX = offsetX - imgLeft;
+    const relY = offsetY - imgTop;
+    const scaleX = nw / dispW;
+    const scaleY = nh / dispH;
+    const srcX = Math.round(relX * scaleX);
+    const srcY = Math.round(relY * scaleY);
+    const srcSize = Math.round(cropSize * Math.min(scaleX, scaleY));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const c = canvas.getContext('2d');
+    c.drawImage(imgEl, srcX, srcY, srcSize, srcSize, 0, 0, 64, 64);
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
+    if (!blob) { showToast('Fehler beim Verarbeiten des Bildes.', 'error'); return; }
+
+    const jpegFile = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
+
+    setButtonLoading('btn-confirm-crop', true, 'Speichern...');
+    try {
+        await uploadProfilePicture(jpegFile);
+        closeModal('profile-crop-modal');
+        if (_profileCropObjectUrl) { URL.revokeObjectURL(_profileCropObjectUrl); _profileCropObjectUrl = null; }
+        showToast('Profilbild gespeichert!', 'success');
+        await loadCurrentProfilePicture();
+    } catch (e) {
+        console.error('Profile upload error:', e);
+        showToast('Fehler beim Hochladen: ' + e.message, 'error');
+    } finally {
+        setButtonLoading('btn-confirm-crop', false, null);
+    }
+};
+
+async function uploadProfilePicture(jpegFile) {
+    const formData = new FormData();
+    formData.append('picture', jpegFile);
+    const response = await fetchWithAuth(`${config.apiBaseUrl}/profile/picture`, {
+        method: 'POST',
+        body: formData
+    });
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Upload fehlgeschlagen');
+    }
+}
+
+async function loadCurrentProfilePicture() {
+    if (!currentUser) return;
+    const uid = currentUser.uid || currentUser.id;
+    if (!uid) return;
+    try {
+        const response = await fetchWithAuth(`${config.apiBaseUrl}/profile/picture/${encodeURIComponent(uid)}`);
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            _applyProfilePicture(url);
+        } else {
+            _applyProfilePicture(null);
+        }
+    } catch {
+        _applyProfilePicture(null);
+    }
+}
+
+function _applyProfilePicture(url) {
+    const adminPreview = document.getElementById('admin-profile-pic-preview');
+    const adminPlaceholder = document.getElementById('admin-profile-pic-placeholder');
+    const userPreview = document.getElementById('user-profile-pic-preview');
+    const userPlaceholder = document.getElementById('user-profile-pic-placeholder');
+    const headerPic = document.getElementById('header-profile-pic');
+    const headerIcon = document.getElementById('header-profile-icon');
+
+    if (url) {
+        if (adminPreview) { adminPreview.src = url; adminPreview.style.display = ''; }
+        if (adminPlaceholder) adminPlaceholder.style.display = 'none';
+        if (userPreview) { userPreview.src = url; userPreview.style.display = ''; }
+        if (userPlaceholder) userPlaceholder.style.display = 'none';
+        if (headerPic) { headerPic.src = url; headerPic.style.display = ''; }
+        if (headerIcon) headerIcon.style.display = 'none';
+    } else {
+        if (adminPreview) adminPreview.style.display = 'none';
+        if (adminPlaceholder) adminPlaceholder.style.display = '';
+        if (userPreview) userPreview.style.display = 'none';
+        if (userPlaceholder) userPlaceholder.style.display = '';
+        if (headerPic) headerPic.style.display = 'none';
+        if (headerIcon) headerIcon.style.display = '';
     }
 }
 
