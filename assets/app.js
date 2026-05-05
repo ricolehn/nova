@@ -4107,22 +4107,36 @@ window.openProfileCrop = async function(input, source) {
 
     // Scale image to fit inside viewport
     const scale = Math.min(vw / nw, vh / nh);
-    const dispW = Math.round(nw * scale);
-    const dispH = Math.round(nh * scale);
-    imgEl.style.width = dispW + 'px';
-    imgEl.style.height = dispH + 'px';
-    imgEl.style.position = 'absolute';
-    imgEl.style.left = Math.round((vw - dispW) / 2) + 'px';
-    imgEl.style.top = Math.round((vh - dispH) / 2) + 'px';
+    let currentZoom = 1;
 
-    const cropSize = Math.min(dispW, dispH, Math.min(vw, vh) - 20);
+    function applyZoom() {
+        const dispW = Math.round(nw * scale * currentZoom);
+        const dispH = Math.round(nh * scale * currentZoom);
+        imgEl.style.width = dispW + 'px';
+        imgEl.style.height = dispH + 'px';
+        imgEl.style.position = 'absolute';
+
+        // Keep image centered
+        imgEl.style.left = Math.round((vw - dispW) / 2) + 'px';
+        imgEl.style.top = Math.round((vh - dispH) / 2) + 'px';
+
+        // Constrain overlay within new image bounds
+        const imgL = parseInt(imgEl.style.left);
+        const imgT = parseInt(imgEl.style.top);
+        offsetX = _profileCropClamp(offsetX, imgL, imgL + dispW - cropSize);
+        offsetY = _profileCropClamp(offsetY, imgT, imgT + dispH - cropSize);
+        overlay.style.left = offsetX + 'px';
+        overlay.style.top = offsetY + 'px';
+    }
+
+    const cropSize = Math.min(Math.round(nw * scale), Math.round(nh * scale), Math.min(vw, vh) - 20);
     overlay.style.width = cropSize + 'px';
     overlay.style.height = cropSize + 'px';
 
     let offsetX = Math.round((vw - cropSize) / 2);
     let offsetY = Math.round((vh - cropSize) / 2);
-    overlay.style.left = offsetX + 'px';
-    overlay.style.top = offsetY + 'px';
+
+    applyZoom();
 
     let isDragging = false, dragStartX = 0, dragStartY = 0, dragStartOX = 0, dragStartOY = 0;
 
@@ -4140,6 +4154,8 @@ window.openProfileCrop = async function(input, source) {
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         const imgL = parseInt(imgEl.style.left);
         const imgT = parseInt(imgEl.style.top);
+        const dispW = Math.round(nw * scale * currentZoom);
+        const dispH = Math.round(nh * scale * currentZoom);
         offsetX = _profileCropClamp(dragStartOX + (clientX - dragStartX), imgL, imgL + dispW - cropSize);
         offsetY = _profileCropClamp(dragStartOY + (clientY - dragStartY), imgT, imgT + dispH - cropSize);
         overlay.style.left = offsetX + 'px';
@@ -4163,9 +4179,36 @@ window.openProfileCrop = async function(input, source) {
     document.addEventListener('touchmove', overlay._tm, { passive: false });
     document.addEventListener('touchend', overlay._tu);
 
+    // Zoom slider logic
+    const zoomSlider = document.getElementById('profileCropZoom');
+    if (zoomSlider) {
+        zoomSlider.value = 1;
+
+        zoomSlider.removeEventListener('input', zoomSlider._zl);
+        zoomSlider._zl = function(e) {
+            currentZoom = parseFloat(e.target.value);
+            applyZoom();
+        };
+        zoomSlider.addEventListener('input', zoomSlider._zl);
+    }
+
+    // Mouse wheel zoom logic
+    viewport.removeEventListener('wheel', viewport._wl);
+    viewport._wl = function(e) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        currentZoom = _profileCropClamp(currentZoom + delta, 1, 3);
+        if (zoomSlider) zoomSlider.value = currentZoom;
+        applyZoom();
+    };
+    viewport.addEventListener('wheel', viewport._wl, { passive: false });
+
     _profileCropContext = {
-        imgEl, nw, nh, dispW, dispH,
-        imgLeft: parseInt(imgEl.style.left), imgTop: parseInt(imgEl.style.top),
+        imgEl, nw, nh,
+        get dispW() { return Math.round(nw * scale * currentZoom); },
+        get dispH() { return Math.round(nh * scale * currentZoom); },
+        get imgLeft() { return parseInt(imgEl.style.left); },
+        get imgTop() { return parseInt(imgEl.style.top); },
         cropSize, vw, vh,
         getOffset: () => ({ x: offsetX, y: offsetY }),
         source
@@ -4197,12 +4240,12 @@ window.confirmProfileCrop = async function() {
     const srcSize = Math.round(cropSize * Math.min(scaleX, scaleY));
 
     const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
+    canvas.width = 256;
+    canvas.height = 256;
     const c = canvas.getContext('2d');
-    c.drawImage(imgEl, srcX, srcY, srcSize, srcSize, 0, 0, 64, 64);
+    c.drawImage(imgEl, srcX, srcY, srcSize, srcSize, 0, 0, 256, 256);
 
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
     if (!blob) { showToast('Fehler beim Verarbeiten des Bildes.', 'error'); return; }
 
     const jpegFile = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
