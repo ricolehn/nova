@@ -26,6 +26,7 @@ async function getPaginatedTransactions(appConfig, page, perPage, search = '') {
           who: p.data.name,
           type: 'pay',
           personId: p.data.id,
+          personUid: p.data.uid || null,
           paymentId: pay.id,
           paymentIndex: index,
           personName: p.data.name,

@@ -2470,10 +2470,12 @@ window.renderHistoryTab = async function(resetLimit = true) {
                 </button>
             ` : '';
 
+            const uidAttr = (t.type === 'pay' && t.personUid) ? ` data-uid="${t.personUid}"` : '';
+
             return `
                 <div class="trans-item" role="button" tabindex="0" onclick="showTransactionDetails('${t.id}', '${t.type}')" onkeydown="if(event.key==='Enter'||event.key===' '){showTransactionDetails('${t.id}', '${t.type}')}" style="cursor:pointer;">
                     <div style="display: flex; align-items: center; flex: 1;">
-                        <div class="trans-icon-wrapper ${iconClass}">
+                        <div class="trans-icon-wrapper ${iconClass}"${uidAttr}>
                             ${iconSvg}
                         </div>
                         <div class="trans-left" style="flex: 1;">
@@ -2502,6 +2504,19 @@ window.renderHistoryTab = async function(resetLimit = true) {
         const previousScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
 
         container.innerHTML = html;
+
+        // Lazy load profile pictures for payments
+        const iconWrappers = container.querySelectorAll('.trans-icon-wrapper[data-uid]');
+        for (const wrapper of iconWrappers) {
+            const uid = wrapper.getAttribute('data-uid');
+            getProfilePicUrl(uid).then(url => {
+                if (url) {
+                    wrapper.innerHTML = `<img src="${url}" alt="Profil" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;">`;
+                    wrapper.style.background = 'transparent'; // Remove soft background color
+                    wrapper.style.color = 'inherit'; // Reset color
+                }
+            });
+        }
 
         if (!resetLimit && scrollContainer) {
             scrollContainer.scrollTop = previousScrollTop;
@@ -4294,6 +4309,45 @@ async function loadCurrentProfilePicture() {
     } catch {
         _applyProfilePicture(null);
     }
+}
+
+let _profilePicCache = new Map();
+let _profilePicFetches = new Map();
+
+async function getProfilePicUrl(uid) {
+    if (!uid) return null;
+
+    // Check if already fetched and cached
+    if (_profilePicCache.has(uid)) {
+        return _profilePicCache.get(uid);
+    }
+
+    // If currently fetching, wait for that fetch to complete
+    if (_profilePicFetches.has(uid)) {
+        return await _profilePicFetches.get(uid);
+    }
+
+    // Start a new fetch
+    const fetchPromise = (async () => {
+        try {
+            const response = await fetchWithAuth(`${config.apiBaseUrl}/profile/picture/${encodeURIComponent(uid)}`);
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                _profilePicCache.set(uid, url);
+                return url;
+            }
+        } catch (err) {
+            // ignore
+        }
+        _profilePicCache.set(uid, null);
+        return null;
+    })();
+
+    _profilePicFetches.set(uid, fetchPromise);
+    const result = await fetchPromise;
+    _profilePicFetches.delete(uid);
+    return result;
 }
 
 let _profilePictureObjectUrl = null;
