@@ -4089,6 +4089,8 @@ window.openProfileCrop = async function(input, source) {
     const imgEl = document.getElementById('profileCropImage');
     const overlay = document.getElementById('profileCropOverlay');
 
+    // Guard: only blob: URLs are valid here to prevent XSS via javascript: scheme
+    if (!_profileCropObjectUrl.startsWith('blob:')) return;
     imgEl.src = _profileCropObjectUrl;
     await new Promise(resolve => { imgEl.onload = resolve; });
 
@@ -4166,6 +4168,12 @@ window.openProfileCrop = async function(input, source) {
     };
 
     openModal('profile-crop-modal');
+};
+
+window.cancelProfileCrop = function() {
+    if (_profileCropObjectUrl) { URL.revokeObjectURL(_profileCropObjectUrl); _profileCropObjectUrl = null; }
+    _profileCropContext = null;
+    closeModal('profile-crop-modal');
 };
 
 window.confirmProfileCrop = async function() {

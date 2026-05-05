@@ -1146,10 +1146,10 @@ app.post('/api/profile/picture', protectedActionRateLimit, verifyToken, (req, re
 
 app.get('/api/profile/picture/:uid', protectedActionRateLimit, verifyToken, (req, res) => {
   const safeUid = req.params.uid.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const filePath = path.resolve(path.join(profilesDir, `${safeUid}.jpg`));
   const normalizedProfilesDir = path.resolve(profilesDir);
+  const filePath = path.resolve(path.join(normalizedProfilesDir, `${safeUid}.jpg`));
 
-  if (!filePath.startsWith(normalizedProfilesDir + path.sep)) {
+  if (path.relative(normalizedProfilesDir, filePath).startsWith('..')) {
     return res.status(403).send('Forbidden: Path traversal detected');
   }
 

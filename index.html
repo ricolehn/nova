@@ -838,7 +838,7 @@
 
 <div id="profile-crop-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="profile-crop-title">
     <div class="modal-content" style="max-width:420px;">
-        <div class="modal-header"><span id="profile-crop-title">Profilbild zuschneiden</span> <button class="close-btn" onclick="closeModal('profile-crop-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="profile-crop-title">Profilbild zuschneiden</span> <button class="close-btn" onclick="cancelProfileCrop()" aria-label="Schließen">&times;</button></div>
         <div class="profile-crop-container">
             <div class="profile-crop-viewport" id="profileCropViewport">
                 <img id="profileCropImage" alt="Crop preview" draggable="false">
@@ -847,7 +847,7 @@
             <p style="font-size:0.82rem; color:var(--text-secondary); margin:10px 0 0 0; text-align:center;">Bild verschieben, um den Bildausschnitt zu wählen</p>
         </div>
         <div style="display:flex; gap:10px; margin-top:15px;">
-            <button class="btn btn-secondary" style="flex:1" onclick="closeModal('profile-crop-modal')">Abbrechen</button>
+            <button class="btn btn-secondary" style="flex:1" onclick="cancelProfileCrop()">Abbrechen</button>
             <button class="btn btn-primary" style="flex:1" id="btn-confirm-crop" onclick="confirmProfileCrop()">Speichern</button>
         </div>
     </div>
