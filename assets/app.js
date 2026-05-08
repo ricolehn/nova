@@ -98,11 +98,9 @@ function setButtonLoading(btnId, isLoading, loadingText = "Laden...") {
         btn.dataset.originalText = btn.innerText;
         btn.innerText = loadingText;
         btn.disabled = true;
-        btn.style.opacity = '0.7';
     } else {
         if(btn.dataset.originalText) btn.innerText = btn.dataset.originalText;
         btn.disabled = false;
-        btn.style.opacity = '';
     }
 }
 

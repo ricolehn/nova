@@ -481,6 +481,7 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
 }
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .btn:active { transform: scale(0.95); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-block { width: 100%; }
 .btn-primary { background: linear-gradient(90deg, #06b6d4 0%, #10b981 100%); color: white; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
 .btn-secondary { background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); }

@@ -1,0 +1,3 @@
+## 2024-05-18 - Added Global CSS rule for Disabled Buttons
+**Learning:** Found that the disabled state for buttons was visually being managed by ad-hoc Javascript inline styles (e.g. `btn.style.opacity = '0.7'`) during loading states instead of global CSS, resulting in missing `cursor: not-allowed` states, lack of visual affordance for naturally disabled buttons, and tightly coupled presentation logic in JS.
+**Action:** Always prefer setting `.btn:disabled` in the global stylesheet with opacity and `cursor: not-allowed`. It makes the UX consistent for all disabled states in the app and cleans up Javascript event logic.
