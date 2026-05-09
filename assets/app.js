@@ -1477,10 +1477,10 @@ function renderAdminRequests() {
             typeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 14h-8"/><path d="M16 18h-8"/><path d="M16 10h-8"/></svg>';
             details = `${formatCurrency(req.data.amount)} € für "${escapeHtml(req.data.description)}" am ${dateFormatter.format(new Date(req.data.date))}`;
             if (req.data.receipt) {
-                const safeReceipt = escapeHtml(req.data.receipt.replace(/\\/g, "\\\\").replace(/'/g, "\\'"));
+                const safeReceipt = escapeHtml(req.data.receipt);
                 const safeId = escapeHtml(req.id);
                 details += `<div id="receipt-container-${safeId}" style="margin-top:10px;">
-                    <button class="btn btn-small" style="background: transparent; border: 1px solid var(--border); color: var(--text); display: flex; align-items: center; gap: 6px;" onclick="viewRequestReceipt('${safeReceipt}', 'receipt-container-${safeId}')">
+                    <button class="btn btn-small" style="background: transparent; border: 1px solid var(--border); color: var(--text); display: flex; align-items: center; gap: 6px;" data-receipt="${safeReceipt}" data-id="${safeId}" onclick="viewRequestReceipt(this.dataset.receipt, 'receipt-container-' + this.dataset.id)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                         Beleg anzeigen
                     </button>
@@ -2463,7 +2463,15 @@ window.renderHistoryTab = async function(resetLimit = true) {
             else if (t.type === 'exp') mappedType = 'expense';
 
             const editBtn = isSuperAdmin ? `
-                <button class="btn btn-secondary btn-small" style="padding: 6px; border-radius: 8px; margin-left: 10px;" data-payload="${paymentPayload}" onclick="event.stopPropagation(); editRecordedPayment('${escapeHtml(String(t.personId || ''))}', '${escapeHtml(String(t.paymentId || ''))}', ${t.paymentIndex !== undefined ? t.paymentIndex : -1}, '${escapeHtml(String(t.personName || ''))}', '${mappedType}', JSON.parse(this.dataset.payload))" aria-label="Bearbeiten">
+                <button class="btn btn-secondary btn-small" style="padding: 6px; border-radius: 8px; margin-left: 10px;"
+                    data-payload="${paymentPayload}"
+                    data-person-id="${escapeHtml(String(t.personId || ''))}"
+                    data-payment-id="${escapeHtml(String(t.paymentId || ''))}"
+                    data-payment-index="${t.paymentIndex !== undefined ? t.paymentIndex : -1}"
+                    data-person-name="${escapeHtml(String(t.personName || ''))}"
+                    data-mapped-type="${escapeHtml(mappedType)}"
+                    onclick="event.stopPropagation(); editRecordedPayment(this.dataset.personId, this.dataset.paymentId, parseInt(this.dataset.paymentIndex, 10), this.dataset.personName, this.dataset.mappedType, JSON.parse(this.dataset.payload))"
+                    aria-label="Bearbeiten">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
             ` : '';
