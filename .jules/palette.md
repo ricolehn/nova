@@ -1,3 +1,6 @@
 ## 2024-05-18 - Added Global CSS rule for Disabled Buttons
 **Learning:** Found that the disabled state for buttons was visually being managed by ad-hoc Javascript inline styles (e.g. `btn.style.opacity = '0.7'`) during loading states instead of global CSS, resulting in missing `cursor: not-allowed` states, lack of visual affordance for naturally disabled buttons, and tightly coupled presentation logic in JS.
 **Action:** Always prefer setting `.btn:disabled` in the global stylesheet with opacity and `cursor: not-allowed`. It makes the UX consistent for all disabled states in the app and cleans up Javascript event logic.
+## 2026-05-09 - AI Chat Input Accessibility Improvements
+**Learning:** Found an accessibility issue where the AI chat textarea and send button (which only contains an SVG icon) lacked `aria-label` attributes. Without these, screen readers struggle to announce the purpose of these interactive elements.
+**Action:** Added descriptive `aria-label` attributes to both the `<textarea>` and the `<button>` to ensure they are accessible. When building or modifying icon-only buttons or inputs without explicit text labels, always ensure `aria-label` or `aria-labelledby` is provided.
