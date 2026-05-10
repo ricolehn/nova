@@ -1,0 +1,3 @@
+## 2024-05-18 - Replacing Placeholder-as-Label with Visible Labels
+**Learning:** Using placeholders as labels along with visually hidden `sr-only` labels is an anti-pattern. While screen readers might pick up the `sr-only` label, sighted users lose context once they start typing since the placeholder disappears. Moreover, certain input types like `type="date"` do not display placeholders at all in most browsers, leaving users without any visual cue for what the field expects.
+**Action:** Always prefer explicitly visible `<label>` elements associated with their inputs using the `for` attribute and grouped logically (e.g., within a `.form-group` wrapper) to ensure the interface is fully accessible and usable for everyone.
