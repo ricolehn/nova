@@ -1504,11 +1504,11 @@ function renderAdminRequests() {
                 </div>
                 <div style="margin-bottom:16px; font-size: 0.95rem; color: var(--text); line-height: 1.5;">${details}</div>
                 <div style="display:flex; gap:10px;">
-                    <button class="btn btn-primary btn-small" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; border-radius: 12px; padding: 8px 0;" onclick="approveRequest('${req.id}')">
+                    <button class="btn btn-primary btn-small" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; border-radius: 12px; padding: 8px 0;" data-id="${escapeHtml(req.id)}" onclick="approveRequest(this.dataset.id)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                         Genehmigen
                     </button>
-                    <button class="btn btn-small" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; background: transparent; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 8px 0;" onclick="rejectRequest('${req.id}')">
+                    <button class="btn btn-small" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; background: transparent; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 8px 0;" data-id="${escapeHtml(req.id)}" onclick="rejectRequest(this.dataset.id)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                         Ablehnen
                     </button>
@@ -1571,7 +1571,7 @@ function renderUnlinkedUsers() {
                     <option value="">Person auswählen</option>
                     ${options}
                 </select>
-                <button class="btn btn-primary btn-small" style="width:auto;" onclick="assignUserToPerson('${u.uid}')">Zuordnen</button>
+                <button class="btn btn-primary btn-small" style="width:auto;" data-uid="${escapeHtml(u.uid)}" onclick="assignUserToPerson(this.dataset.uid)">Zuordnen</button>
             </div>
         `;
     }).join('');
@@ -2183,7 +2183,7 @@ function generatePersonHTML(p, preCalcData = null) {
                             </div>
                         </div>
                         ${(true) ? `
-                        <button class="btn-icon text-danger" onclick="openEndStandingOrderModal('${p.id}', '${so.id}')" title="Bearbeiten/Beenden" style="background:none; border:none; padding:4px;">
+                        <button class="btn-icon text-danger" data-pid="${escapeHtml(p.id)}" data-soid="${escapeHtml(so.id)}" onclick="openEndStandingOrderModal(this.dataset.pid, this.dataset.soid)" title="Bearbeiten/Beenden" style="background:none; border:none; padding:4px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         </button>
                         ` : ''}
@@ -2196,7 +2196,7 @@ function generatePersonHTML(p, preCalcData = null) {
 
     return `
         <div class="person-wrapper">
-            <div id="person-item-${p.id}" class="person-item" role="button" tabindex="0" aria-expanded="false" onclick="toggleDetails('${p.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); toggleDetails('${p.id}');}">
+            <div id="person-item-${p.id}" class="person-item" role="button" tabindex="0" aria-expanded="false" data-id="${escapeHtml(p.id)}" onclick="toggleDetails(this.dataset.id)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); toggleDetails(this.dataset.id);}">
                 <div class="person-pill">
                     <div class="person-left">
                         <div class="person-name">
@@ -2235,16 +2235,16 @@ function generatePersonHTML(p, preCalcData = null) {
                     ${soListHtml}
 
                     <div class="details-actions" style="${(currentUser && !currentUser.admin) ? 'display:none' : ''}">
-                        <button class="btn btn-primary" onclick="openPaymentModal('${p.id}')">
+                        <button class="btn btn-primary" data-id="${escapeHtml(p.id)}" onclick="openPaymentModal(this.dataset.id)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12"></path><path d="M4 14h9"></path><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"></path></svg>
                             Zahlung erfassen
                         </button>
                         <div class="secondary-actions">
-                            <button class="btn btn-secondary" onclick="openChangeStatusModal('${p.id}')">
+                            <button class="btn btn-secondary" data-id="${escapeHtml(p.id)}" onclick="openChangeStatusModal(this.dataset.id)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                                 Status
                             </button>
-                            <button class="btn btn-secondary" onclick="sendStatusEmail('${p.id}')">
+                            <button class="btn btn-secondary" data-id="${escapeHtml(p.id)}" onclick="sendStatusEmail(this.dataset.id)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                                 E-Mail
                             </button>
@@ -2479,7 +2479,7 @@ window.renderHistoryTab = async function(resetLimit = true) {
             const uidAttr = (t.type === 'pay' && t.personUid) ? ` data-uid="${t.personUid}"` : '';
 
             return `
-                <div class="trans-item" role="button" tabindex="0" onclick="showTransactionDetails('${t.id}', '${t.type}')" onkeydown="if(event.key==='Enter'||event.key===' '){showTransactionDetails('${t.id}', '${t.type}')}" style="cursor:pointer;">
+                <div class="trans-item" role="button" tabindex="0" data-id="${escapeHtml(t.id)}" data-type="${escapeHtml(t.type)}" onclick="showTransactionDetails(this.dataset.id, this.dataset.type)" onkeydown="if(event.key==='Enter'||event.key===' '){showTransactionDetails(this.dataset.id, this.dataset.type)}" style="cursor:pointer;">
                     <div style="display: flex; align-items: center; flex: 1;">
                         <div class="trans-icon-wrapper ${iconClass}"${uidAttr}>
                             ${iconSvg}

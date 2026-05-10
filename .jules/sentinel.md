@@ -1,0 +1,4 @@
+## 2026-05-10 - Fixed High Priority DOM XSS Vulnerability in UI Inline Event Handlers
+**Vulnerability:** Found multiple instances of `escapeHtml` being used to dynamically construct inline Javascript event handlers (like `onclick="..."`) inside `assets/app.js` using string interpolation.
+**Learning:** The browser decodes HTML entities (which `escapeHtml` creates) *before* interpreting and running the Javascript within inline HTML event handlers. This meant the escaped output could re-introduce quotes or execution context breaks, maintaining a viable DOM XSS attack vector when rendering dynamic user data like names, request IDs, or transaction payloads.
+**Prevention:** Always use `data-*` attributes with `escapeHtml` when attaching dynamic user data to HTML elements that will trigger javascript. Then, inside the event listener or inline handler, retrieve the safely stored variable via `this.dataset.*` to prevent any execution of the data as code.
