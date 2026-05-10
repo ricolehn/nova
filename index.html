@@ -772,28 +772,44 @@
 <div id="add-donation-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-add-donation">
     <div class="modal-content">
         <div class="modal-header"><span id="title-add-donation">Spende</span> <button class="close-btn" onclick="closeModal('add-donation-modal')" aria-label="Schließen">&times;</button></div>
-        <label for="donation-amount" class="sr-only">Betrag</label>
-        <input id="donation-amount" class="form-input" type="text" inputmode="decimal" placeholder="Betrag" style="margin-bottom:10px">
-        <label for="donation-name" class="sr-only">Spender Name</label>
-        <input id="donation-name" class="form-input" placeholder="Spender Name" style="margin-bottom:10px">
-        <label for="donation-date" class="sr-only">Datum</label>
-        <input type="date" id="donation-date" class="form-input" style="margin-bottom:10px">
+        <div class="form-group">
+            <label for="donation-amount" class="form-label">Betrag</label>
+            <input id="donation-amount" class="form-input" type="text" inputmode="decimal" placeholder="Betrag">
+        </div>
+        <div class="form-group">
+            <label for="donation-name" class="form-label">Spender Name</label>
+            <input id="donation-name" class="form-input" placeholder="Spender Name">
+        </div>
+        <div class="form-group">
+            <label for="donation-date" class="form-label">Datum</label>
+            <input type="date" id="donation-date" class="form-input">
+        </div>
         <button id="btn-add-donation" class="btn btn-primary btn-block" onclick="addDonation()">Speichern</button>
     </div>
 </div>
 <div id="add-expense-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-add-expense">
     <div class="modal-content">
         <div class="modal-header"><span id="title-add-expense">Ausgabe</span> <button class="close-btn" onclick="closeModal('add-expense-modal')" aria-label="Schließen">&times;</button></div>
-        <label for="expense-amount" class="sr-only">Betrag</label>
-        <input id="expense-amount" class="form-input" type="text" inputmode="decimal" placeholder="Betrag" style="margin-bottom:10px">
-        <label for="expense-issuer" class="sr-only">Wer?</label>
-        <input id="expense-issuer" class="form-input" placeholder="Wer?" style="margin-bottom:10px">
-        <label for="expense-desc" class="sr-only">Wofür?</label>
-        <input id="expense-desc" class="form-input" placeholder="Wofür?" style="margin-bottom:10px">
-        <label for="expense-date" class="sr-only">Datum</label>
-        <input type="date" id="expense-date" class="form-input" style="margin-bottom:10px">
-        <label for="expense-receipt" class="sr-only">Beleg</label>
-        <input type="file" id="expense-receipt" accept="image/*,.heic,.heif" class="form-input" style="margin-bottom:10px">
+        <div class="form-group">
+            <label for="expense-amount" class="form-label">Betrag</label>
+            <input id="expense-amount" class="form-input" type="text" inputmode="decimal" placeholder="Betrag">
+        </div>
+        <div class="form-group">
+            <label for="expense-issuer" class="form-label">Wer?</label>
+            <input id="expense-issuer" class="form-input" placeholder="Wer?">
+        </div>
+        <div class="form-group">
+            <label for="expense-desc" class="form-label">Wofür?</label>
+            <input id="expense-desc" class="form-input" placeholder="Wofür?">
+        </div>
+        <div class="form-group">
+            <label for="expense-date" class="form-label">Datum</label>
+            <input type="date" id="expense-date" class="form-input">
+        </div>
+        <div class="form-group">
+            <label for="expense-receipt" class="form-label">Beleg</label>
+            <input type="file" id="expense-receipt" accept="image/*,.heic,.heif" class="form-input">
+        </div>
         <button id="btn-add-expense" class="btn btn-primary btn-block" onclick="addExpense()">Speichern</button>
     </div>
 </div>
