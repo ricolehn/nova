@@ -1024,7 +1024,7 @@ function generateStatusHistoryHTML(person) {
     };
 
     let html = `
-        <div class="trans-item" style="background: rgba(6, 182, 212, 0.05); margin: -5px; padding: 12px; border-radius: 8px;">
+        <div class="trans-item" style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2);">
             <div class="trans-left">
                 <span style="font-weight:600;">${statusLabels[person.status] || person.status}</span>
                 <div class="trans-meta">Seit ${dateFormatter.format(new Date(currentStatusStart))} • Aktuell</div>
