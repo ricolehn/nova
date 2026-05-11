@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
+<!DOCTYPE html><html lang="de"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#06b6d4">
     <link rel="manifest" href="manifest.json">
     <title>Nova</title>
-    <link rel="modulepreload" href="assets/config.js">
+    <script src="assets/i18n.js"></script><link rel="modulepreload" href="assets/config.js">
     <link rel="modulepreload" href="assets/app.js">
     <link rel="modulepreload" href="assets/pocketbase-compat.js">
     <link rel="stylesheet" href="assets/style.css">
@@ -16,61 +14,59 @@
 
 <div id="loading-overlay">
     <div class="spinner"></div>
-    <div id="loading-message" style="font-weight:600; color:#333; margin-top: 20px;">Lade Daten...</div>
-    <div class="loading-footer"><span id="app-name-footer">Nova</span> &copy; 2026</div>
+    <div id="loading-message" style="font-weight:600; color:#333; margin-top: 20px;" data-i18n="Lade Daten...">Lade Daten...</div>
+    <div class="loading-footer"><span id="app-name-footer" data-i18n="Nova">Nova</span> © 2026</div>
 </div>
 
 <div class="container">
     <button id="install-pwa-btn" class="btn btn-primary" style="display:none; margin-bottom: 20px;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        App installieren
-    </button>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span data-i18n="App installieren">App installieren</span></button>
 
     <div class="app-layout">
         <header class="header">
             <div class="header-left">
                 <div class="header-brand">
                     <img src="assets/church-logo.svg" alt="Nova Logo">
-                    <h1 id="app-name-header">Nova</h1>
+                    <h1 id="app-name-header" data-i18n="Nova">Nova</h1>
                 </div>
                 <nav id="admin-desktop-nav" class="desktop-nav">
                     <button class="nav-btn active" data-tab="overview" onclick="switchTab('overview', this)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                        <span class="nav-label">Startseite</span>
+                        <span class="nav-label" data-i18n="Startseite">Startseite</span>
                     </button>
                     <button class="nav-btn" data-tab="people-view" onclick="switchTab('people-view', this)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                        <span class="nav-label">Personen</span>
+                        <span class="nav-label" data-i18n="Personen">Personen</span>
                     </button>
                     <button id="admin-sys-nav-btn-desktop" class="nav-btn" data-tab="payment-history" onclick="switchTab('payment-history', this)" style="display:none;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><path d="M14 3v5h5M16 13H8M16 17H8M10 9H8"></path></svg>
-                        <span class="nav-label">Historie</span>
+                        <span class="nav-label" data-i18n="Historie">Historie</span>
                     </button>
                     <button id="admin-ai-nav-btn-desktop" class="nav-btn" data-tab="ai-chat" onclick="switchTab('ai-chat', this)" style="display:none;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        <span class="nav-label">KI-Support</span>
+                        <span class="nav-label" data-i18n="KI-Support">KI-Support</span>
                     </button>
                     <button class="nav-btn" data-tab="settings" onclick="switchTab('settings', this)" style="display:none;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                        <span class="nav-label">Einstellungen</span>
+                        <span class="nav-label" data-i18n="Einstellungen">Einstellungen</span>
                     </button>
                 </nav>
                 <nav id="user-desktop-nav" class="desktop-nav" style="display:none;">
                     <button class="nav-btn active" data-tab="user-overview" onclick="switchTab('user-overview', this)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                        <span class="nav-label">Startseite</span>
+                        <span class="nav-label" data-i18n="Startseite">Startseite</span>
                     </button>
                     <button class="nav-btn" data-tab="user-history" onclick="switchTab('user-history', this)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><path d="M14 3v5h5M16 13H8M16 17H8M10 9H8"></path></svg>
-                        <span class="nav-label">Historie</span>
+                        <span class="nav-label" data-i18n="Historie">Historie</span>
                     </button>
                     <button class="nav-btn" data-tab="user-requests" onclick="switchTab('user-requests', this)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        <span class="nav-label">Anfragen</span>
+                        <span class="nav-label" data-i18n="Anfragen">Anfragen</span>
                     </button>
                     <button class="nav-btn" data-tab="user-settings" onclick="switchTab('user-settings', this)" style="display:none;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                        <span class="nav-label">Einstellungen</span>
+                        <span class="nav-label" data-i18n="Einstellungen">Einstellungen</span>
                     </button>
                 </nav>
             </div>
@@ -83,21 +79,13 @@
                     </button>
                     <div id="profileDropdown" class="profile-dropdown">
                         <button class="dropdown-item" onclick="openHomeTab()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                            Startseite
-                        </button>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span data-i18n="Startseite">Startseite</span></button>
                         <button id="profile-sys-settings-btn" class="dropdown-item" onclick="openSystemSettingsTab()" style="display:none;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                            Systemeinstellungen
-                        </button>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><span data-i18n="Systemeinstellungen">Systemeinstellungen</span></button>
                         <button class="dropdown-item" onclick="openSettingsTab()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                            Einstellungen
-                        </button>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span data-i18n="Einstellungen">Einstellungen</span></button>
                         <button class="dropdown-item text-danger" onclick="logout()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                            Abmelden
-                        </button>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span data-i18n="Abmelden">Abmelden</span></button>
                     </div>
                 </div>
             </div>
@@ -109,9 +97,9 @@
             <div class="dashboard-top-section">
                 <div class="dashboard-left">
                     <div class="hero-card" role="button" tabindex="0" aria-label="Transaktionsverlauf anzeigen" onclick="switchTab('payment-history')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); switchTab('payment-history');}">
-                        <span class="hero-label">Aktueller Kassenstand</span>
+                        <span class="hero-label" data-i18n="Aktueller Kassenstand">Aktueller Kassenstand</span>
                         <div class="hero-amount" id="heroAmount">0,00 €</div>
-                        <div class="hero-subtitle">Tippen für Details</div>
+                        <div class="hero-subtitle" data-i18n="Tippen für Details">Tippen für Details</div>
                     </div>
 
                     <div class="stats-grid">
@@ -120,7 +108,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                             </div>
                             <div>
-                                <div class="stat-label">Einnahmen</div>
+                                <div class="stat-label" data-i18n="Einnahmen">Einnahmen</div>
                                 <div class="stat-value text-success" id="totalIncome">0,00 €</div>
                             </div>
                         </div>
@@ -129,7 +117,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
                             </div>
                             <div>
-                                <div class="stat-label">Ausgaben</div>
+                                <div class="stat-label" data-i18n="Ausgaben">Ausgaben</div>
                                 <div class="stat-value text-danger" id="totalExpenses">0,00 €</div>
                             </div>
                         </div>
@@ -138,7 +126,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                             </div>
                             <div>
-                                <div class="stat-label">Mitglieder</div>
+                                <div class="stat-label" data-i18n="Mitglieder">Mitglieder</div>
                                 <div class="stat-value text-info" id="totalMembers">0</div>
                             </div>
                         </div>
@@ -147,7 +135,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                             </div>
                             <div>
-                                <div class="stat-label">Überfällig</div>
+                                <div class="stat-label" data-i18n="Überfällig">Überfällig</div>
                                 <div class="stat-value text-warning" id="totalOverdue">0,00 €</div>
                             </div>
                         </div>
@@ -156,7 +144,7 @@
 
                 <div class="dashboard-right">
                     <div class="chart-card">
-                        <div class="chart-header">Verlauf (90 Tage)</div>
+                        <div class="chart-header" data-i18n="Verlauf (90 Tage)">Verlauf (90 Tage)</div>
                     <div class="chart-container">
                             <canvas id="balanceChart" role="img" aria-label="Kontostandsverlauf über 90 Tage"></canvas>
                         </div>
@@ -171,14 +159,12 @@
 
         <div id="people-view" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-people-view">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="font-size: 1.2rem; font-weight: 800;">Mitglieder</h2>
+                <h2 style="font-size: 1.2rem; font-weight: 800;" data-i18n="Mitglieder">Mitglieder</h2>
                 <button class="btn btn-primary btn-small" onclick="openModal('add-person-modal')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                    Hinzufügen
-                </button>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg><span data-i18n="Hinzufügen">Hinzufügen</span></button>
             </div>
             <div class="form-group">
-                <label for="people-search" class="sr-only">Mitglieder suchen</label>
+                <label for="people-search" class="sr-only" data-i18n="Mitglieder suchen">Mitglieder suchen</label>
                 <div class="input-with-icon search-bar-wrapper">
                     <div class="input-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -190,7 +176,7 @@
             <div id="peopleList"></div>
             <div id="emptyState" style="text-align:center; padding:40px; color:var(--text-secondary); display:none;">
                 <div style="font-size:3rem; margin-bottom:10px;">👥</div>
-                <p>Noch keine Mitglieder.</p>
+                <p data-i18n="Noch keine Mitglieder.">Noch keine Mitglieder.</p>
                 <button class="btn btn-primary" style="margin-top: 20px;" onclick="openModal('add-person-modal')">
                     Person hinzufügen
                 </button>
@@ -200,7 +186,7 @@
         <div id="settings" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-settings">
             
             <div class="card card-settings" id="card-profile-pic-admin">
-                <div class="card-header">Profilbild</div>
+                <div class="card-header" data-i18n="Profilbild">Profilbild</div>
                 <div class="card-body">
                     <div class="profile-pic-section">
                         <div class="profile-pic-preview-wrap">
@@ -211,21 +197,19 @@
                         </div>
                         <div>
                             <label class="btn btn-secondary" for="admin-profile-pic-input" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                Bild hochladen
-                            </label>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg><span data-i18n="Bild hochladen">Bild hochladen</span></label>
                             <input type="file" id="admin-profile-pic-input" accept="image/*,.heic,.heif" style="display:none;" onchange="openProfileCrop(this, 'admin')">
-                            <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:6px;">JPG, PNG, HEIC – wird als 256×256 JPEG gespeichert.</div>
+                            <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:6px;" data-i18n="JPG, PNG, HEIC – wird als 256×256 JPEG gespeichert.">JPG, PNG, HEIC – wird als 256×256 JPEG gespeichert.</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="card card-settings" id="card-design">
-                <div class="card-header">Design</div>
+                <div class="card-header" data-i18n="Design">Design</div>
                 <div class="card-body">
                     <div class="form-group">
-                        <span class="form-label">Farbschema</span>
+                        <span class="form-label" data-i18n="Farbschema">Farbschema</span>
                         <div class="settings-flex-row">
                             <button class="btn btn-secondary" onclick="setTheme('light')">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -245,28 +229,28 @@
             </div>
 
             <div class="card card-settings" id="card-rates">
-                <div class="card-header">Monatliche Beiträge</div>
+                <div class="card-header" data-i18n="Monatliche Beiträge">Monatliche Beiträge</div>
                 <div class="card-body">
                     <div class="form-group">
-                        <label class="form-label" for="rate-vollverdiener">Vollverdiener (€)</label>
+                        <label class="form-label" for="rate-vollverdiener" data-i18n="Vollverdiener (€)">Vollverdiener (€)</label>
                 <input type="text" inputmode="decimal" id="rate-vollverdiener" class="form-input" value="50">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="rate-geringverdiener">Geringverdiener (€)</label>
+                        <label class="form-label" for="rate-geringverdiener" data-i18n="Geringverdiener (€)">Geringverdiener (€)</label>
                 <input type="text" inputmode="decimal" id="rate-geringverdiener" class="form-input" value="25">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="rate-keinverdiener">Keinverdiener (€)</label>
+                        <label class="form-label" for="rate-keinverdiener" data-i18n="Keinverdiener (€)">Keinverdiener (€)</label>
                 <input type="text" inputmode="decimal" id="rate-keinverdiener" class="form-input" value="10">
                     </div>
                 </div>
             </div>
 
             <div class="card card-settings" id="card-report">
-                <div class="card-header">Berichtszeitraum</div>
+                <div class="card-header" data-i18n="Berichtszeitraum">Berichtszeitraum</div>
                 <div class="card-body">
                     <div class="form-group">
-                        <label class="form-label" for="report-start-date">Startdatum für Berechnung</label>
+                        <label class="form-label" for="report-start-date" data-i18n="Startdatum für Berechnung">Startdatum für Berechnung</label>
                         <input type="date" id="report-start-date" class="form-input">
                         <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
                             Einnahmen und Ausgaben werden erst ab diesem Datum in der Übersicht gezählt.
@@ -276,16 +260,16 @@
             </div>
 
             <div class="card card-settings" id="card-invite">
-                <div class="card-header">Registrierungscode</div>
+                <div class="card-header" data-i18n="Registrierungscode">Registrierungscode</div>
                 <div class="card-body">
                     <div class="form-group">
-                        <label class="form-label" for="admin-invite-code">Aktueller Code</label>
+                        <label class="form-label" for="admin-invite-code" data-i18n="Aktueller Code">Aktueller Code</label>
                         <div class="settings-flex-row">
-                            <input type="text" id="admin-invite-code" class="form-input" readonly>
+                            <input type="text" id="admin-invite-code" class="form-input" readonly="">
                             <button class="btn btn-secondary" onclick="copyInviteCode()" aria-label="Code kopieren" title="Code kopieren">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                             </button>
-                            <button class="btn btn-secondary" onclick="generateNewCode()" aria-label="Neuen Code generieren">Neu</button>
+                            <button class="btn btn-secondary" onclick="generateNewCode()" aria-label="Neuen Code generieren" data-i18n="Neu">Neu</button>
                         </div>
                         <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
                             Dieser Code wird für neue Registrierungen benötigt.
@@ -295,36 +279,36 @@
             </div>
 
             <div class="card card-settings" id="card-security">
-                <div class="card-header">Sicherheit & Benachrichtigungen</div>
+                <div class="card-header" data-i18n="Sicherheit &amp; Benachrichtigungen">Sicherheit &amp; Benachrichtigungen</div>
                 <div class="card-body">
                     <div class="form-group" style="display:flex; align-items:center; gap:10px;">
                         <label class="switch">
                             <input type="checkbox" id="admin-email-notifications">
                             <span class="slider"></span>
                         </label>
-                        <label for="admin-email-notifications" style="margin:0; font-weight:600; cursor:pointer">E-Mail Benachrichtigungen bei Anfragen</label>
+                        <label for="admin-email-notifications" style="margin:0; font-weight:600; cursor:pointer" data-i18n="E-Mail Benachrichtigungen bei Anfragen">E-Mail Benachrichtigungen bei Anfragen</label>
                     </div>
                     <div class="form-group" style="margin-top:20px;">
-                        <label class="form-label">Passwort ändern</label>
+                        <label class="form-label" data-i18n="Passwort ändern">Passwort ändern</label>
                         <div class="password-wrapper" style="margin-bottom: 12px;">
-                            <input type="password" id="old-password" class="form-input has-toggle" placeholder="Altes Passwort">
+                            <input type="password" id="old-password" class="form-input has-toggle" placeholder="Altes Passwort" data-i18n-placeholder="Altes Passwort">
                             <button type="button" class="password-toggle" onclick="togglePassword('old-password', this)" aria-label="Passwort anzeigen">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                             </button>
                         </div>
                         <div class="password-wrapper">
-                            <input type="password" id="new-password" class="form-input has-toggle" placeholder="Neues Passwort">
+                            <input type="password" id="new-password" class="form-input has-toggle" placeholder="Neues Passwort" data-i18n-placeholder="Neues Passwort">
                             <button type="button" class="password-toggle" onclick="togglePassword('new-password', this)" aria-label="Passwort anzeigen">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                             </button>
                         </div>
                     </div>
-                    <button class="btn btn-secondary btn-block" onclick="changePassword()">Passwort ändern</button>
+                    <button class="btn btn-secondary btn-block" onclick="changePassword()" data-i18n="Passwort ändern">Passwort ändern</button>
                 </div>
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 30px; align-items: center; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="saveSettings()">Alle Einstellungen Speichern</button>
+                <button class="btn btn-primary" onclick="saveSettings()" data-i18n="Alle Einstellungen Speichern">Alle Einstellungen Speichern</button>
             </div>
         </div>
 
@@ -333,8 +317,8 @@
 
                     <!-- Benutzerrechte -->
                     <div class="super-admin-group">
-                        <div class="super-admin-group-title">Benutzerrechte verwalten</div>
-                        <div class="super-admin-group-desc">Aktiviert nur normale Admin-/Supervisor-Rechte (kein Super-Admin).</div>
+                        <div class="super-admin-group-title" data-i18n="Benutzerrechte verwalten">Benutzerrechte verwalten</div>
+                        <div class="super-admin-group-desc" data-i18n="Aktiviert nur normale Admin-/Supervisor-Rechte (kein Super-Admin).">Aktiviert nur normale Admin-/Supervisor-Rechte (kein Super-Admin).</div>
                         <div id="super-admin-user-management" style="display:flex; flex-direction: column; gap:10px; width: 100%;"></div>
                     </div>
 
@@ -351,8 +335,8 @@
                         <div class="super-admin-group-title">System-Konfiguration</div>
 
                         <div class="form-group">
-                            <label class="form-label" for="super-admin-app-name" style="color: var(--text-secondary);">Name der Anwendung</label>
-                            <input type="text" id="super-admin-app-name" class="form-input super-admin-input" placeholder="Nova">
+                            <label class="form-label" for="super-admin-app-name" style="color: var(--text-secondary);" data-i18n="Name der Anwendung">Name der Anwendung</label>
+                            <input type="text" id="super-admin-app-name" class="form-input super-admin-input" placeholder="Nova" data-i18n-placeholder="Nova">
                             <div class="help-text" style="color: var(--text-secondary); margin-top: 6px; font-size: 0.8rem;">PocketBase wird automatisch im Docker-Container verwaltet. Hier können Sie nur den Anzeigenamen und optionale SMTP-Daten ändern.</div>
                         </div>
 
@@ -379,12 +363,12 @@
 
                         <div class="settings-flex-row">
                             <div class="form-group" style="flex: 1; min-width: 150px;">
-                                <label class="form-label" for="super-admin-smtp-user" style="color: var(--text-secondary);">Benutzer / E-Mail</label>
+                                <label class="form-label" for="super-admin-smtp-user" style="color: var(--text-secondary);" data-i18n="Benutzer / E-Mail">Benutzer / E-Mail</label>
                                 <input type="text" id="super-admin-smtp-user" class="form-input super-admin-input" placeholder="mail@example.com">
                             </div>
                             <div class="form-group" style="flex: 1; min-width: 150px;">
-                                <label class="form-label" for="super-admin-smtp-pass" style="color: var(--text-secondary);">Passwort</label>
-                                <input type="password" id="super-admin-smtp-pass" class="form-input super-admin-input" placeholder="Passwort">
+                                <label class="form-label" for="super-admin-smtp-pass" style="color: var(--text-secondary);" data-i18n="Passwort">Passwort</label>
+                                <input type="password" id="super-admin-smtp-pass" class="form-input super-admin-input" placeholder="Passwort" data-i18n-placeholder="Passwort">
                             </div>
                         </div>
 
@@ -405,13 +389,13 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="super-admin-ai-base-url" style="color: var(--text-secondary);">Basis-URL</label>
+                            <label class="form-label" for="super-admin-ai-base-url" style="color: var(--text-secondary);" data-i18n="Basis-URL">Basis-URL</label>
                             <input type="url" id="super-admin-ai-base-url" class="form-input super-admin-input" placeholder="https://api.openai.com/v1">
                             <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">Leer lassen für OpenAI-Standard. Für Ollama: http://localhost:11434/v1</div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="super-admin-ai-api-key" style="color: var(--text-secondary);">API-Schlüssel</label>
+                            <label class="form-label" for="super-admin-ai-api-key" style="color: var(--text-secondary);" data-i18n="API-Schlüssel">API-Schlüssel</label>
                             <div class="password-wrapper">
                                 <input type="password" id="super-admin-ai-api-key" class="form-input super-admin-input has-toggle" placeholder="sk-…">
                                 <button type="button" class="password-toggle" onclick="togglePassword('super-admin-ai-api-key', this)" aria-label="Schlüssel anzeigen">
@@ -432,7 +416,7 @@
 
         <div id="payment-history" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-payment-history">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="font-size: 1.2rem; font-weight: 800;">Historie</h2>
+                <h2 style="font-size: 1.2rem; font-weight: 800;" data-i18n="Historie">Historie</h2>
             </div>
             <div class="form-group">
                 <label for="history-search" class="sr-only">Historie suchen</label>
@@ -450,7 +434,7 @@
             <div id="card-ai-chat" class="ai-chat-layout">
                 <div class="card-header ai-chat-header-styled">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    <span>KI-Support</span>
+                    <span data-i18n="KI-Support">KI-Support</span>
                     <button class="btn btn-secondary btn-small" onclick="clearAiChat()" style="margin-left:auto;">Verlauf löschen</button>
                 </div>
 
@@ -487,7 +471,7 @@
             <div id="user-status-card">
                 <div style="text-align:center; padding: 40px 20px; color: var(--text-secondary);">
                     <div class="spinner" style="margin: 0 auto 15px;"></div>
-                    <div>Lade Daten...</div>
+                    <div data-i18n="Lade Daten...">Lade Daten...</div>
                 </div>
             </div>
 
@@ -507,13 +491,13 @@
                         <div class="user-action-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
                         </div>
-                        <div class="user-action-label">Zahlung</div>
+                        <div class="user-action-label" data-i18n="Zahlung">Zahlung</div>
                     </button>
                     <button class="btn btn-secondary user-action-btn" onclick="openUserRequestModal('status')">
                         <div class="user-action-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                         </div>
-                        <div class="user-action-label">Status</div>
+                        <div class="user-action-label" data-i18n="Status">Status</div>
                     </button>
                     <button class="btn btn-secondary user-action-btn" onclick="openUserRequestModal('expense')">
                         <div class="user-action-icon">
@@ -537,7 +521,7 @@
 
         <div id="user-settings" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-user-settings">
             <div class="card">
-                <div class="card-header">Profilbild</div>
+                <div class="card-header" data-i18n="Profilbild">Profilbild</div>
                 <div class="card-body">
                     <div class="profile-pic-section">
                         <div class="profile-pic-preview-wrap">
@@ -548,21 +532,19 @@
                         </div>
                         <div>
                             <label class="btn btn-secondary" for="user-profile-pic-input" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                Bild hochladen
-                            </label>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg><span data-i18n="Bild hochladen">Bild hochladen</span></label>
                             <input type="file" id="user-profile-pic-input" accept="image/*,.heic,.heif" style="display:none;" onchange="openProfileCrop(this, 'user')">
-                            <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:6px;">JPG, PNG, HEIC – wird als 256×256 JPEG gespeichert.</div>
+                            <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:6px;" data-i18n="JPG, PNG, HEIC – wird als 256×256 JPEG gespeichert.">JPG, PNG, HEIC – wird als 256×256 JPEG gespeichert.</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header">Einstellungen</div>
+                <div class="card-header" data-i18n="Einstellungen">Einstellungen</div>
                 <div class="card-body">
                     <div class="form-group">
-                        <span class="form-label">Farbschema</span>
+                        <span class="form-label" data-i18n="Farbschema">Farbschema</span>
                         <div class="settings-flex-row">
                             <button class="btn btn-secondary" onclick="setTheme('light')">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -579,21 +561,21 @@
                         </div>
                     </div>
                     <div class="form-group" style="margin-top:20px;">
-                        <label class="form-label">Passwort ändern</label>
+                        <label class="form-label" data-i18n="Passwort ändern">Passwort ändern</label>
                         <div class="password-wrapper" style="margin-bottom: 12px;">
-                            <input type="password" id="user-old-password" class="form-input has-toggle" placeholder="Altes Passwort">
+                            <input type="password" id="user-old-password" class="form-input has-toggle" placeholder="Altes Passwort" data-i18n-placeholder="Altes Passwort">
                             <button type="button" class="password-toggle" onclick="togglePassword('user-old-password', this)" aria-label="Passwort anzeigen">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                             </button>
                         </div>
                         <div class="password-wrapper">
-                            <input type="password" id="user-new-password" class="form-input has-toggle" placeholder="Neues Passwort">
+                            <input type="password" id="user-new-password" class="form-input has-toggle" placeholder="Neues Passwort" data-i18n-placeholder="Neues Passwort">
                             <button type="button" class="password-toggle" onclick="togglePassword('user-new-password', this)" aria-label="Passwort anzeigen">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                             </button>
                         </div>
                     </div>
-                    <button class="btn btn-secondary btn-block" onclick="changePassword(true)">Passwort ändern</button>
+                    <button class="btn btn-secondary btn-block" onclick="changePassword(true)" data-i18n="Passwort ändern">Passwort ändern</button>
                 </div>
             </div>
 
@@ -610,9 +592,7 @@
         Person
     </button>
     <button type="button" class="fab-item" onclick="openModal('add-donation-modal'); toggleFab()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
-        Spende
-    </button>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg><span data-i18n="Spende">Spende</span></button>
     <button type="button" class="fab-item" onclick="openModal('add-expense-modal'); toggleFab()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
         Ausgabe
@@ -636,7 +616,7 @@
         </div>
     </button>
     <button id="admin-sys-nav-btn" class="nav-item" data-tab="payment-history" onclick="switchTab('payment-history', this)" aria-label="Historie" style="display:none;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 3v5h5M16 13H8M16 17H8M10 9H8"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><path d="M14 3v5h5M16 13H8M16 17H8M10 9H8"></path></svg>
     </button>
     <button id="admin-ai-nav-btn" class="nav-item" data-tab="ai-chat" onclick="switchTab('ai-chat', this)" aria-label="KI-Support" style="display:none;">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
@@ -654,7 +634,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
     </button>
     <button class="nav-item" data-tab="user-history" onclick="switchTab('user-history', this)" aria-label="Historie">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 3v5h5M16 13H8M16 17H8M10 9H8"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><path d="M14 3v5h5M16 13H8M16 17H8M10 9H8"></path></svg>
     </button>
     <button class="nav-item" data-tab="user-requests" onclick="switchTab('user-requests', this)" aria-label="Anfragen">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
@@ -668,20 +648,20 @@
 
 <div id="add-person-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-add-person">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-add-person">Person hinzufügen</span> <button class="close-btn" onclick="closeModal('add-person-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-add-person">Person hinzufügen</span> <button class="close-btn" onclick="closeModal('add-person-modal')" aria-label="Schließen">×</button></div>
         <div class="form-group">
-            <label class="form-label" for="new-person-name">Name</label>
+            <label class="form-label" for="new-person-name" data-i18n="Name">Name</label>
             <input type="text" id="new-person-name" class="form-input">
         </div>
         <div class="form-group">
             <label class="form-label" for="new-person-start">Mitglied Seit</label>
             <input type="date" id="new-person-start" class="form-input">
-            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;" data-i18n="Ab diesem Datum werden Beiträge berechnet.">
                 Ab diesem Datum werden Beiträge berechnet.
             </div>
         </div>
         <div class="form-group">
-            <label class="form-label" for="new-person-status">Status</label>
+            <label class="form-label" for="new-person-status" data-i18n="Status">Status</label>
             <select id="new-person-status" class="form-select">
                 <option value="vollverdiener">💼 Vollverdiener</option>
                 <option value="geringverdiener">📉 Geringverdiener</option>
@@ -689,13 +669,13 @@
                 <option value="pausiert">⏸️ Pausiert</option>
             </select>
         </div>
-        <button id="btn-add-person" class="btn btn-primary btn-block" onclick="addPerson()">Hinzufügen</button>
+        <button id="btn-add-person" class="btn btn-primary btn-block" onclick="addPerson()" data-i18n="Hinzufügen">Hinzufügen</button>
     </div>
 </div>
 
 <div id="change-status-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-change-status">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-change-status">Status Ändern</span> <button class="close-btn" onclick="closeModal('change-status-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-change-status">Status Ändern</span> <button class="close-btn" onclick="closeModal('change-status-modal')" aria-label="Schließen">×</button></div>
         <div class="form-group">
             <label class="form-label" for="change-status-select">Neuer Status</label>
             <select id="change-status-select" class="form-select">
@@ -719,7 +699,7 @@
 
 <div id="add-payment-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-add-payment">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-add-payment">Zahlung buchen</span> <button class="close-btn" onclick="closeModal('add-payment-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-add-payment">Zahlung buchen</span> <button class="close-btn" onclick="closeModal('add-payment-modal')" aria-label="Schließen">×</button></div>
         <div class="form-group" style="display:flex; align-items:center; gap:10px;">
             <label class="switch">
                 <input type="checkbox" id="payment-is-standing-order" onchange="document.getElementById('payment-date-label').innerText = this.checked ? 'Startdatum' : 'Datum'">
@@ -728,11 +708,11 @@
             <label for="payment-is-standing-order" style="margin:0; font-weight:600; cursor:pointer">Dauerauftrag</label>
         </div>
         <div class="form-group">
-            <label class="form-label" for="payment-amount">Betrag (€)</label>
+            <label class="form-label" for="payment-amount" data-i18n="Betrag (€)">Betrag (€)</label>
             <input type="text" inputmode="decimal" id="payment-amount" class="form-input">
         </div>
         <div class="form-group">
-            <label class="form-label" id="payment-date-label" for="payment-date">Datum</label>
+            <label class="form-label" id="payment-date-label" for="payment-date" data-i18n="Datum">Datum</label>
             <input type="date" id="payment-date" class="form-input">
         </div>
         <div class="form-group">
@@ -745,14 +725,14 @@
 
 <div id="edit-payment-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-edit-payment">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-edit-payment">Zahlung bearbeiten</span> <button class="close-btn" onclick="closeModal('edit-payment-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-edit-payment">Zahlung bearbeiten</span> <button class="close-btn" onclick="closeModal('edit-payment-modal')" aria-label="Schließen">×</button></div>
         <div id="edit-payment-person" style="font-weight:700; margin-bottom:10px;"></div>
         <div class="form-group">
-            <label class="form-label" for="edit-payment-amount">Betrag (€)</label>
+            <label class="form-label" for="edit-payment-amount" data-i18n="Betrag (€)">Betrag (€)</label>
             <input type="text" inputmode="decimal" id="edit-payment-amount" class="form-input">
         </div>
         <div class="form-group">
-            <label class="form-label" for="edit-payment-date">Datum</label>
+            <label class="form-label" for="edit-payment-date" data-i18n="Datum">Datum</label>
             <input type="date" id="edit-payment-date" class="form-input">
         </div>
         <div class="form-group">
@@ -761,36 +741,36 @@
         </div>
         <div class="form-group" id="edit-payment-issuer-group" style="display:none;">
             <label class="form-label" for="edit-payment-issuer">Wer / Empfänger</label>
-            <input type="text" id="edit-payment-issuer" class="form-input" placeholder="Name">
+            <input type="text" id="edit-payment-issuer" class="form-input" placeholder="Name" data-i18n-placeholder="Name">
         </div>
-        <button class="btn btn-primary btn-block" onclick="saveEditedPayment()">Speichern</button>
+        <button class="btn btn-primary btn-block" onclick="saveEditedPayment()" data-i18n="Speichern">Speichern</button>
     </div>
 </div>
 
 <div id="add-donation-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-add-donation">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-add-donation">Spende</span> <button class="close-btn" onclick="closeModal('add-donation-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-add-donation" data-i18n="Spende">Spende</span> <button class="close-btn" onclick="closeModal('add-donation-modal')" aria-label="Schließen">×</button></div>
         <div class="form-group">
-            <label for="donation-amount" class="form-label">Betrag</label>
-            <input id="donation-amount" class="form-input" type="text" inputmode="decimal" placeholder="Betrag">
+            <label for="donation-amount" class="form-label" data-i18n="Betrag">Betrag</label>
+            <input id="donation-amount" class="form-input" type="text" inputmode="decimal" placeholder="Betrag" data-i18n-placeholder="Betrag">
         </div>
         <div class="form-group">
             <label for="donation-name" class="form-label">Spender Name</label>
             <input id="donation-name" class="form-input" placeholder="Spender Name">
         </div>
         <div class="form-group">
-            <label for="donation-date" class="form-label">Datum</label>
+            <label for="donation-date" class="form-label" data-i18n="Datum">Datum</label>
             <input type="date" id="donation-date" class="form-input">
         </div>
-        <button id="btn-add-donation" class="btn btn-primary btn-block" onclick="addDonation()">Speichern</button>
+        <button id="btn-add-donation" class="btn btn-primary btn-block" onclick="addDonation()" data-i18n="Speichern">Speichern</button>
     </div>
 </div>
 <div id="add-expense-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-add-expense">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-add-expense">Ausgabe</span> <button class="close-btn" onclick="closeModal('add-expense-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-add-expense">Ausgabe</span> <button class="close-btn" onclick="closeModal('add-expense-modal')" aria-label="Schließen">×</button></div>
         <div class="form-group">
-            <label for="expense-amount" class="form-label">Betrag</label>
-            <input id="expense-amount" class="form-input" type="text" inputmode="decimal" placeholder="Betrag">
+            <label for="expense-amount" class="form-label" data-i18n="Betrag">Betrag</label>
+            <input id="expense-amount" class="form-input" type="text" inputmode="decimal" placeholder="Betrag" data-i18n-placeholder="Betrag">
         </div>
         <div class="form-group">
             <label for="expense-issuer" class="form-label">Wer?</label>
@@ -801,27 +781,27 @@
             <input id="expense-desc" class="form-input" placeholder="Wofür?">
         </div>
         <div class="form-group">
-            <label for="expense-date" class="form-label">Datum</label>
+            <label for="expense-date" class="form-label" data-i18n="Datum">Datum</label>
             <input type="date" id="expense-date" class="form-input">
         </div>
         <div class="form-group">
-            <label for="expense-receipt" class="form-label">Beleg</label>
+            <label for="expense-receipt" class="form-label" data-i18n="Beleg">Beleg</label>
             <input type="file" id="expense-receipt" accept="image/*,.heic,.heif" class="form-input">
         </div>
-        <button id="btn-add-expense" class="btn btn-primary btn-block" onclick="addExpense()">Speichern</button>
+        <button id="btn-add-expense" class="btn btn-primary btn-block" onclick="addExpense()" data-i18n="Speichern">Speichern</button>
     </div>
 </div>
 
 <div id="transaction-details-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-transaction-details">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-transaction-details">Details</span> <button class="close-btn" onclick="closeModal('transaction-details-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-transaction-details">Details</span> <button class="close-btn" onclick="closeModal('transaction-details-modal')" aria-label="Schließen">×</button></div>
         <div id="transaction-details-content"></div>
     </div>
 </div>
 
 <div id="end-standing-order-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-end-so">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-end-so">Dauerauftrag verwalten</span> <button class="close-btn" onclick="closeModal('end-standing-order-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-end-so">Dauerauftrag verwalten</span> <button class="close-btn" onclick="closeModal('end-standing-order-modal')" aria-label="Schließen">×</button></div>
         <p style="margin-bottom:15px; color:var(--text-secondary); font-size:0.9rem;">Wann soll dieser Dauerauftrag enden?</p>
 
         <div class="form-group">
@@ -833,7 +813,7 @@
         </div>
 
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:20px;">
-            <button class="btn btn-primary btn-block" onclick="saveStandingOrderEnd()">Beenden / Speichern</button>
+            <button class="btn btn-primary btn-block" onclick="saveStandingOrderEnd()" data-i18n="Beenden / Speichern">Beenden / Speichern</button>
         </div>
         <button class="btn btn-danger btn-block" onclick="deleteStandingOrderCompletely()" style="margin-top:15px; background:none; border:1px solid var(--danger); color:var(--danger);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -844,15 +824,15 @@
 
 <div id="user-request-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="req-modal-title">
     <div class="modal-content">
-        <div class="modal-header"><span id="req-modal-title">Anfrage</span> <button class="close-btn" onclick="closeModal('user-request-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="req-modal-title" data-i18n="Anfrage">Anfrage</span> <button class="close-btn" onclick="closeModal('user-request-modal')" aria-label="Schließen">×</button></div>
         <div id="req-form-content"></div>
-        <button id="btn-submit-request" class="btn btn-primary btn-block" onclick="submitUserRequest()" style="margin-top:15px;">Absenden</button>
+        <button id="btn-submit-request" class="btn btn-primary btn-block" onclick="submitUserRequest()" style="margin-top:15px;" data-i18n="Absenden">Absenden</button>
     </div>
 </div>
 
 <div id="profile-crop-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="profile-crop-title">
     <div class="modal-content" style="max-width:420px;">
-        <div class="modal-header"><span id="profile-crop-title">Profilbild zuschneiden</span> <button class="close-btn" onclick="cancelProfileCrop()" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="profile-crop-title">Profilbild zuschneiden</span> <button class="close-btn" onclick="cancelProfileCrop()" aria-label="Schließen">×</button></div>
         <div class="profile-crop-container">
             <div class="profile-crop-viewport" id="profileCropViewport">
                 <img id="profileCropImage" alt="Crop preview" draggable="false">
@@ -863,11 +843,11 @@
                 <input type="range" id="profileCropZoom" min="1" max="3" step="0.01" value="1" style="flex:1;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
             </div>
-            <p style="font-size:0.82rem; color:var(--text-secondary); margin:10px 0 0 0; text-align:center;">Bild verschieben und zoomen, um den Bildausschnitt zu wählen</p>
+            <p style="font-size:0.82rem; color:var(--text-secondary); margin:10px 0 0 0; text-align:center;" data-i18n="Bild verschieben und zoomen, um den Bildausschnitt zu wählen">Bild verschieben und zoomen, um den Bildausschnitt zu wählen</p>
         </div>
         <div style="display:flex; gap:10px; margin-top:15px;">
-            <button class="btn btn-secondary" style="flex:1" onclick="cancelProfileCrop()">Abbrechen</button>
-            <button class="btn btn-primary" style="flex:1" id="btn-confirm-crop" onclick="confirmProfileCrop()">Speichern</button>
+            <button class="btn btn-secondary" style="flex:1" onclick="cancelProfileCrop()" data-i18n="Abbrechen">Abbrechen</button>
+            <button class="btn btn-primary" style="flex:1" id="btn-confirm-crop" onclick="confirmProfileCrop()" data-i18n="Speichern">Speichern</button>
         </div>
     </div>
 </div>
@@ -877,7 +857,7 @@
         <div class="login-header">
             <div class="login-brand">
                 <img src="assets/church-logo.svg" alt="App Logo" id="login-app-logo">
-                <h2 id="login-app-name">Nova</h2>
+                <h2 id="login-app-name" data-i18n="Nova">Nova</h2>
             </div>
             <p id="auth-subtitle" class="login-subtitle">Melden Sie sich an, um fortzufahren</p>
         </div>
@@ -894,14 +874,14 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                 </div>
                 <label for="login-email" class="sr-only">E-Mail</label>
-                <input type="email" id="login-email" class="form-input" placeholder="E-Mail" autocomplete="username" required>
+                <input type="email" id="login-email" class="form-input" placeholder="E-Mail" autocomplete="username" required="">
             </div>
             <div class="input-with-icon password-wrapper" style="margin-bottom: 24px;">
                 <div class="input-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 </div>
-                <label for="login-password" class="sr-only">Passwort</label>
-                <input type="password" id="login-password" class="form-input has-toggle" placeholder="Passwort" autocomplete="current-password" required>
+                <label for="login-password" class="sr-only" data-i18n="Passwort">Passwort</label>
+                <input type="password" id="login-password" class="form-input has-toggle" placeholder="Passwort" autocomplete="current-password" required="" data-i18n-placeholder="Passwort">
                 <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" aria-label="Passwort anzeigen">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </button>
@@ -912,21 +892,21 @@
         <!-- Register Form -->
         <form id="register-form" style="display:none;" onsubmit="event.preventDefault(); attemptRegister()">
             <div style="background: var(--surface-alt); padding: 12px; border-radius: 12px; margin-bottom: 16px; font-size: 0.9rem; text-align: center; border: 1px dashed var(--border);">
-                <p id="reg-code-desc" style="color: var(--text-secondary);">Bitte geben Sie den aktuellen 6-stelligen Registrierungscode ein.</p>
+                <p id="reg-code-desc" style="color: var(--text-secondary);" data-i18n="Bitte geben Sie den aktuellen 6-stelligen Registrierungscode ein.">Bitte geben Sie den aktuellen 6-stelligen Registrierungscode ein.</p>
             </div>
             <div class="input-with-icon" style="margin-bottom: 12px;">
                 <div class="input-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                 </div>
-                <label for="reg-code" class="sr-only">Registrierungscode</label>
-                <input type="text" id="reg-code" class="form-input" placeholder="6-stelliger Code" maxlength="6" inputmode="numeric" pattern="[0-9]*" required autocomplete="off" aria-describedby="reg-code-desc">
+                <label for="reg-code" class="sr-only" data-i18n="Registrierungscode">Registrierungscode</label>
+                <input type="text" id="reg-code" class="form-input" placeholder="6-stelliger Code" maxlength="6" inputmode="numeric" pattern="[0-9]*" required="" autocomplete="off" aria-describedby="reg-code-desc" data-i18n-placeholder="6-stelliger Code">
             </div>
             <div class="input-with-icon" style="margin-bottom: 12px;">
                 <div class="input-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                 </div>
                 <label for="reg-email" class="sr-only">E-Mail</label>
-                <input type="email" id="reg-email" class="form-input" placeholder="E-Mail" autocomplete="username" required>
+                <input type="email" id="reg-email" class="form-input" placeholder="E-Mail" autocomplete="username" required="">
             </div>
             <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                 <div class="input-with-icon" style="flex: 1;">
@@ -934,12 +914,12 @@
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                     </div>
                     <label for="reg-firstname" class="sr-only">Vorname</label>
-                    <input type="text" id="reg-firstname" class="form-input" placeholder="Vorname" autocomplete="given-name" required>
+                    <input type="text" id="reg-firstname" class="form-input" placeholder="Vorname" autocomplete="given-name" required="">
                 </div>
                 <div class="input-with-icon" style="flex: 1;">
                     <div class="input-icon" style="display: none;"></div>
                     <label for="reg-lastname" class="sr-only">Nachname</label>
-                    <input type="text" id="reg-lastname" class="form-input" placeholder="Nachname" autocomplete="family-name" required style="padding-left: 12px;">
+                    <input type="text" id="reg-lastname" class="form-input" placeholder="Nachname" autocomplete="family-name" required="" style="padding-left: 12px;">
                 </div>
             </div>
             <div class="input-with-icon password-wrapper" style="margin-bottom: 12px;">
@@ -947,7 +927,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 </div>
                 <label for="reg-pass1" class="sr-only">Passwort (min 6 Zeichen)</label>
-                <input type="password" id="reg-pass1" class="form-input has-toggle" placeholder="Passwort (min 6)" autocomplete="new-password" required minlength="6">
+                <input type="password" id="reg-pass1" class="form-input has-toggle" placeholder="Passwort (min 6)" autocomplete="new-password" required="" minlength="6">
                 <button type="button" class="password-toggle" onclick="togglePassword('reg-pass1', this)" aria-label="Passwort anzeigen">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </button>
@@ -957,7 +937,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 </div>
                 <label for="reg-pass2" class="sr-only">Passwort wiederholen</label>
-                <input type="password" id="reg-pass2" class="form-input has-toggle" placeholder="Passwort wiederholen" autocomplete="new-password" required minlength="6">
+                <input type="password" id="reg-pass2" class="form-input has-toggle" placeholder="Passwort wiederholen" autocomplete="new-password" required="" minlength="6">
                 <button type="button" class="password-toggle" onclick="togglePassword('reg-pass2', this)" aria-label="Passwort anzeigen">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </button>
@@ -991,6 +971,12 @@
     }
 </script>
 
-<script type="module" src="assets/app.js"></script>
-</body>
-</html>
+
+<script type="module">
+    await window.initI18n();
+    import "./assets/app.js";
+</script>
+
+
+
+</body></html>
