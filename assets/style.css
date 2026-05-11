@@ -283,9 +283,20 @@ body { background-color: var(--bg); color: var(--text); height: 100dvh; overflow
 }
 
 /* --- Tabs (Content only) --- */
-.tab-content { display: none; animation: fadeIn 0.3s cubic-bezier(0.25, 1, 0.5, 1); }
+.tab-content { display: none; }
 .tab-content.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateX(15px); } to { opacity: 1; transform: translateX(0); } }
+
+.tab-content.slide-in-right { animation: slideInRight 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+.tab-content.slide-in-left { animation: slideInLeft 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
 
 /* --- Cards & Settings --- */
 .card {
@@ -1469,10 +1480,6 @@ input:checked + .slider:before { transform: translateX(22px); }
 }
 
 @media (max-width: 767px) {
-    #ai-chat.tab-content {
-        animation: none;
-    }
-
     #ai-chat.active {
         display: flex;
         flex-direction: column;

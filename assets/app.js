@@ -247,9 +247,23 @@ window.switchTab = function(tabName, btn) {
     const scope = isUserNav ? document.getElementById('user-view') : document.getElementById('admin-view');
     if (!scope) return;
 
+    const navSelector = isUserNav
+        ? '#user-desktop-nav [data-tab]'
+        : '#admin-desktop-nav [data-tab]';
+    const navButtonsDesktop = Array.from(document.querySelectorAll(navSelector));
+
+    let currentIndex = -1;
+    let targetIndex = -1;
+
+    // Find indices based on desktop nav
+    navButtonsDesktop.forEach((el, index) => {
+        if (el.classList.contains('active')) currentIndex = index;
+        if (el.dataset.tab === tabName) targetIndex = index;
+    });
+
     // Hide only the tab contents inside the current scope (admin vs user)
     scope.querySelectorAll('.tab-content').forEach(el => {
-        el.classList.remove('active');
+        el.classList.remove('active', 'slide-in-right', 'slide-in-left');
         if (el.id === 'payment-history' || el.id === 'user-history' || el.id === 'user-requests') el.style.display = 'none';
     });
 
@@ -257,6 +271,17 @@ window.switchTab = function(tabName, btn) {
     const targetContent = document.getElementById(tabName);
     if (targetContent && scope.contains(targetContent)) {
         targetContent.classList.add('active');
+
+        if (currentIndex !== -1 && targetIndex !== -1 && currentIndex !== targetIndex) {
+            if (targetIndex < currentIndex) {
+                targetContent.classList.add('slide-in-left');
+            } else {
+                targetContent.classList.add('slide-in-right');
+            }
+        } else {
+            targetContent.classList.add('slide-in-right'); // fallback
+        }
+
         if (tabName === 'payment-history' || tabName === 'user-history' || tabName === 'user-requests') targetContent.style.display = 'block';
     }
 
@@ -274,11 +299,11 @@ window.switchTab = function(tabName, btn) {
         }
     }
 
-    const navSelector = isUserNav
+    const allNavSelector = isUserNav
         ? '#user-desktop-nav [data-tab], #user-bottom-nav [data-tab]'
         : '#admin-desktop-nav [data-tab], #admin-bottom-nav [data-tab]';
-    const navButtons = document.querySelectorAll(navSelector);
-    navButtons.forEach(el => {
+    const allNavButtons = document.querySelectorAll(allNavSelector);
+    allNavButtons.forEach(el => {
         const isActive = el.dataset.tab === tabName;
         if (isActive) {
             el.classList.add('active');
