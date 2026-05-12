@@ -1,0 +1,4 @@
+## 2024-05-12 - Prevent DOM-based XSS in String Interpolation Sink
+**Vulnerability:** In `assets/app.js`, several places constructed HTML using template literals and `.innerHTML` injection. Text values derived from backend data, specifically `statusMeta.text`, `currentStatus`, and status label properties, were interpolated without being escaped. An attacker who controls backend data entries could potentially execute arbitrary JavaScript (DOM XSS).
+**Learning:** Even though fields like `statusMeta.text` might seem "safe" because they currently default to hardcoded values (`Alles in Ordnung`, `Zahlung überfällig`), they are populated from the backend and are technically dynamically fetched data (`person._statusMeta`). The assumption of safe defaults bypasses XSS defenses.
+**Prevention:** Always use the globally available `escapeHtml()` function on any dynamically interpolated variables that represent text or labels before injecting them into `.innerHTML`.
