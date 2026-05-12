@@ -59,7 +59,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('de-DE', { day: '2-digit', mon
 const shortDateFormatter = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit' });
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const appName = config.appName || "Nova";
+    const appName = config.appName || window.t("Nova");
 
     // Update visual elements
     const headerEl = document.getElementById('app-name-header');
@@ -820,9 +820,9 @@ function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = nu
     const paidUntil = preCalculatedPaidUntil !== undefined ? preCalculatedPaidUntil : calculatePaidUntil(person);
     if (!paidUntil) {
         if (hasActiveSO) {
-             return { text: 'Keine Zahlungen', isOverdue: true, isSoonDue: false, isActiveStandingOrder: true };
+             return { text: window.t('Keine Zahlungen'), isOverdue: true, isSoonDue: false, isActiveStandingOrder: true };
         }
-        return { text: 'Keine Zahlungen', isOverdue: true, isSoonDue: false };
+        return { text: window.t('Keine Zahlungen'), isOverdue: true, isSoonDue: false };
     }
 
     const today = new Date();
@@ -862,14 +862,14 @@ function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = nu
             // If trueMissingAmount <= totalSOAmount, then after SO executes, they will owe 0.
             if (trueMissingAmount <= totalSOAmount) {
                 return {
-                    text: 'Alles in Ordnung',
+                    text: window.t('Alles in Ordnung'),
                     isOverdue: false,
                     isSoonDue: true, // Mark them as soon due since the standing order is expected this month
                     isActiveStandingOrder: true
                 };
             } else {
                 return {
-                    text: 'Zahlung überfällig',
+                    text: window.t('Zahlung überfällig'),
                     isOverdue: true,
                     isSoonDue: false,
                     isActiveStandingOrder: true
@@ -886,7 +886,7 @@ function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = nu
 
     if (hasActiveSO) {
         return {
-            text: 'Alles in Ordnung',
+            text: window.t('Alles in Ordnung'),
             isOverdue: false,
             isSoonDue: false,
             isActiveStandingOrder: true
@@ -894,9 +894,9 @@ function calculateTimeRemaining(person, preCalculatedPaidUntil, todayStrArg = nu
     }
 
     if (monthsDiff === 0) {
-        return { text: 'läuft diesen Monat ab', isOverdue: false, isSoonDue: true };
+        return { text: window.t('läuft diesen Monat ab'), isOverdue: false, isSoonDue: true };
     } else if (monthsDiff === 1) {
-        return { text: 'läuft nächsten Monat ab', isOverdue: false, isSoonDue: true };
+        return { text: window.t('läuft nächsten Monat ab'), isOverdue: false, isSoonDue: true };
     } else {
         return { text: `noch ${monthsDiff} Monat${monthsDiff !== 1 ? 'e' : ''}`, isOverdue: false, isSoonDue: false };
     }
@@ -1374,7 +1374,7 @@ async function loadData(silent = false) {
     }
     } catch (err) {
         console.error("Ladefehler:", err);
-        alert("Fehler beim Laden der Daten. Bitte Seite neu laden.");
+        alert(window.t("Fehler beim Laden der Daten. Bitte Seite neu laden."));
     } finally {
         // Ladebildschirm ausblenden
         if(loader && !silent) loader.style.display = 'none';
@@ -1911,9 +1911,9 @@ function renderUserView() {
     let dateText = paidUntil ? monthYearFormatter.format(paidUntil) : 'Nie';
 
     const statusLabels = {
-        'vollverdiener': 'Vollverdiener',
-        'geringverdiener': 'Geringverdiener',
-        'keinverdiener': 'Keinverdiener',
+        'vollverdiener': window.t('Vollverdiener'),
+        'geringverdiener': window.t('Geringverdiener'),
+        'keinverdiener': window.t('Keinverdiener'),
         'pausiert': 'Pausiert'
     };
 
@@ -1939,7 +1939,7 @@ function renderUserView() {
             <h2 style="color: ${statusColor}; font-size: 1.25rem; font-weight: 800; margin-bottom: 5px;">
                 ${statusMeta.text}
             </h2>
-            ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `<div style="font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 5px;">Bezahlt bis <strong>${dateText}</strong></div>`}
+            ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `<div style="font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 5px;">${window.t('Bezahlt bis')} <strong>${dateText}</strong></div>`}
             ${statusMeta.isOverdue ? `
                 <div style="margin-top: 15px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
                     <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 5px; color: var(--danger);">Offener Betrag</div>
@@ -1954,7 +1954,7 @@ function renderUserView() {
                 <div class="user-info-box-value">${formatCurrency(monthlyRate)} €</div>
             </div>
             <div class="user-info-box">
-                <div class="user-info-box-label">Aktueller Status</div>
+                <div class="user-info-box-label">${window.t('Aktueller Status')}</div>
                 <div class="user-info-box-value">${statusLabels[currentStatus] || currentStatus}</div>
             </div>
         </div>
@@ -2217,7 +2217,7 @@ function generatePersonHTML(p, preCalcData = null) {
                     <div class="details-status-card ${cardClass}">
                         ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `
                         <div class="details-row">
-                            <span class="details-label">Bezahlt bis</span>
+                            <span class="details-label">${window.t('Bezahlt bis')}</span>
                             <span class="details-value">${dateText}</span>
                         </div>`}
                         <div class="details-row">
@@ -2471,7 +2471,7 @@ window.renderHistoryTab = async function(resetLimit = true) {
                     data-person-name="${escapeHtml(String(t.personName || ''))}"
                     data-mapped-type="${escapeHtml(mappedType)}"
                     onclick="event.stopPropagation(); editRecordedPayment(this.dataset.personId, this.dataset.paymentId, parseInt(this.dataset.paymentIndex, 10), this.dataset.personName, this.dataset.mappedType, JSON.parse(this.dataset.payload))"
-                    aria-label="Bearbeiten">
+                    aria-label="${window.t('Bearbeiten')}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
             ` : '';
@@ -2864,13 +2864,13 @@ window.sendStatusEmail = async (personId) => {
     const currentStatus = person._currentStatus || person.status;
 
     const statusLabels = {
-        'vollverdiener': 'Vollverdiener',
-        'geringverdiener': 'Geringverdiener',
-        'keinverdiener': 'Keinverdiener',
+        'vollverdiener': window.t('Vollverdiener'),
+        'geringverdiener': window.t('Geringverdiener'),
+        'keinverdiener': window.t('Keinverdiener'),
         'pausiert': 'Pausiert'
     };
     const readableStatus = statusLabels[currentStatus] || currentStatus;
-    const appName = config.appName || "Nova";
+    const appName = config.appName || window.t("Nova");
 
     const paidUntilDate = person._paidUntil ? new Date(person._paidUntil) : calculatePaidUntil(person);
     const paidUntilText = paidUntilDate ? monthYearFormatter.format(paidUntilDate) : 'Nie';
@@ -3845,7 +3845,7 @@ window.attemptRegister = async () => {
         return;
     }
     if(p1 !== p2) {
-        errDiv.innerText = "Passwörter stimmen nicht überein.";
+        errDiv.innerText = window.t("Passwörter stimmen nicht überein.");
         errDiv.style.display = 'block';
         return;
     }
@@ -3900,7 +3900,7 @@ window.openUserRequestModal = (type) => {
                 <label for="req-is-standing-order" style="margin:0; font-weight:600; cursor:pointer">Dauerauftrag</label>
             </div>
             <div class="form-group">
-                <label class="form-label" for="req-amount">Betrag (€)</label>
+                <label class="form-label" for="req-amount">${window.t('Betrag (€)')}</label>
                 <input type="text" inputmode="decimal" id="req-amount" class="form-input">
             </div>
             <div class="form-group">
@@ -3933,7 +3933,7 @@ window.openUserRequestModal = (type) => {
         title.innerText = "Ausgabe melden";
         container.innerHTML = `
             <div class="form-group">
-                <label class="form-label" for="req-amount">Betrag (€)</label>
+                <label class="form-label" for="req-amount">${window.t('Betrag (€)')}</label>
                 <input type="text" inputmode="decimal" id="req-amount" class="form-input">
             </div>
             <div class="form-group">
@@ -4271,7 +4271,7 @@ window.confirmProfileCrop = async function() {
 
     const jpegFile = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
 
-    setButtonLoading('btn-confirm-crop', true, 'Speichern...');
+    setButtonLoading('btn-confirm-crop', true, window.t('Speichern...'));
     try {
         await uploadProfilePicture(jpegFile);
         closeModal('profile-crop-modal');
@@ -4548,7 +4548,7 @@ window.viewRequestReceipt = async function(filename, containerId) {
         const imgUrl = await fetchReceiptImage(filename);
         container.dataset.blobUrl = imgUrl;
         container.innerHTML = `
-                <img src="${imgUrl}" style="width:100%; max-width:100%; border-radius:8px; border:1px solid var(--border); margin-top:10px; opacity:0; transition:opacity 0.3s ease-in;" onload="this.style.opacity=1" alt="Beleg">
+                <img src="${imgUrl}" style="width:100%; max-width:100%; border-radius:8px; border:1px solid var(--border); margin-top:10px; opacity:0; transition:opacity 0.3s ease-in;" onload="this.style.opacity=1" alt="${window.t('Beleg')}">
         `;
     } catch (err) {
         console.error(err);
@@ -4565,7 +4565,7 @@ window.findTransaction = function(id, type) {
     if (type === 'exp') {
         return { ...item, typeName: 'Ausgabe' };
     } else if (type === 'don') {
-        return { ...item, typeName: 'Spende', who: item.name || item.who };
+        return { ...item, typeName: window.t('Spende'), who: item.name || item.who };
     } else if (type === 'pay') {
         return { ...item, typeName: 'Zahlung' };
     }
@@ -4627,8 +4627,8 @@ window.showTransactionDetails = async function(id, type) {
             const imgUrl = await fetchReceiptImage(item.receipt);
             content.dataset.blobUrl = imgUrl;
             receiptContainer.innerHTML = `
-                <div style="font-weight:600; margin-bottom:10px;">Beleg</div>
-                <img src="${imgUrl}" style="width:100%; border-radius:12px; border:1px solid var(--border); opacity:0; transition:opacity 0.3s ease-in;" onload="this.style.opacity=1" alt="Beleg">
+                <div style="font-weight:600; margin-bottom:10px;">${window.t('Beleg')}</div>
+                <img src="${imgUrl}" style="width:100%; border-radius:12px; border:1px solid var(--border); opacity:0; transition:opacity 0.3s ease-in;" onload="this.style.opacity=1" alt="${window.t('Beleg')}">
             `;
         } catch (err) {
             receiptContainer.innerHTML = `<div style="color:var(--danger); text-align:center;">Beleg konnte nicht geladen werden.</div>`;
