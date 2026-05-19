@@ -2855,6 +2855,47 @@ window.deleteStandingOrderCompletely = async () => {
     }
 };
 
+window.deleteEditedPayment = async () => {
+    if (!isSuperAdminUser() || !currentEditedPayment) return;
+
+    if (!confirm('Achtung: Soll dieser Eintrag wirklich gelöscht werden? Dies kann nicht rückgängig gemacht werden.')) {
+        return;
+    }
+
+    try {
+        if (currentEditedPayment.type === 'payment') {
+            await mutatePerson(currentEditedPayment.personId, (draft) => {
+                const nextPayments = safeList(draft.payments).filter((_, i) => i !== currentEditedPayment.targetIndex);
+                const totalPaid = calculateTotalPaidLoop(nextPayments);
+                return { ...draft, payments: nextPayments, totalPaid };
+            });
+            showToast('Zahlung gelöscht');
+        } else if (currentEditedPayment.type === 'donation') {
+            const remoteDonations = safeList(await apiGet('donations').catch(() => []));
+            const targetDonationId = currentEditedPayment.paymentId;
+            const updatedDonations = remoteDonations.filter(d => String(d.id) !== String(targetDonationId));
+
+            await set(ref(db, 'donations'), updatedDonations.length > 0 ? { ...updatedDonations } : null);
+            donations = updatedDonations;
+            showToast('Spende gelöscht');
+        } else if (currentEditedPayment.type === 'expense') {
+            const remoteExpenses = safeList(await apiGet('expenses').catch(() => []));
+            const targetExpenseId = currentEditedPayment.paymentId;
+            const updatedExpenses = remoteExpenses.filter(e => String(e.id) !== String(targetExpenseId));
+
+            await set(ref(db, 'expenses'), updatedExpenses.length > 0 ? { ...updatedExpenses } : null);
+            expenses = updatedExpenses;
+            showToast('Ausgabe gelöscht');
+        }
+
+        closeModal('edit-payment-modal');
+        if (typeof loadData === 'function') loadData();
+    } catch (e) {
+        console.error("Error deleting payment:", e);
+        alert('Fehler beim Löschen des Eintrags.');
+    }
+};
+
 window.deleteStandingOrder = async (personId, soId) => {
     // Legacy mapping or just redirect
     openEndStandingOrderModal(personId, soId);
