@@ -58,6 +58,18 @@ const monthYearFormatter = new Intl.DateTimeFormat('de-DE', { month: 'long', yea
 const dateTimeFormatter = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const shortDateFormatter = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit' });
 
+// ⚡ Bolt: Fast path for ISO date formatting
+// Avoids expensive Date parsing and Intl.DateTimeFormat overhead for standard database dates
+function formatDateFast(dateInput) {
+    if (!dateInput) return '';
+    const dStr = String(dateInput);
+    if (dStr.length === 10 && dStr[4] === '-' && dStr[7] === '-') {
+        return `${dStr.substring(8, 10)}.${dStr.substring(5, 7)}.${dStr.substring(0, 4)}`;
+    }
+    const d = new Date(dateInput);
+    return Number.isNaN(d.getTime()) ? 'Kein Datum' : dateFormatter.format(d);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const appName = config.appName || "Nova";
 
@@ -1052,7 +1064,7 @@ function generateStatusHistoryHTML(person) {
         <div class="trans-item" style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2);">
             <div class="trans-left">
                 <span style="font-weight:600;">${escapeHtml(statusLabels[person.status] || person.status)}</span>
-                <div class="trans-meta">Seit ${dateFormatter.format(new Date(currentStatusStart))} • Aktuell</div>
+                <div class="trans-meta">Seit ${formatDateFast(currentStatusStart)} • Aktuell</div>
             </div>
             <div style="font-size:0.75rem; color:var(--success); font-weight:600;">AKTIV</div>
         </div>
@@ -1063,8 +1075,8 @@ function generateStatusHistoryHTML(person) {
     }
 
     html += history.map(entry => {
-        const start = dateFormatter.format(new Date(entry.startDate));
-        const end = entry.endDate ? dateFormatter.format(new Date(entry.endDate)) : 'Offen';
+        const start = formatDateFast(entry.startDate);
+        const end = entry.endDate ? formatDateFast(entry.endDate) : 'Offen';
         const rate = settings[entry.status] || 0;
 
         return `
@@ -1491,16 +1503,16 @@ function renderAdminRequests() {
         if (req.type === 'payment') {
             typeLabel = 'Zahlung';
             typeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>';
-            details = `${formatCurrency(req.data.amount)} € am ${dateFormatter.format(new Date(req.data.date))}`;
+            details = `${formatCurrency(req.data.amount)} € am ${formatDateFast(req.data.date)}`;
             if (req.data.note) details += `<br><small style="color: var(--text-secondary);"><span style="opacity: 0.7;">"</span>${escapeHtml(req.data.note)}<span style="opacity: 0.7;">"</span></small>`;
         } else if (req.type === 'status') {
             typeLabel = 'Statusänderung';
             typeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
-            details = `Neu: <strong>${escapeHtml(req.data.newStatus)}</strong> ab ${dateFormatter.format(new Date(req.data.date))}`;
+            details = `Neu: <strong>${escapeHtml(req.data.newStatus)}</strong> ab ${formatDateFast(req.data.date)}`;
         } else if (req.type === 'expense') {
             typeLabel = 'Ausgabe';
             typeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 14h-8"/><path d="M16 18h-8"/><path d="M16 10h-8"/></svg>';
-            details = `${formatCurrency(req.data.amount)} € für "${escapeHtml(req.data.description)}" am ${dateFormatter.format(new Date(req.data.date))}`;
+            details = `${formatCurrency(req.data.amount)} € für "${escapeHtml(req.data.description)}" am ${formatDateFast(req.data.date)}`;
             if (req.data.receipt) {
                 const safeReceipt = escapeHtml(req.data.receipt);
                 const safeId = escapeHtml(req.id);
@@ -1514,7 +1526,7 @@ function renderAdminRequests() {
         } else if (req.type === 'standing_order') {
             typeLabel = 'Dauerauftrag';
             typeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>';
-            details = `${formatCurrency(req.data.amount)} € / Monat<br>Start: ${dateFormatter.format(new Date(req.data.date))}`;
+            details = `${formatCurrency(req.data.amount)} € / Monat<br>Start: ${formatDateFast(req.data.date)}`;
             if (req.data.note) details += `<br><small style="color: var(--text-secondary);"><span style="opacity: 0.7;">"</span>${escapeHtml(req.data.note)}<span style="opacity: 0.7;">"</span></small>`;
         }
 
@@ -2026,7 +2038,7 @@ function renderUserView() {
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
                         <div>
                             <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">${typeIcons[req.type]} ${typeLabels[req.type] || req.type}</div>
-                            <div style="font-size: 0.85rem; color: var(--text-secondary);">${dateFormatter.format(new Date(req.timestamp))}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">${formatDateFast(req.timestamp)}</div>
                         </div>
                         <div style="background: ${statusBg}; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; white-space: nowrap;">
                             ${statusBadge} ${statusText}
@@ -2141,7 +2153,7 @@ function generateTimelineHTML(person) {
     };
 
     const timelineItems = allEvents.map(event => {
-        const dateStr = dateFormatter.format(new Date(event.dateStr));
+        const dateStr = formatDateFast(event.dateStr);
         let content = '';
         let dotClass = 'timeline-dot';
 
@@ -2203,8 +2215,8 @@ function generatePersonHTML(p, preCalcData = null) {
                             <div style="font-size:0.9rem; font-weight:600;">${formatCurrency(so.amount)} € / Monat</div>
                             <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">${escapeHtml(so.note || 'Ohne Notiz')}</div>
                             <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">
-                                Start: ${dateFormatter.format(new Date(so.startDate))}
-                                ${so.endDate ? `<br>Ende: ${dateFormatter.format(new Date(so.endDate))}` : ''}
+                                Start: ${formatDateFast(so.startDate)}
+                                ${so.endDate ? `<br>Ende: ${formatDateFast(so.endDate)}` : ''}
                             </div>
                         </div>
                         ${(true) ? `
@@ -2464,7 +2476,7 @@ window.renderHistoryTab = async function(resetLimit = true) {
         let html = '';
 
         cachedTransactions.forEach((t, index) => {
-            const tDateFormatted = t.date ? dateFormatter.format(new Date(t.date)) : 'Kein Datum';
+            const tDateFormatted = t.date ? formatDateFast(t.date) : 'Kein Datum';
 
             if (tDateFormatted !== lastDateFormatted) {
                 html += `<div style="margin: ${index === 0 ? '0' : '20px'} 0 8px 10px; font-weight: bold; font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">${tDateFormatted}</div>`;
@@ -4674,7 +4686,7 @@ window.showTransactionDetails = async function(id, type) {
         <div class="details-status-card" style="background:var(--surface-alt); border:1px solid var(--border);">
             <div class="details-row">
                 <span class="details-label">Datum</span>
-                <span class="details-value">${item.date ? dateFormatter.format(new Date(item.date)) : '-'}</span>
+                <span class="details-value">${item.date ? formatDateFast(item.date) : '-'}</span>
             </div>
             ${item.who ? `
             <div class="details-row">
