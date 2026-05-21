@@ -169,12 +169,22 @@ function preprocessPerson(person) {
     person.statusHistory = safeList(person.statusHistory).sort(
         (a, b) => a.startDate.localeCompare(b.startDate)
     );
+    const isoDateRegex = /^\d{4}-\d{2}-\d{2}/;
     person.statusHistory.forEach(entry => {
-        const s = new Date(entry.startDate);
-        entry.startTotal = s.getFullYear() * 12 + s.getMonth();
+        if (entry.startDate && isoDateRegex.test(entry.startDate)) {
+            entry.startTotal = parseInt(entry.startDate.substring(0, 4), 10) * 12 + (parseInt(entry.startDate.substring(5, 7), 10) - 1);
+        } else {
+            const s = new Date(entry.startDate);
+            entry.startTotal = s.getFullYear() * 12 + s.getMonth();
+        }
+
         if (entry.endDate) {
-            const e = new Date(entry.endDate);
-            entry.endTotal = e.getFullYear() * 12 + e.getMonth();
+            if (isoDateRegex.test(entry.endDate)) {
+                entry.endTotal = parseInt(entry.endDate.substring(0, 4), 10) * 12 + (parseInt(entry.endDate.substring(5, 7), 10) - 1);
+            } else {
+                const e = new Date(entry.endDate);
+                entry.endTotal = e.getFullYear() * 12 + e.getMonth();
+            }
         } else {
             entry.endTotal = null;
         }
