@@ -353,7 +353,11 @@ async function ensureUsersCollection(appConfig) {
       updateRule: 'id = @request.auth.id || @request.auth.admin = true',
       deleteRule: '@request.auth.superAdmin = true',
       fields,
-      indexes: existing.indexes || []
+      indexes: existing.indexes || [],
+      options: {
+        ...existing.options,
+        minPasswordLength: 6
+      }
     }
   });
 }
@@ -1011,15 +1015,43 @@ async function upsertPeopleRecord(appConfig, personKey, value, expectedUpdated =
 async function removePeopleRecord(appConfig, personKey) {
   const existing = await getPeopleRecord(appConfig, personKey);
   if (existing) {
-    const [payments, statusHistory] = await Promise.all([
-      listAllRecords('payments', pbFilterEquals('personKey', personKey), appConfig),
-      listAllRecords('status_history', pbFilterEquals('personKey', personKey), appConfig)
-    ]);
-    await Promise.all([
-      ...payments.map((payment) => deleteRecord('payments', payment.id, appConfig)),
-      ...statusHistory.map((entry) => deleteRecord('status_history', entry.id, appConfig))
-    ]);
-    await deleteRecord('people', existing.id, appConfig);
+    // 1. Delete corresponding auth user record from 'users' collection if uid exists
+    const uid = existing.uid || (existing.data && existing.data.uid);
+    if (uid) {
+      try {
+        await deleteRecord('users', uid, appConfig);
+      } catch (err) {
+        console.warn(`[PocketBase] Failed to delete auth user ${uid}:`, err.message);
+      }
+    }
+
+    // 2. Delete status history records associated with this personKey
+    const statusHistory = await listAllRecords('status_history', pbFilterEquals('personKey', personKey), appConfig);
+    await Promise.all(
+      statusHistory.map((entry) => deleteRecord('status_history', entry.id, appConfig))
+    );
+
+    // 3. Keep payments, name, totalPaid, uid, and profile picture, but absolutely delete/clear the rest
+    // Set isDeleted = true, status = "", standingOrders = [] inside data JSON blob and people record
+    const updatedData = {
+      ...(existing.data || {}),
+      status: '',
+      standingOrders: [],
+      isDeleted: true
+    };
+
+    const updatePayload = {
+      personKey: String(personKey),
+      uid: toOptionalText(uid),
+      name: toOptionalText(existing.name),
+      status: '',
+      memberSince: toOptionalText(existing.memberSince),
+      originalMemberSince: toOptionalText(existing.originalMemberSince || existing.memberSince),
+      totalPaid: existing.totalPaid || 0,
+      data: updatedData
+    };
+
+    await updateRecord('people', existing.id, updatePayload, appConfig);
   }
 }
 
