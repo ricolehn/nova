@@ -474,13 +474,15 @@ app.post('/api/setup', setupRateLimit, async (req, res) => {
     await saveOptionalLogo(logoSvg);
     await setRuntimeConfig(newConfig);
 
-    // Register the super-admin user in PocketBase
+    // Register the super-admin user in PocketBase using the superuser token,
+    // which bypasses PocketBase's default minPasswordLength constraint (8 chars)
+    // so that 6-character passwords set in the wizard are accepted.
     const auth = await registerUser({
       email: adminUser.email,
       password: adminUser.password,
       firstName: adminUser.firstName,
       lastName: adminUser.lastName
-    });
+    }, newConfig);
 
     // Instantly promote user to superAdmin and save their UID
     const system = await getStateValue(newConfig, 'system', DEFAULT_SYSTEM_STATE);
