@@ -2313,7 +2313,12 @@ function generatePersonHTML(p, preCalcData = null) {
                 </div>
             </div>
             <div id="drawer-${p.id}" class="person-details">
-                <div class="details-content">
+                <div class="details-content" style="position: relative;">
+                    ${(currentUser && currentUser.admin) ? `
+                    <button class="delete-person-btn" data-id="${escapeHtml(p.id)}" onclick="deletePersonClick(this.dataset.id)" aria-label="Mitglied löschen" style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--danger); padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; z-index: 10;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                    ` : ''}
 
                     <div class="details-status-card ${cardClass}">
                         ${(statusMeta.isActiveStandingOrder && !statusMeta.isOverdue) ? '' : `
@@ -2348,10 +2353,6 @@ function generatePersonHTML(p, preCalcData = null) {
                             <button class="btn btn-secondary" data-id="${escapeHtml(p.id)}" onclick="sendStatusEmail(this.dataset.id)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                                 E-Mail
-                            </button>
-                            <button class="btn btn-secondary text-danger" style="border-color: var(--danger); color: var(--danger);" data-id="${escapeHtml(p.id)}" onclick="deletePersonClick(this.dataset.id)">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                Löschen
                             </button>
                         </div>
                     </div>
