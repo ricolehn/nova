@@ -294,37 +294,50 @@
                 </div>
             </div>
 
+            <div class="card card-settings" id="card-language">
+                <div class="card-header">Sprache / Language</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Sprache / Language</label>
+                        <select id="settings-language" class="form-select" onchange="changeAppLanguage(this.value)">
+                            <option value="de">Deutsch</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <div class="card card-settings" id="card-security">
-                <div class="card-header">Sicherheit & Benachrichtigungen</div>
+                <div class="card-header" data-i18n="security_title">Sicherheit & Benachrichtigungen</div>
                 <div class="card-body">
                     <div class="form-group" style="display:flex; align-items:center; gap:10px;">
                         <label class="switch">
                             <input type="checkbox" id="admin-email-notifications">
                             <span class="slider"></span>
                         </label>
-                        <label for="admin-email-notifications" style="margin:0; font-weight:600; cursor:pointer">E-Mail Benachrichtigungen bei Anfragen</label>
+                        <label for="admin-email-notifications" style="margin:0; font-weight:600; cursor:pointer" data-i18n="email_notifications">E-Mail Benachrichtigungen bei Anfragen</label>
                     </div>
                     <div class="form-group" style="margin-top:20px;">
-                        <label class="form-label">Passwort ändern</label>
+                        <label class="form-label" data-i18n="change_password_title">Passwort ändern</label>
                         <div class="password-wrapper" style="margin-bottom: 12px;">
-                            <input type="password" id="old-password" class="form-input has-toggle" placeholder="Altes Passwort">
+                            <input type="password" id="old-password" class="form-input has-toggle" data-i18n-placeholder="old_password" placeholder="Altes Passwort">
                             <button type="button" class="password-toggle" onclick="togglePassword('old-password', this)" aria-label="Passwort anzeigen">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                             </button>
                         </div>
                         <div class="password-wrapper">
-                            <input type="password" id="new-password" class="form-input has-toggle" placeholder="Neues Passwort">
+                            <input type="password" id="new-password" class="form-input has-toggle" data-i18n-placeholder="new_password" placeholder="Neues Passwort">
                             <button type="button" class="password-toggle" onclick="togglePassword('new-password', this)" aria-label="Passwort anzeigen">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                             </button>
                         </div>
                     </div>
-                    <button class="btn btn-secondary btn-block" onclick="changePassword()">Passwort ändern</button>
+                    <button class="btn btn-secondary btn-block" onclick="changePassword()" data-i18n="btn_change_password">Passwort ändern</button>
                 </div>
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 30px; align-items: center; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="saveSettings()">Alle Einstellungen Speichern</button>
+                <button class="btn btn-primary" onclick="saveSettings()" data-i18n="btn_save_settings">Alle Einstellungen Speichern</button>
             </div>
         </div>
 
@@ -559,20 +572,27 @@
             </div>
 
             <div class="card">
-                <div class="card-header">Einstellungen</div>
+                <div class="card-header" data-i18n="nav_settings">Einstellungen</div>
                 <div class="card-body">
                     <div class="form-group">
-                        <span class="form-label">Farbschema</span>
+                        <label class="form-label" data-i18n="settings_language">Sprache / Language</label>
+                        <select id="user-settings-language" class="form-select" onchange="changeAppLanguage(this.value)">
+                            <option value="de">Deutsch</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-top:20px;">
+                        <span class="form-label" data-i18n="theme_title">Farbschema</span>
                         <div class="settings-flex-row">
-                            <button class="btn btn-secondary" onclick="setTheme('light')">
+                            <button class="btn btn-secondary" onclick="setTheme('light')" data-i18n="theme_light">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                                 Hell
                             </button>
-                            <button class="btn btn-secondary" onclick="setTheme('dark')">
+                            <button class="btn btn-secondary" onclick="setTheme('dark')" data-i18n="theme_dark">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                                 Dunkel
                             </button>
-                            <button class="btn btn-secondary" onclick="setTheme('system')">
+                            <button class="btn btn-secondary" onclick="setTheme('system')" data-i18n="theme_system">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                                 System
                             </button>
@@ -668,52 +688,52 @@
 
 <div id="add-person-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-add-person">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-add-person">Person hinzufügen</span> <button class="close-btn" onclick="closeModal('add-person-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-add-person" data-i18n="modal_add_person_title">Person hinzufügen</span> <button class="close-btn" onclick="closeModal('add-person-modal')" aria-label="Schließen">&times;</button></div>
         <div class="form-group">
-            <label class="form-label" for="new-person-name">Name</label>
+            <label class="form-label" for="new-person-name" data-i18n="modal_person_name">Name</label>
             <input type="text" id="new-person-name" class="form-input">
         </div>
         <div class="form-group">
-            <label class="form-label" for="new-person-start">Mitglied Seit</label>
+            <label class="form-label" for="new-person-start" data-i18n="modal_person_start">Mitglied Seit</label>
             <input type="date" id="new-person-start" class="form-input">
-            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;" data-i18n="modal_person_start_desc">
                 Ab diesem Datum werden Beiträge berechnet.
             </div>
         </div>
         <div class="form-group">
-            <label class="form-label" for="new-person-status">Status</label>
+            <label class="form-label" for="new-person-status" data-i18n="modal_person_status">Status</label>
             <select id="new-person-status" class="form-select">
-                <option value="vollverdiener">💼 Vollverdiener</option>
-                <option value="geringverdiener">📉 Geringverdiener</option>
-                <option value="keinverdiener">🎓 Keinverdiener</option>
-                <option value="pausiert">⏸️ Pausiert</option>
+                <option value="vollverdiener" data-i18n="member_status_full">💼 Vollverdiener</option>
+                <option value="geringverdiener" data-i18n="member_status_low">📉 Geringverdiener</option>
+                <option value="keinverdiener" data-i18n="member_status_none">🎓 Keinverdiener</option>
+                <option value="pausiert" data-i18n="member_status_paused">⏸️ Pausiert</option>
             </select>
         </div>
-        <button id="btn-add-person" class="btn btn-primary btn-block" onclick="addPerson()">Hinzufügen</button>
+        <button id="btn-add-person" class="btn btn-primary btn-block" onclick="addPerson()" data-i18n="btn_add">Hinzufügen</button>
     </div>
 </div>
 
 <div id="change-status-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="title-change-status">
     <div class="modal-content">
-        <div class="modal-header"><span id="title-change-status">Status Ändern</span> <button class="close-btn" onclick="closeModal('change-status-modal')" aria-label="Schließen">&times;</button></div>
+        <div class="modal-header"><span id="title-change-status" data-i18n="modal_change_status_title">Status Ändern</span> <button class="close-btn" onclick="closeModal('change-status-modal')" aria-label="Schließen">&times;</button></div>
         <div class="form-group">
-            <label class="form-label" for="change-status-select">Neuer Status</label>
+            <label class="form-label" for="change-status-select" data-i18n="modal_new_status">Neuer Status</label>
             <select id="change-status-select" class="form-select">
-                <option value="vollverdiener">💼 Vollverdiener</option>
-                <option value="geringverdiener">📉 Geringverdiener</option>
-                <option value="keinverdiener">🎓 Keinverdiener</option>
-                <option value="pausiert">⏸️ Pausiert</option>
+                <option value="vollverdiener" data-i18n="member_status_full">💼 Vollverdiener</option>
+                <option value="geringverdiener" data-i18n="member_status_low">📉 Geringverdiener</option>
+                <option value="keinverdiener" data-i18n="member_status_none">🎓 Keinverdiener</option>
+                <option value="pausiert" data-i18n="member_status_paused">⏸️ Pausiert</option>
             </select>
         </div>
         <div class="form-group">
-            <label class="form-label" for="change-status-date">Gültig ab</label>
+            <label class="form-label" for="change-status-date" data-i18n="modal_valid_from">Gültig ab</label>
             <input type="date" id="change-status-date" class="form-input">
-            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;">
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;" data-i18n="modal_status_desc">
                 <strong>Rückwirkend:</strong> Korrigiert die Berechnung ab dem angegebenen Datum.<br>
                 <strong>Zukünftig:</strong> Der neue Status gilt ab dem Datum (bisherige Berechnung bleibt).
             </div>
         </div>
-        <button class="btn btn-primary btn-block" onclick="saveStatusChange()">Status Ändern</button>
+        <button class="btn btn-primary btn-block" onclick="saveStatusChange()" data-i18n="btn_save">Status Ändern</button>
     </div>
 </div>
 

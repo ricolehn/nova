@@ -37,6 +37,76 @@ function parseReceipts(receiptField) {
     return trimmed.split(',').map(s => s.trim()).filter(Boolean);
 }
 
+// --- i18n Translation Engine ---
+let currentLang = localStorage.getItem('app_lang');
+if (!currentLang) {
+    const browserLang = (navigator.language || navigator.userLanguage || 'de').toLowerCase();
+    currentLang = browserLang.startsWith('de') ? 'de' : 'en';
+}
+let translations = {};
+
+async function loadLanguage(lang) {
+    try {
+        const response = await fetch(`./assets/locales/${lang}.json`);
+        translations = await response.json();
+        currentLang = lang;
+        localStorage.setItem('app_lang', lang);
+        applyTranslations();
+    } catch (e) {
+        console.error("Failed to load translation:", e);
+    }
+}
+
+function t(key, fallback = '') {
+    return translations[key] || fallback;
+}
+
+function getStatusLabels(withEmoji = false) {
+    if (withEmoji) {
+        return {
+            'vollverdiener': '💼 ' + t('member_status_full', 'Vollverdiener'),
+            'geringverdiener': '📉 ' + t('member_status_low', 'Geringverdiener'),
+            'keinverdiener': '🎓 ' + t('member_status_none', 'Keinverdiener'),
+            'pausiert': '⏸️ ' + t('member_status_paused', 'Pausiert')
+        };
+    }
+    return {
+        'vollverdiener': t('member_status_full', 'Vollverdiener'),
+        'geringverdiener': t('member_status_low', 'Geringverdiener'),
+        'keinverdiener': t('member_status_none', 'Keinverdiener'),
+        'pausiert': t('member_status_paused', 'Pausiert')
+    };
+}
+
+function applyTranslations() {
+    // Translate elements with data-i18n
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[key]) el.innerHTML = translations[key];
+    });
+    // Translate elements with data-i18n-placeholder
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (translations[key]) el.setAttribute('placeholder', translations[key]);
+    });
+    // Sync language selection dropdowns
+    const langSelect = document.getElementById('settings-language');
+    if (langSelect) langSelect.value = currentLang;
+    const userLangSelect = document.getElementById('user-settings-language');
+    if (userLangSelect) userLangSelect.value = currentLang;
+}
+
+window.changeAppLanguage = async function(lang) {
+    await loadLanguage(lang);
+    renderPeople();
+    renderStats();
+    renderHistory();
+    renderSuperAdminPaymentEditor();
+};
+
+// Initialize immediately
+loadLanguage(currentLang);
+
 let sseConnection = null;
 let aiEnabled = false;
 let aiMessages = [];
@@ -1091,12 +1161,7 @@ function generateStatusHistoryHTML(person) {
         ? history[0].endDate
         : (person.originalMemberSince || person.memberSince);
 
-    const statusLabels = {
-        'vollverdiener': '💼 Vollverdiener',
-        'geringverdiener': '📉 Geringverdiener',
-        'keinverdiener': '🎓 Keinverdiener',
-        'pausiert': '⏸️ Pausiert'
-    };
+    const statusLabels = getStatusLabels(true);
 
     let html = `
         <div class="trans-item" style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2);">
@@ -2169,12 +2234,7 @@ function renderUserView() {
     // Format date to show only month and year
     let dateText = paidUntil ? monthYearFormatter.format(paidUntil) : 'Nie';
 
-    const statusLabels = {
-        'vollverdiener': 'Vollverdiener',
-        'geringverdiener': 'Geringverdiener',
-        'keinverdiener': 'Keinverdiener',
-        'pausiert': 'Pausiert'
-    };
+    const statusLabels = getStatusLabels(false);
 
     let statusClass = 'user-status-ok';
     let statusColor = 'var(--success)';
@@ -2372,12 +2432,7 @@ function generateTimelineHTML(person) {
         return '<div style="font-size:0.8rem; color:var(--text-secondary); font-style:italic;">Keine Einträge vorhanden.</div>';
     }
 
-    const statusLabels = {
-        'vollverdiener': '💼 Vollverdiener',
-        'geringverdiener': '📉 Geringverdiener',
-        'keinverdiener': '🎓 Keinverdiener',
-        'pausiert': '⏸️ Pausiert'
-    };
+    const statusLabels = getStatusLabels(true);
 
     const timelineItems = allEvents.map(event => {
         const dateStr = formatDateFast(event.dateStr);
@@ -3193,12 +3248,7 @@ window.sendStatusEmail = async (personId) => {
     const overdueAmount = person._overdueAmount || 0;
     const currentStatus = person._currentStatus || person.status;
 
-    const statusLabels = {
-        'vollverdiener': 'Vollverdiener',
-        'geringverdiener': 'Geringverdiener',
-        'keinverdiener': 'Keinverdiener',
-        'pausiert': 'Pausiert'
-    };
+    const statusLabels = getStatusLabels(false);
     const readableStatus = statusLabels[currentStatus] || currentStatus;
     const appName = config.appName || "Nova";
 
@@ -5115,4 +5165,62 @@ window.togglePassword = function(inputId, btn) {
     const eye = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
     btn.innerHTML = isPassword ? eyeOff : eye;
     btn.setAttribute('aria-label', isPassword ? 'Passwort verbergen' : 'Passwort anzeigen');
+};
+
+// Overwrite default Alert and Toast to automatically translate messages
+const originalAlert = window.alert;
+window.alert = function(msg) {
+    if (!msg) return;
+    const cleanMsg = String(msg).trim().replace(/\.$/, '');
+    const keyMap = {
+        "Bitte alle Felder ausfüllen": "alert_fill_fields",
+        "Ungültiger Betrag": "alert_invalid_amount",
+        "Ungültiges Datum": "alert_invalid_date",
+        "Bitte ein Datum angeben": "alert_invalid_date",
+        "Fehler beim Laden der Daten. Bitte Seite neu laden": "toast_error",
+        "Bitte eine Person auswählen": "modal_person_name",
+        "Person nicht gefunden": "toast_error",
+        "Zuordnung fehlgeschlagen. Bitte erneut versuchen": "toast_error",
+        "Kein Personenprofil gefunden": "toast_error",
+        "Anfrage konnte nicht gesendet werden. Bitte erneut versuchen": "toast_error",
+        "Neuer Code konnte nicht gespeichert werden": "toast_error",
+        "Bitte Datum wählen": "alert_invalid_date",
+        "Fehler beim Speichern": "toast_error",
+        "Fehler beim Löschen": "toast_error",
+        "Fehler beim Löschen des Eintrags": "toast_error",
+        "Bitte geben Sie Ihr altes Passwort ein": "old_password",
+        "Neues Passwort muss mindestens 6 Zeichen lang sein": "toast_error",
+        "Kein Benutzer angemeldet": "toast_error"
+    };
+    const key = keyMap[cleanMsg] || cleanMsg;
+    if (translations[key]) {
+        originalAlert(translations[key]);
+    } else {
+        originalAlert(msg);
+    }
+};
+
+const originalShowToast = window.showToast;
+window.showToast = (msg, type='success') => {
+    if (!originalShowToast) return;
+    const keyMap = {
+        "Zahlung aktualisiert": "toast_updated",
+        "Spende aktualisiert": "toast_updated",
+        "Ausgabe aktualisiert": "toast_updated",
+        "Zahlung erfolgreich gesendet": "toast_saved",
+        "Anfrage erfolgreich gesendet": "toast_saved",
+        "Code kopiert!": "toast_saved",
+        "Profilbild gespeichert!": "toast_saved",
+        "Toast erfolgreich": "toast_saved",
+        "Code kopiert": "toast_saved",
+        "Zahlung gebucht": "toast_saved",
+        "Spende gebucht": "toast_saved",
+        "Ausgabe gebucht": "toast_saved",
+        "Person hinzugefügt": "toast_saved",
+        "Status geändert": "toast_updated"
+    };
+    const cleanMsg = String(msg).trim().replace(/[!.]/g, '');
+    const key = keyMap[cleanMsg] || msg;
+    const translatedMsg = translations[key] || msg;
+    originalShowToast(translatedMsg, type);
 };
