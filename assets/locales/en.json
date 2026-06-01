@@ -47,6 +47,7 @@
   "invite_current": "Current Code",
   "invite_desc": "This code is required for new registrations.",
   "btn_generate_new": "New",
+  "copy_btn": "Copy",
   "security_title": "Security & Notifications",
   "email_notifications": "Email Notifications for Requests",
   "change_password_title": "Change Password",

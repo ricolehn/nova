@@ -47,6 +47,7 @@
   "invite_current": "Aktueller Code",
   "invite_desc": "Dieser Code wird für neue Registrierungen benötigt.",
   "btn_generate_new": "Neu",
+  "copy_btn": "Kopieren",
   "security_title": "Sicherheit & Benachrichtigungen",
   "email_notifications": "E-Mail Benachrichtigungen bei Anfragen",
   "change_password_title": "Passwort ändern",

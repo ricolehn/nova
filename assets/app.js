@@ -1504,6 +1504,8 @@ async function loadData(silent = false) {
         const code = cData ? cData : '123456';
         const codeInput = document.getElementById('admin-invite-code');
         if(codeInput) codeInput.value = code;
+        const codeDisplay = document.getElementById('admin-invite-code-display');
+        if(codeDisplay) codeDisplay.textContent = code;
 
         // UI toggles
         document.getElementById('admin-view').style.display = 'block';
@@ -4503,7 +4505,10 @@ window.generateNewCode = async () => {
     const newCode = 100000 + (array[0] % 900000);
     try {
         await set(ref(db, 'system/inviteCode'), newCode);
-        document.getElementById('admin-invite-code').value = newCode;
+        const codeInput = document.getElementById('admin-invite-code');
+        if (codeInput) codeInput.value = newCode;
+        const codeDisplay = document.getElementById('admin-invite-code-display');
+        if (codeDisplay) codeDisplay.textContent = newCode;
     } catch (err) {
         console.error('Fehler beim Generieren des Codes:', err);
         alert(t('alert_save_code_failed', 'Neuer Code konnte nicht gespeichert werden.'));

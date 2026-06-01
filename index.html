@@ -199,6 +199,48 @@
 
         <div id="settings" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-settings">
             
+            <!-- PREMIUM ELEGANT REGISTRATION/INVITE CODE CARD -->
+            <div class="card card-settings premium-invite-card" id="card-invite">
+                <div class="card-header premium-invite-header">
+                    <div class="premium-invite-header-title">
+                        <svg class="premium-invite-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <span data-i18n="invite_title">Registrierungscode</span>
+                    </div>
+                </div>
+                <div class="card-body premium-invite-body">
+                    <p class="premium-invite-desc" data-i18n="invite_desc">Dieser Code wird für neue Registrierungen benötigt.</p>
+                    
+                    <div class="premium-invite-display-container">
+                        <!-- Hidden input so the old JS logic still works perfectly without any breaking changes -->
+                        <input type="text" id="admin-invite-code" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;" readonly>
+                        
+                        <div class="premium-invite-code-wrapper">
+                            <div class="premium-invite-code-label" data-i18n="invite_current">Aktueller Code</div>
+                            <div class="premium-invite-code-value" id="admin-invite-code-display">------</div>
+                        </div>
+                        
+                        <div class="premium-invite-actions">
+                            <button class="btn btn-premium-action btn-copy-invite" onclick="copyInviteCode()" aria-label="Code kopieren" title="Code kopieren">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span data-i18n="copy_btn">Kopieren</span>
+                            </button>
+                            <button class="btn btn-premium-action btn-generate-invite" onclick="generateNewCode()" aria-label="Neuen Code generieren">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                                </svg>
+                                <span data-i18n="btn_generate_new">Neu</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card card-settings" id="card-profile-pic-admin">
                 <div class="card-header" data-i18n="profile_pic_title">Profilbild</div>
                 <div class="card-body">
@@ -275,24 +317,6 @@
                 </div>
             </div>
 
-            <div class="card card-settings" id="card-invite">
-                <div class="card-header" data-i18n="invite_title">Registrierungscode</div>
-                <div class="card-body">
-                    <div class="form-group">
-                        <label class="form-label" for="admin-invite-code" data-i18n="invite_current">Aktueller Code</label>
-                        <div class="settings-flex-row">
-                            <input type="text" id="admin-invite-code" class="form-input" readonly>
-                            <button class="btn btn-secondary" onclick="copyInviteCode()" aria-label="Code kopieren" title="Code kopieren">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            </button>
-                            <button class="btn btn-secondary" onclick="generateNewCode()" aria-label="Neuen Code generieren"><span data-i18n="btn_generate_new">Neu</span></button>
-                        </div>
-                        <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;" data-i18n="invite_desc">
-                            Dieser Code wird für neue Registrierungen benötigt.
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <div class="card card-settings" id="card-language">
                 <div class="card-header">Sprache / Language</div>
