@@ -329,5 +329,14 @@
   "toast_profile_pic_saved": "Profilbild gespeichert!",
   "toast_upload_failed": "Fehler beim Hochladen: ",
   "toast_code_copied": "Code kopiert!",
-  "toast_copy_failed": "Kopieren fehlgeschlagen"
+  "toast_copy_failed": "Kopieren fehlgeschlagen",
+  "details_issued_by": "Ausgestellt von",
+  "details_description": "Beschreibung",
+  "timeline_status_change": "Statusänderung",
+  "timeline_valid_from": "Gültig ab",
+  "timeline_payment": "Zahlung",
+  "timeline_no_note": "Keine Notiz",
+  "timeline_no_entries": "Keine Einträge vorhanden.",
+  "btn_close": "Schließen",
+  "details_receipts": "Belege"
 }

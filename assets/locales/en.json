@@ -329,5 +329,14 @@
   "toast_profile_pic_saved": "Profile picture saved!",
   "toast_upload_failed": "Upload failed: ",
   "toast_code_copied": "Code copied!",
-  "toast_copy_failed": "Copy failed"
+  "toast_copy_failed": "Copy failed",
+  "details_issued_by": "Issued by",
+  "details_description": "Description",
+  "timeline_status_change": "Status Change",
+  "timeline_valid_from": "Valid from",
+  "timeline_payment": "Payment",
+  "timeline_no_note": "No note",
+  "timeline_no_entries": "No entries found.",
+  "btn_close": "Close",
+  "details_receipts": "Receipts"
 }

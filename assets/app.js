@@ -2481,7 +2481,7 @@ function generateTimelineHTML(person) {
     const allEvents = [...history, ...payments].sort((a, b) => b.dateStr.localeCompare(a.dateStr));
 
     if (allEvents.length === 0) {
-        return '<div style="font-size:0.8rem; color:var(--text-secondary); font-style:italic;">Keine Einträge vorhanden.</div>';
+        return `<div style="font-size:0.8rem; color:var(--text-secondary); font-style:italic;">${t('timeline_no_entries', 'Keine Einträge vorhanden.')}</div>`;
     }
 
     const statusLabels = getStatusLabels(true);
@@ -2494,13 +2494,13 @@ function generateTimelineHTML(person) {
         if (event.type === 'status') {
             const label = statusLabels[event.status] || event.status;
             content = `
-                <div style="font-weight: 600;">Statusänderung: ${escapeHtml(label)}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">Gültig ab ${dateStr}</div>
+                <div style="font-weight: 600;">${t('timeline_status_change', 'Statusänderung')}: ${escapeHtml(label)}</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">${t('timeline_valid_from', 'Gültig ab')} ${dateStr}</div>
             `;
         } else {
             content = `
-                <div style="font-weight: 600;">Zahlung: ${formatCurrency(event.amount)}€</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(event.description) || 'Keine Notiz'} • ${dateStr}</div>
+                <div style="font-weight: 600;">${t('timeline_payment', 'Zahlung')}: ${formatCurrency(event.amount)}€</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(event.description) || t('timeline_no_note', 'Keine Notiz')} • ${dateStr}</div>
             `;
         }
 
@@ -5039,11 +5039,11 @@ window.findTransaction = function(id, type) {
     if (!item) return null;
 
     if (type === 'exp') {
-        return { ...item, typeName: 'Ausgabe' };
+        return { ...item, typeName: t('action_expense', 'Ausgabe') };
     } else if (type === 'don') {
-        return { ...item, typeName: 'Spende', who: item.name || item.who };
+        return { ...item, typeName: t('btn_add_donation', 'Spende'), who: item.name || item.who };
     } else if (type === 'pay') {
-        return { ...item, typeName: 'Zahlung' };
+        return { ...item, typeName: t('action_payment', 'Zahlung') };
     }
     return null;
 };
@@ -5072,21 +5072,21 @@ window.showTransactionDetails = async function(id, type) {
         </div>
         <div class="details-status-card" style="background:var(--surface-alt); border:1px solid var(--border);">
             <div class="details-row">
-                <span class="details-label">Datum</span>
+                <span class="details-label">${t('modal_date', 'Datum')}</span>
                 <span class="details-value">${item.date ? formatDateFast(item.date) : '-'}</span>
             </div>
             ${item.who ? `
             <div class="details-row">
-                <span class="details-label">Person</span>
+                <span class="details-label">${t('modal_person_name', 'Person')}</span>
                 <span class="details-value">${escapeHtml(item.who)}</span>
             </div>` : ''}
              ${item.issuer ? `
             <div class="details-row">
-                <span class="details-label">Ausgestellt von</span>
+                <span class="details-label">${t('details_issued_by', 'Ausgestellt von')}</span>
                 <span class="details-value">${escapeHtml(item.issuer)}</span>
             </div>` : ''}
             <div class="details-row">
-                <span class="details-label">Beschreibung</span>
+                <span class="details-label">${t('details_description', 'Beschreibung')}</span>
                 <span class="details-value">${escapeHtml(item.description || item.note || '-')}</span>
             </div>
         </div>
@@ -5097,7 +5097,7 @@ window.showTransactionDetails = async function(id, type) {
 
     if (item.receipt) {
         const receiptContainer = document.getElementById('receipt-container');
-        receiptContainer.innerHTML = '<div class="spinner" style="margin:20px auto;"></div><div style="text-align:center">Lade Belege...</div>';
+        receiptContainer.innerHTML = `<div class="spinner" style="margin:20px auto;"></div><div style="text-align:center">${t('loading_receipts', 'Lade Belege...')}</div>`;
 
         // Revoke previous URLs if any
         if (content.dataset.blobUrls) {
@@ -5111,23 +5111,23 @@ window.showTransactionDetails = async function(id, type) {
         try {
             const filenames = parseReceipts(item.receipt);
             if (filenames.length === 0) {
-                receiptContainer.innerHTML = `<div style="color:var(--text-secondary); text-align:center; font-size:0.9rem;">Kein Beleg vorhanden.</div>`;
+                receiptContainer.innerHTML = `<div style="color:var(--text-secondary); text-align:center; font-size:0.9rem;">${t('no_receipts', 'Kein Beleg vorhanden.')}</div>`;
                 return;
             }
 
             const imgUrls = [];
-            let html = '<div style="font-weight:600; margin-bottom:10px;">Belege</div><div style="display:flex; flex-direction:column; gap:15px;">';
+            let html = `<div style="font-weight:600; margin-bottom:10px;">${t('details_receipts', 'Belege')}</div><div style="display:flex; flex-direction:column; gap:15px;">`;
             
             for (const filename of filenames) {
                 const imgUrl = await fetchReceiptImage(filename);
                 imgUrls.push(imgUrl);
                 html += `
                     <div style="position:relative; border:1px solid var(--border); border-radius:12px; padding:10px; background:var(--surface-alt);">
-                        <img src="${imgUrl}" style="width:100%; border-radius:8px; opacity:0; transition:opacity 0.3s ease-in;" onload="this.style.opacity=1" alt="Beleg">
+                        <img src="${imgUrl}" style="width:100%; border-radius:8px; opacity:0; transition:opacity 0.3s ease-in;" onload="this.style.opacity=1" alt="${t('details_receipts', 'Beleg')}">
                         <div style="margin-top:10px; display:flex; gap:10px; justify-content:flex-end;">
                             <a href="${imgUrl}" download="${filename}" class="btn btn-secondary btn-small" style="background:var(--surface); border:1px solid var(--border); color:var(--text); text-decoration:none; display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:0.85rem; border-radius:8px;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                Herunterladen
+                                ${t('download_btn', 'Herunterladen')}
                             </a>
                         </div>
                     </div>
@@ -5138,10 +5138,10 @@ window.showTransactionDetails = async function(id, type) {
             content.dataset.blobUrls = JSON.stringify(imgUrls);
             receiptContainer.innerHTML = html;
         } catch (err) {
-            receiptContainer.innerHTML = `<div style="color:var(--danger); text-align:center;">Belege konnten nicht geladen werden.</div>`;
+            receiptContainer.innerHTML = `<div style="color:var(--danger); text-align:center;">${t('error_loading_receipts', 'Belege konnten nicht geladen werden.')}</div>`;
         }
     } else {
-        document.getElementById('receipt-container').innerHTML = `<div style="color:var(--text-secondary); text-align:center; font-size:0.9rem;">Kein Beleg vorhanden.</div>`;
+        document.getElementById('receipt-container').innerHTML = `<div style="color:var(--text-secondary); text-align:center; font-size:0.9rem;">${t('no_receipts', 'Kein Beleg vorhanden.')}</div>`;
     }
 };
 
