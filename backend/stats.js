@@ -24,6 +24,12 @@ async function aggregateStats(appConfig) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const todayY = today.getFullYear();
+  const todayM = String(today.getMonth() + 1).padStart(2, '0');
+  const todayD = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${todayY}-${todayM}-${todayD}`;
+
   const ninetyDaysAgo = new Date(today);
   ninetyDaysAgo.setDate(today.getDate() - 90);
 
@@ -47,38 +53,44 @@ async function aggregateStats(appConfig) {
   people.forEach(record => {
     const p = record.data;
     if (!p) return;
-    const pTotal = parseFloat(p.totalPaid || 0);
-    totalInc += pTotal;
 
-    if (startStr) {
-      if (Array.isArray(p.payments)) {
-        p.payments.forEach(pay => {
-          if (pay.date >= startStr) periodInc += parseFloat(pay.amount);
-          processEvent(parseFloat(pay.amount), pay.date);
-        });
-      }
-    } else {
-      periodInc += pTotal;
-      if (Array.isArray(p.payments)) {
-        p.payments.forEach(pay => {
-          processEvent(parseFloat(pay.amount), pay.date);
-        });
-      }
+    if (Array.isArray(p.payments)) {
+      p.payments.forEach(pay => {
+        if (!pay.date || pay.date > todayStr) return; // Exclude future payments
+
+        const amount = parseFloat(pay.amount) || 0;
+        totalInc += amount;
+
+        if (!startStr || pay.date >= startStr) {
+          periodInc += amount;
+        }
+        processEvent(amount, pay.date);
+      });
     }
   });
 
   donations.forEach(d => {
-    const amount = parseFloat(d.amount);
+    if (!d.date || d.date > todayStr) return; // Exclude future donations
+
+    const amount = parseFloat(d.amount) || 0;
     totalInc += amount;
-    if (!startStr || d.date >= startStr) periodInc += amount;
+
+    if (!startStr || d.date >= startStr) {
+      periodInc += amount;
+    }
     processEvent(amount, d.date);
   });
 
   expenses.forEach(record => {
     const e = record.data || record;
-    const amount = parseFloat(e.amount);
+    if (!e.date || e.date > todayStr) return; // Exclude future expenses
+
+    const amount = parseFloat(e.amount) || 0;
     totalExp += amount;
-    if (!startStr || e.date >= startStr) periodExp += amount;
+
+    if (!startStr || e.date >= startStr) {
+      periodExp += amount;
+    }
     processEvent(-amount, e.date);
   });
 
