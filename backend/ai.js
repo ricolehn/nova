@@ -58,7 +58,15 @@ async function buildDatabaseSnapshot(appConfig) {
       if (d instanceof Date) {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       }
-      return String(d).slice(0, 10);
+      const str = String(d);
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        return str.slice(0, 10);
+      }
+      const parsed = new Date(str);
+      if (!isNaN(parsed.getTime())) {
+        return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+      }
+      return '1970-01-01';
     };
 
     // Aggregate summary statistics
