@@ -89,13 +89,22 @@ async function buildDatabaseSnapshot(appConfig) {
     // Build full member records (no uid, no raw data blob)
     const memberRecords = people.map((p) => {
       const payments = Array.isArray(p.data?.payments) ? p.data.payments : [];
+
+      let historicalTotalPaid = 0;
+      for (const pay of payments) {
+        const payDateStr = toDateStr(pay.date);
+        if (payDateStr <= todayStr) {
+          historicalTotalPaid += Number(String(pay.amount || 0).replace(',', '.'));
+        }
+      }
+
       return {
         id: p.personKey,
         name: p.name || '',
         status: p.status || '',
         memberSince: p.memberSince || '',
         originalMemberSince: p.originalMemberSince || p.memberSince || '',
-        totalPaid: Math.round(Number(String(p.totalPaid || 0).replace(',', '.')) * 100) / 100,
+        totalPaid: Math.round(historicalTotalPaid * 100) / 100,
         payments: payments.map((pay) => ({
           amount: Math.round(Number(String(pay.amount || 0).replace(',', '.')) * 100) / 100,
           date: pay.date || '',
