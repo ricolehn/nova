@@ -67,7 +67,7 @@ async function aggregateStats(appConfig) {
       const payDateStr = toDateStr(pay.date);
       if (payDateStr > todayStr) return; // Exclude strictly future payments
 
-      const amount = parseFloat(pay.amount) || 0;
+      const amount = Number(String(pay.amount || 0).replace(',', '.'));
       totalInc += amount;
 
       if (!startStr || payDateStr >= startStr) {
@@ -81,7 +81,7 @@ async function aggregateStats(appConfig) {
     const dDateStr = toDateStr(d.date);
     if (dDateStr > todayStr) return; // Exclude future donations
 
-    const amount = parseFloat(d.amount) || 0;
+    const amount = Number(String(d.amount || 0).replace(',', '.'));
     totalInc += amount;
 
     if (!startStr || dDateStr >= startStr) {
@@ -95,7 +95,7 @@ async function aggregateStats(appConfig) {
     const eDateStr = toDateStr(e.date);
     if (eDateStr > todayStr) return; // Exclude future expenses
 
-    const amount = parseFloat(e.amount) || 0;
+    const amount = Number(String(e.amount || 0).replace(',', '.'));
     totalExp += amount;
 
     if (!startStr || eDateStr >= startStr) {

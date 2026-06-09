@@ -53,12 +53,17 @@ async function buildDatabaseSnapshot(appConfig) {
     for (const p of people) {
       const status = p.status || 'unknown';
       membersByStatus[status] = (membersByStatus[status] || 0) + 1;
-      totalPaidAcrossMembers += parseFloat(p.totalPaid || 0);
+      totalPaidAcrossMembers += Number(String(p.totalPaid || 0).replace(',', '.'));
     }
 
     let totalExpenses = 0;
     for (const e of expenses) {
-      totalExpenses += parseFloat(e.amount || 0);
+      totalExpenses += Number(String(e.amount || 0).replace(',', '.'));
+    }
+
+    let totalDonations = 0;
+    for (const d of Object.values(donations || {})) {
+      totalDonations += Number(String(d.amount || 0).replace(',', '.'));
     }
 
     // Build full member records (no uid, no raw data blob)
@@ -70,9 +75,9 @@ async function buildDatabaseSnapshot(appConfig) {
         status: p.status || '',
         memberSince: p.memberSince || '',
         originalMemberSince: p.originalMemberSince || p.memberSince || '',
-        totalPaid: Math.round(parseFloat(p.totalPaid || 0) * 100) / 100,
+        totalPaid: Math.round(Number(String(p.totalPaid || 0).replace(',', '.')) * 100) / 100,
         payments: payments.map((pay) => ({
-          amount: Math.round(parseFloat(pay.amount || 0) * 100) / 100,
+          amount: Math.round(Number(String(pay.amount || 0).replace(',', '.')) * 100) / 100,
           date: pay.date || '',
           description: pay.description || ''
         })),
@@ -87,7 +92,7 @@ async function buildDatabaseSnapshot(appConfig) {
     // Build expense records (no receipt field)
     const expenseRecords = expenses.map((e) => ({
       id: e.expenseKey,
-      amount: Math.round(parseFloat(e.amount || 0) * 100) / 100,
+      amount: Math.round(Number(String(e.amount || 0).replace(',', '.')) * 100) / 100,
       date: e.date || '',
       issuer: e.issuer || '',
       description: e.description || ''
@@ -120,7 +125,7 @@ async function buildDatabaseSnapshot(appConfig) {
         membersByStatus,
         totalMemberPaymentsEur: Math.round(totalPaidAcrossMembers * 100) / 100,
         totalExpensesEur: Math.round(totalExpenses * 100) / 100,
-        estimatedBalanceEur: Math.round((totalPaidAcrossMembers - totalExpenses) * 100) / 100,
+        estimatedBalanceEur: Math.round((totalPaidAcrossMembers + totalDonations - totalExpenses) * 100) / 100,
         totalUsers: users.length,
         adminCount: users.filter((u) => u.admin === true).length
       },
