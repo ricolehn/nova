@@ -183,7 +183,45 @@ async function buildDatabaseSnapshot(appConfig) {
  * @param {string} dbSnapshot - JSON string from buildDatabaseSnapshot.
  */
 function buildSystemPrompt(appName, dbSnapshot) {
-  return `You are a helpful support assistant for the ${appName || 'Nova'} church management application. Answer admin questions about the application data, members, finances, and settings. Be concise and helpful.\n\nCurrent database context:\n${dbSnapshot}`;
+  return `You are a helpful support assistant for the ${appName || 'Nova'} church management application. Answer admin questions about the application data, members, finances, and settings. Be concise and helpful.
+
+---
+### NOVA DEEP-DIVE MANUAL & EDGE CASES
+
+#### 1. Roles & Permissions
+- **Super-Admins**: Can manage admin promotions, edit past payments, change app config/SMTP, and update the application logo.
+- **Admins**: Can read/write all data: members, payments, requests, expenses, donations, and settings.
+- **Users**: Standard members. Can view their own linked member record, view shared settings/rates, and submit requests.
+
+#### 2. Financial & Aggregation Edge Cases
+- **Future Exclusion**: All financial aggregations, statistics, estimated balances, and total paid amounts strictly exclude payments, donations, or expenses with dates in the future (relative to the current local server date).
+- **Report Start Date**: If 'reportStartDate' is configured in settings, statistics and graph data will exclude income/expenses dated before that boundary, though estimated balance will still account for them to preserve absolute totals.
+
+#### 3. Payment Status & Arrears Calculations
+- **Expected Contribution**: Iterates month-by-month from the member's registration month ('memberSince' or 'originalMemberSince') to the current month.
+- **Rate Determination**: For each month, the system checks 'statusHistory' entries. If a month falls within an entry's start/end total, that entry's status is used; otherwise, it falls back to the current 'status' field. The rate is retrieved from settings.
+- **Anticipated Standing Order Buffer**: If a member has an active standing order and is behind by exactly one month, the system calculates whether the upcoming execution amount covers their overdue balance. If so, they are treated as 'Alles in Ordnung' (soon due, with active standing order flag) rather than 'Zahlung überfällig'.
+
+#### 4. Standing Orders Automation
+- **Execution Mechanism**: Runs daily. Execution generates a payment in 'payments' with ID 'auto_{soId}_{date}'.
+- **Catch-up Mechanism**: If a standing order's execution was missed (e.g., server offline, or created with a past start date), the scheduler will generate all missing payments up to the current day (capped at a 1200-month safety limit).
+- **Day Capping**: For monthly recurrences on days like the 31st, executions automatically cap to the maximum days of the target month (e.g., February 28/29, April 30).
+- **Expiration**: If 'endDate' is reached and past, the standing order is flagged as expired and excluded from future executions.
+
+#### 5. Data Sync & Deletion Rules
+- **People Deletion (Soft Deletion)**: When a member is deleted:
+  - Associated auth user and status history records are deleted.
+  - Profile is flagged with 'isDeleted: true', 'status' is set to '""', and 'standingOrders' is cleared.
+  - Name, totalPaid, and past payments are preserved to keep financial history consistent.
+- **SHA256 Child Keys**: Child objects ('payments', 'status_history', 'expenses') use deterministic SHA256 hashes for sync validation.
+
+#### 6. System Setup Mode
+- If no configuration file exists at startup, the app boots in **Setup Mode**, locking the '/api/stream' endpoint and serving 'setup.html' instead of 'index.html'.
+- The first user to register after setup is automatically promoted to 'admin' and 'superAdmin'.
+---
+
+Current database context:
+${dbSnapshot}`;
 }
 
 module.exports = { getAiSettings, setAiSettings, buildDatabaseSnapshot, buildSystemPrompt };
