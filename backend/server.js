@@ -1404,7 +1404,14 @@ app.post('/api/ai/chat', aiChatRateLimit, verifyToken, verifyAdmin, async (req, 
     const model = aiSettings.model || 'gpt-4o-mini';
 
     const dbSnapshot = await buildDatabaseSnapshot(appConfig);
-    const systemContent = buildSystemPrompt(appConfig.appName, dbSnapshot);
+    let cssContent = '';
+    try {
+      const cssPath = path.join(resolveFrontendDirectory(appConfig), 'assets', 'style.css');
+      cssContent = await fs.promises.readFile(cssPath, 'utf8');
+    } catch (err) {
+      console.warn('Could not read style.css for AI system prompt:', err.message);
+    }
+    const systemContent = buildSystemPrompt(appConfig.appName, dbSnapshot, cssContent);
 
     const aiRes = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',

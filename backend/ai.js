@@ -181,8 +181,9 @@ async function buildDatabaseSnapshot(appConfig) {
  * Builds the system prompt injected at the start of every chat request.
  * @param {string} appName - The configured application name.
  * @param {string} dbSnapshot - JSON string from buildDatabaseSnapshot.
+ * @param {string} cssContent - Raw CSS content of the application.
  */
-function buildSystemPrompt(appName, dbSnapshot) {
+function buildSystemPrompt(appName, dbSnapshot, cssContent = '') {
   return `You are a helpful support assistant for the ${appName || 'Nova'} church management application. Answer admin questions about the application data, members, finances, and settings. Be concise and helpful.
 
 ---
@@ -235,7 +236,7 @@ The client-side SPA (Single Page Application) is controlled by 'assets/app.js' a
 ---
 
 Current database context:
-${dbSnapshot}`;
+${dbSnapshot}${cssContent ? `\n\n---\n### APPLICATION STYLING & CSS RULES\nThe application CSS defines the visual identity, styles, colors, and layout classes. Here is the active stylesheet:\n\`\`\`css\n${cssContent}\n\`\`\`\n---` : ''}`;
 }
 
 module.exports = { getAiSettings, setAiSettings, buildDatabaseSnapshot, buildSystemPrompt };
