@@ -1960,7 +1960,7 @@ window.editRecordedPaymentByIndex = function(index) {
 window.saveEditedPayment = async () => {
     if (!(currentUser && currentUser.admin) || !currentEditedPayment) return;
 
-    const amount = parseFloat(String(document.getElementById('edit-payment-amount').value || '').replace(',', '.'));
+    const amount = parseFloat(String(document.getElementById('edit-payment-amount').value || '').replace(/\.(?=.*,)/g, '').replace(',', '.'));
     const date = document.getElementById('edit-payment-date').value;
     const description = document.getElementById('edit-payment-desc').value.trim();
 
@@ -2948,10 +2948,17 @@ window.openExportReportModal = async function() {
     openModal('export-report-modal');
     
     try {
-        const response = await fetchWithAuth(`${config.apiBaseUrl}/transactions?page=1&perPage=10000`);
-        if (!response.ok) throw new Error('Failed to fetch transactions');
-        const data = await response.json();
-        allReportTransactions = data.items || [];
+        let pageNum = 1;
+        let totalPages = 1;
+        allReportTransactions = [];
+        do {
+            const response = await fetchWithAuth(`${config.apiBaseUrl}/transactions?page=${pageNum}&perPage=500`);
+            if (!response.ok) throw new Error('Failed to fetch transactions');
+            const data = await response.json();
+            allReportTransactions = allReportTransactions.concat(data.items || []);
+            totalPages = data.totalPages || 1;
+            pageNum++;
+        } while (pageNum <= totalPages);
         
         // Find unique years of transactions
         const years = new Set();
@@ -3084,10 +3091,14 @@ window.updateReportPreview = function() {
         const to = document.getElementById('report-person-date-to').value;
         
         filtered = allReportTransactions.filter(tData => {
-            const matchesPerson = String(tData.personId) === String(selectedPersonId) ||
-                                  (tData.personUid && selectedPerson && tData.personUid === selectedPerson.uid) ||
-                                  (tData.who && personName && tData.who.trim().toLowerCase() === personName.trim().toLowerCase());
-            if (!matchesPerson) return false;
+            const matchesPersonId = String(tData.personId) === String(selectedPersonId) ||
+                                    (tData.personUid && selectedPerson && tData.personUid === selectedPerson.uid);
+            const matchesPersonFallback = !matchesPersonId && (tData.who && personName && tData.who.trim().toLowerCase() === personName.trim().toLowerCase());
+
+            if (!matchesPersonId && !matchesPersonFallback) return false;
+            if (matchesPersonFallback) {
+                console.warn(`Fallback string match used for person "${personName}" on transaction: `, tData);
+            }
             
             if (from && tData.date && tData.date < from) return false;
             if (to && tData.date && tData.date > to) return false;
@@ -3262,6 +3273,11 @@ window.downloadReportPdf = function() {
     const element = document.getElementById('report-print-preview');
     if (!element) return;
     
+    if (typeof html2pdf === 'undefined') {
+        alert(currentLang === 'de' ? 'PDF-Bibliothek konnte nicht geladen werden.' : 'PDF library failed to load.');
+        return;
+    }
+
     setButtonLoading('btn-download-pdf', true, currentLang === 'de' ? 'Generiere...' : 'Generating...');
     
     const opt = {
@@ -3299,11 +3315,15 @@ window.resizeReportPreview = function() {
     viewport.style.setProperty('--preview-height', `${canvasHeight}px`);
 };
 
+let reportResizeTimeout;
 window.addEventListener('resize', () => {
-    const modal = document.getElementById('export-report-modal');
-    if (modal && modal.classList.contains('show')) {
-        window.resizeReportPreview();
-    }
+    clearTimeout(reportResizeTimeout);
+    reportResizeTimeout = setTimeout(() => {
+        const modal = document.getElementById('export-report-modal');
+        if (modal && modal.classList.contains('show')) {
+            window.resizeReportPreview();
+        }
+    }, 100);
 });
 
 window.addPerson = async () => {
@@ -3344,7 +3364,7 @@ window.addPayment = async () => {
 
     setButtonLoading('btn-add-payment', true, "Buche...");
 
-    const amt = parseFloat(document.getElementById('payment-amount').value.replace(',', '.'));
+    const amt = parseFloat(document.getElementById('payment-amount').value.replace(/\.(?=.*,)/g, '').replace(',', '.'));
     const date = document.getElementById('payment-date').value;
     const desc = document.getElementById('payment-desc').value;
     const isStandingOrder = document.getElementById('payment-is-standing-order').checked;
@@ -3405,7 +3425,7 @@ window.addDonation = async () => {
 
     setButtonLoading('btn-add-donation', true, "Speichert...");
 
-    const amt = parseFloat(document.getElementById('donation-amount').value.replace(',', '.'));
+    const amt = parseFloat(document.getElementById('donation-amount').value.replace(/\.(?=.*,)/g, '').replace(',', '.'));
     if(isNaN(amt)) {
         setButtonLoading('btn-add-donation', false);
         return;
@@ -3433,7 +3453,7 @@ window.addExpense = async () => {
 
     setButtonLoading('btn-add-expense', true, "Speichert...");
 
-    const amt = parseFloat(document.getElementById('expense-amount').value.replace(',', '.'));
+    const amt = parseFloat(document.getElementById('expense-amount').value.replace(/\.(?=.*,)/g, '').replace(',', '.'));
     if(isNaN(amt)) {
         setButtonLoading('btn-add-expense', false);
         return;
@@ -4406,9 +4426,9 @@ window.uploadChurchLogo = async () => {
 };
 
 window.saveSettings = async () => {
-    settings.vollverdiener = parseFloat(document.getElementById('rate-vollverdiener').value.replace(',', '.'));
-    settings.geringverdiener = parseFloat(document.getElementById('rate-geringverdiener').value.replace(',', '.'));
-    settings.keinverdiener = parseFloat(document.getElementById('rate-keinverdiener').value.replace(',', '.'));
+    settings.vollverdiener = parseFloat(document.getElementById('rate-vollverdiener').value.replace(/\.(?=.*,)/g, '').replace(',', '.'));
+    settings.geringverdiener = parseFloat(document.getElementById('rate-geringverdiener').value.replace(/\.(?=.*,)/g, '').replace(',', '.'));
+    settings.keinverdiener = parseFloat(document.getElementById('rate-keinverdiener').value.replace(/\.(?=.*,)/g, '').replace(',', '.'));
     settings.reportStartDate = document.getElementById('report-start-date').value || null;
     settingsVersion++;
 
@@ -4789,7 +4809,7 @@ window.submitUserRequest = async () => {
     const date = document.getElementById('req-date').value;
 
     if(currentRequestType === 'payment') {
-        const amount = document.getElementById('req-amount').value.replace(',', '.');
+        const amount = document.getElementById('req-amount').value.replace(/\.(?=.*,)/g, '').replace(',', '.');
         const note = document.getElementById('req-note').value;
         const isStandingOrder = document.getElementById('req-is-standing-order') && document.getElementById('req-is-standing-order').checked;
 
@@ -4809,7 +4829,7 @@ window.submitUserRequest = async () => {
         reqData.newStatus = status;
         reqData.date = date;
     } else if(currentRequestType === 'expense') {
-        const amount = document.getElementById('req-amount').value.replace(',', '.');
+        const amount = document.getElementById('req-amount').value.replace(/\.(?=.*,)/g, '').replace(',', '.');
         const desc = document.getElementById('req-desc').value;
         if(!amount || !desc || !date) { alert(t('alert_fill_fields', 'Bitte alle Felder ausfüllen.')); return; }
         reqData.amount = amount;
