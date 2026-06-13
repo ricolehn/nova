@@ -347,6 +347,8 @@
   "report_type_annual": "Jahreszusammenfassung",
   "report_type_custom": "Benutzerdefinierter Zeitraum",
   "report_type_manual": "Manuelle Auswahl",
+  "report_type_person": "Einzelperson",
+  "report_person": "Mitglied / Person",
   "report_year": "Jahr",
   "report_from": "Von",
   "report_to": "Bis",

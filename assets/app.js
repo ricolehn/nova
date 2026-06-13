@@ -2978,6 +2978,14 @@ window.openExportReportModal = async function() {
         document.getElementById('report-date-from').value = `${thisYear}-01-01`;
         document.getElementById('report-date-to').value = today;
         
+        // Populate single person selector
+        const personSelect = document.getElementById('report-person-select');
+        if (personSelect) {
+            personSelect.innerHTML = people.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+        }
+        document.getElementById('report-person-date-from').value = `${thisYear}-01-01`;
+        document.getElementById('report-person-date-to').value = today;
+        
         // Reset manual transaction checklist
         selectedManualTransactionIds.clear();
         const checklistContainer = document.getElementById('report-manual-checklist');
@@ -3039,6 +3047,7 @@ window.onReportTypeChange = function() {
     document.getElementById('report-year-picker-container').style.display = (type === 'annual') ? 'block' : 'none';
     document.getElementById('report-date-range-container').style.display = (type === 'custom') ? 'block' : 'none';
     document.getElementById('report-manual-checklist-container').style.display = (type === 'manual') ? 'block' : 'none';
+    document.getElementById('report-person-selector-container').style.display = (type === 'person') ? 'block' : 'none';
     
     window.updateReportPreview();
 };
@@ -3066,6 +3075,29 @@ window.updateReportPreview = function() {
     } else if (type === 'manual') {
         filtered = allReportTransactions.filter(tData => selectedManualTransactionIds.has(tData.id || tData.paymentId));
         filterDesc = currentLang === 'de' ? 'Manuelle Auswahl' : 'Manual Selection';
+    } else if (type === 'person') {
+        const selectedPersonId = document.getElementById('report-person-select').value;
+        const selectedPerson = people.find(p => String(p.id) === String(selectedPersonId));
+        const personName = selectedPerson ? selectedPerson.name : '';
+        
+        const from = document.getElementById('report-person-date-from').value;
+        const to = document.getElementById('report-person-date-to').value;
+        
+        filtered = allReportTransactions.filter(tData => {
+            const matchesPerson = String(tData.personId) === String(selectedPersonId) ||
+                                  (tData.personUid && selectedPerson && tData.personUid === selectedPerson.uid) ||
+                                  (tData.who && personName && tData.who.trim().toLowerCase() === personName.trim().toLowerCase());
+            if (!matchesPerson) return false;
+            
+            if (from && tData.date && tData.date < from) return false;
+            if (to && tData.date && tData.date > to) return false;
+            return true;
+        });
+        
+        const fromFormatted = from ? formatDateFast(from) : '';
+        const toFormatted = to ? formatDateFast(to) : '';
+        const rangeText = (from || to) ? `: ${fromFormatted} - ${toFormatted}` : '';
+        filterDesc = `${personName}${rangeText}`;
     }
     
     // Sort transactions chronologically (oldest first)

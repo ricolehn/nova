@@ -347,6 +347,8 @@
   "report_type_annual": "Annual Summary",
   "report_type_custom": "Custom Range",
   "report_type_manual": "Manual Selection",
+  "report_type_person": "Single Person",
+  "report_person": "Member / Person",
   "report_year": "Year",
   "report_from": "From",
   "report_to": "To",

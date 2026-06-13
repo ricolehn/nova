@@ -984,6 +984,7 @@
                         <option value="annual" data-i18n="report_type_annual" selected>Jahreszusammenfassung</option>
                         <option value="custom" data-i18n="report_type_custom">Benutzerdefinierter Zeitraum</option>
                         <option value="manual" data-i18n="report_type_manual">Manuelle Auswahl</option>
+                        <option value="person" data-i18n="report_type_person">Einzelperson</option>
                     </select>
                 </div>
                 
@@ -1005,6 +1006,24 @@
                         <div style="flex: 1;">
                             <label class="form-label" for="report-date-to" data-i18n="report_to">Bis</label>
                             <input type="date" id="report-date-to" class="form-input" onchange="window.updateReportPreview()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2.5. Single Person Selector -->
+                <div id="report-person-selector-container" class="form-group" style="display: none;">
+                    <label class="form-label" for="report-person-select" data-i18n="report_person">Mitglied / Person</label>
+                    <select id="report-person-select" class="form-select" onchange="window.updateReportPreview()">
+                        <!-- Filled dynamically by JS -->
+                    </select>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <div style="flex: 1;">
+                            <label class="form-label" for="report-person-date-from" data-i18n="report_from">Von</label>
+                            <input type="date" id="report-person-date-from" class="form-input" onchange="window.updateReportPreview()">
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="form-label" for="report-person-date-to" data-i18n="report_to">Bis</label>
+                            <input type="date" id="report-person-date-to" class="form-input" onchange="window.updateReportPreview()">
                         </div>
                     </div>
                 </div>
