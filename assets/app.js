@@ -3073,7 +3073,7 @@ window.updateReportPreview = function() {
     if (type === 'annual') {
         const year = document.getElementById('report-year-select').value;
         filtered = allReportTransactions.filter(tData => tData.date && tData.date.startsWith(year));
-        filterDesc = currentLang === 'de' ? `Jahr: ${year}` : `Year: ${year}`;
+        filterDesc = `${t('report_year_filter', 'Year:')} ${year}`;
     } else if (type === 'custom') {
         const from = document.getElementById('report-date-from').value;
         const to = document.getElementById('report-date-to').value;
@@ -3083,7 +3083,7 @@ window.updateReportPreview = function() {
         filterDesc = `${fromFormatted} - ${toFormatted}`;
     } else if (type === 'manual') {
         filtered = allReportTransactions.filter(tData => selectedManualTransactionIds.has(tData.id || tData.paymentId));
-        filterDesc = currentLang === 'de' ? 'Manuelle Auswahl' : 'Manual Selection';
+        filterDesc = t('report_manual_selection', 'Manual Selection');
     } else if (type === 'person') {
         const selectedPersonId = document.getElementById('report-person-select').value;
         selectedPerson = people.find(p => String(p.id) === String(selectedPersonId));
@@ -3149,14 +3149,14 @@ window.updateReportPreview = function() {
                 <span>${escapeHtml(appName)}</span>
             </div>
             <div class="preview-meta">
-                <div>${currentLang === 'de' ? 'Erstellt am:' : 'Created on:'} ${formatDateFast(getTodayStr())}</div>
+                <div>${t('report_created_on', 'Created on:')} ${formatDateFast(getTodayStr())}</div>
                 <div style="font-weight: 600; margin-top: 2px;">${filterDesc}</div>
             </div>
         </div>
         <div class="preview-title-block">
-            <h2>${currentLang === 'de' ? 'Finanzbericht' : 'Financial Report'}</h2>
+            <h2>${t('report_financial_report', 'Financial Report')}</h2>
             <div style="font-size: 0.9rem; color: #718096; margin-top: 5px;">
-                ${currentLang === 'de' ? 'Zusammenfassung der Einnahmen und Ausgaben' : 'Summary of income and expenses'}
+                ${t('report_summary', 'Summary of income and expenses')}
             </div>
         </div>
     `;
@@ -3182,7 +3182,7 @@ window.updateReportPreview = function() {
     } else {
         thirdCardHtml = `
             <div class="preview-stat-card">
-                <div class="preview-stat-label">Saldo</div>
+                <div class="preview-stat-label">${t('report_balance', 'Balance')}</div>
                 <div class="preview-stat-value balance ${netBalance >= 0 ? 'income' : 'expense'}">${netBalance >= 0 ? '+' : ''}${formatCurrency(netBalance)} €</div>
             </div>
         `;
@@ -3206,9 +3206,7 @@ window.updateReportPreview = function() {
     // Table HTML
     let tableHtml = '';
     if (tier !== 'compact') {
-        const headers = currentLang === 'de' 
-            ? `<tr><th>Datum</th><th>Typ</th><th>Beschreibung / Partner</th><th style="text-align: right;">Betrag</th></tr>`
-            : `<tr><th>Date</th><th>Type</th><th>Description / Partner</th><th style="text-align: right;">Amount</th></tr>`;
+        const headers = `<tr><th>${t('report_table_date', 'Date')}</th><th>${t('report_table_type', 'Type')}</th><th>${t('report_table_desc', 'Description / Partner')}</th><th style="text-align: right;">${t('report_table_amount', 'Amount')}</th></tr>`;
             
         let rowsHtml = '';
         filtered.forEach(tData => {
@@ -3219,20 +3217,20 @@ window.updateReportPreview = function() {
             
             let typeStr = '';
             if (tData.type === 'pay') {
-                typeStr = currentLang === 'de' ? 'Beitrag' : 'Membership';
+                typeStr = t('report_type_membership', 'Membership');
             } else if (tData.type === 'don') {
-                typeStr = currentLang === 'de' ? 'Spende' : 'Donation';
+                typeStr = t('report_type_donation', 'Donation');
             } else {
-                typeStr = currentLang === 'de' ? 'Ausgabe' : 'Expense';
+                typeStr = t('report_type_expense', 'Expense');
             }
             
             let partnerDesc = '';
             if (tData.type === 'pay') {
                 partnerDesc = tData.who;
             } else if (tData.type === 'don') {
-                partnerDesc = tData.who || 'Spende';
+                partnerDesc = tData.who || t('report_type_donation', 'Donation');
             } else {
-                partnerDesc = tData.description || tData.who || 'Ausgabe';
+                partnerDesc = tData.description || tData.who || t('report_type_expense', 'Expense');
             }
             
             rowsHtml += `
@@ -3262,7 +3260,7 @@ window.updateReportPreview = function() {
                         detailContent += `
                             <div class="preview-attachment-indicator">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                <span>${currentLang === 'de' ? 'Beleg vorhanden' : 'Receipt attached'}</span>
+                                <span>${t('report_receipt_attached', 'Receipt attached')}</span>
                             </div>
                         `;
                     }
@@ -3302,11 +3300,11 @@ window.downloadReportPdf = function() {
     if (!element) return;
     
     if (typeof html2pdf === 'undefined') {
-        alert(currentLang === 'de' ? 'PDF-Bibliothek konnte nicht geladen werden.' : 'PDF library failed to load.');
+        alert(t('report_pdf_lib_error', 'PDF library failed to load.'));
         return;
     }
 
-    setButtonLoading('btn-download-pdf', true, currentLang === 'de' ? 'Generiere...' : 'Generating...');
+    setButtonLoading('btn-download-pdf', true, t('report_generating', 'Generating...'));
     
     const appName = config.appName || "Nova";
     const safeAppName = appName.replace(/[^a-zA-Z0-9]/g, '_');
@@ -3325,7 +3323,7 @@ window.downloadReportPdf = function() {
     }).catch(err => {
         console.error('PDF generation failed:', err);
         setButtonLoading('btn-download-pdf', false);
-        alert(currentLang === 'de' ? 'Fehler beim Erstellen der PDF-Datei.' : 'Failed to generate PDF.');
+        alert(t('report_pdf_error', 'Failed to generate PDF.'));
     });
 };
 
