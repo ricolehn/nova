@@ -360,6 +360,22 @@
   "report_no_data": "Keine Daten im gewählten Zeitraum",
   "report_transactions_select": "Transaktionen auswählen",
   "report_outstanding_till_today": "Ausstehend (bis heute)",
-  "report_status_good": "Kein Rückstand"
+  "report_status_good": "Kein Rückstand",
+  "report_year_filter": "Jahr:",
+  "report_manual_selection": "Manuelle Auswahl",
+  "report_created_on": "Erstellt am:",
+  "report_financial_report": "Finanzbericht",
+  "report_summary": "Zusammenfassung der Einnahmen und Ausgaben",
+  "report_table_date": "Datum",
+  "report_table_type": "Typ",
+  "report_table_desc": "Beschreibung / Partner",
+  "report_table_amount": "Betrag",
+  "report_type_membership": "Beitrag",
+  "report_type_donation": "Spende",
+  "report_type_expense": "Ausgabe",
+  "report_receipt_attached": "Beleg vorhanden",
+  "report_pdf_lib_error": "PDF-Bibliothek konnte nicht geladen werden.",
+  "report_generating": "Generiere...",
+  "report_pdf_error": "Fehler beim Erstellen der PDF-Datei.",
+  "report_balance": "Saldo"
 }
-
