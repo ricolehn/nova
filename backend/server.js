@@ -1008,6 +1008,7 @@ app.post('/api/db/transaction', dbRateLimit, verifyToken, async (req, res) => {
     broadcastDataUpdate();
     res.json({ value: updated.data, version: updated.updated });
   } catch (error) {
+    console.error('Transaction endpoint error:', error);
     res.status(error.status || 500).json({ error: error.message || 'Transaction failed' });
   }
 });
