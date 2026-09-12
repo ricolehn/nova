@@ -123,6 +123,7 @@ let superAdminPaymentRows = [];
 let superAdminUserRows = [];
 let currentEditedPayment = null;
 let currentEditedReceipts = [];
+let currentActiveTab = 'user-overview';
 
 function parseReceipts(receiptField) {
     if (!receiptField) return [];
@@ -387,6 +388,10 @@ function canViewFinances() {
     return canManageFinances() || !!(currentUser && (currentUser.canViewFinances || (Array.isArray(currentUser.permissions) && currentUser.permissions.includes('view_finances'))));
 }
 
+function canAccessAi() {
+    return !!(currentUser && (currentUser.canAccessAi || (Array.isArray(currentUser.permissions) && currentUser.permissions.includes('access_ai'))));
+}
+
 function isSystemAdmin() {
     return isSuperAdminUser();
 }
@@ -407,11 +412,9 @@ async function loadSystemPermissions() {
     }
     if (!Array.isArray(systemPermissions) || systemPermissions.length === 0) {
         systemPermissions = [
-            { id: 'view_finances', name: 'Finanzübersicht & Historie einsehen', description: 'Erlaubt die Einsicht in die Kassenstände, Historie und Berichte' },
-            { id: 'manage_finances', name: 'Finanzen verwalten & buchen', description: 'Erlaubt das Erfassen, Bearbeiten und Löschen von Zahlungen, Spenden und Ausgaben' },
-            { id: 'manage_members', name: 'Mitglieder verwalten', description: 'Erlaubt das Anlegen und Bearbeiten von Mitgliedern und deren Status' },
-            { id: 'manage_system', name: 'Systemeinstellungen verwalten', description: 'Erlaubt das Konfigurieren von Systemparametern, Logos und Mailserver' },
-            { id: 'access_ai', name: 'KI-Support nutzen', description: 'Erlaubt die Nutzung des integrierten KI-Assistenten' }
+            { id: 'view_finances', name: 'Finanzverwaltung (Nur Lesen)', description: 'Erlaubt die Einsicht in Kassenstände, Historie, Transaktionen und Berichte ohne Bearbeitungsrechte' },
+            { id: 'manage_finances', name: 'Finanzverwaltung (Vollzugriff)', description: 'Erlaubt das Erfassen, Bearbeiten, Buchen und Löschen von Zahlungen, Spenden, Ausgaben und Daueraufträgen' },
+            { id: 'access_ai', name: 'KI-Support nutzen', description: 'Erlaubt den Zugriff und die Nutzung des integrierten KI-Assistenten' }
         ];
     }
 }
@@ -762,13 +765,34 @@ function updateNavVisibility() {
     const sysSettingsBtn = document.getElementById('profile-sys-settings-btn');
     if (sysSettingsBtn) sysSettingsBtn.style.display = isSysAdmin ? '' : 'none';
 
-    // FAB / quick actions
+    // FAB / quick actions (Only visible on finances tab for users who can manage finances)
+    updateFabVisibility();
+}
+
+function updateFabVisibility() {
+    const isFinances = currentActiveTab === 'finances';
+    const canManage = canManageFinances();
+    const showFab = isFinances && canManage;
     const desktopFab = document.getElementById('desktop-fab');
-    if (desktopFab) desktopFab.style.display = canManage ? '' : 'none';
     const mobileFabItem = document.getElementById('mobile-fab-nav-item');
-    if (mobileFabItem) mobileFabItem.style.display = canManage ? '' : 'none';
+    if (mobileFabItem) mobileFabItem.style.display = 'none';
     const fabMenu = document.getElementById('fabMenu');
-    if (fabMenu) fabMenu.style.display = canManage ? '' : 'none';
+
+    if (desktopFab) {
+        desktopFab.style.display = showFab ? 'flex' : 'none';
+        if (!showFab) {
+            desktopFab.classList.remove('active');
+            desktopFab.setAttribute('aria-expanded', 'false');
+        }
+    }
+    if (fabMenu) {
+        if (!showFab) {
+            fabMenu.classList.remove('show');
+            fabMenu.style.display = 'none';
+        } else {
+            fabMenu.style.display = '';
+        }
+    }
 }
 
 async function fetchWithAuth(url, options = {}) {
@@ -953,6 +977,17 @@ window.switchTab = function(tabName, btn) {
     } else if (tabName === 'user-history' || tabName === 'user-requests') {
         tabName = 'user-finances';
     }
+
+    if (tabName === 'finances' && !canViewFinances()) {
+        tabName = 'user-overview';
+    } else if (tabName === 'super-admin-settings' && !isSuperAdminUser()) {
+        tabName = 'user-overview';
+    } else if (tabName === 'ai-chat' && (!canAccessAi() || !aiEnabled)) {
+        tabName = 'user-overview';
+    }
+
+    currentActiveTab = tabName;
+    updateFabVisibility();
 
     const allTabs = Array.from(document.querySelectorAll('.tab-content'));
     const navButtonsDesktop = Array.from(document.querySelectorAll('#desktop-nav [data-tab], .desktop-nav [data-tab]'));
@@ -1965,6 +2000,9 @@ async function loadData(silent = false) {
     const dbRef = ref(db);
 
     try {
+        if (isAuthenticated) {
+            await refreshCurrentUser();
+        }
         const hasFinances = canViewFinances();
         const isSysAdmin = isSystemAdmin();
         const canManage = canManageFinances();
@@ -2076,13 +2114,14 @@ async function loadData(silent = false) {
             // Pure System Admin (no finance permissions assigned)
             advancedConfigLoaded = false;
             advancedConfigAppName = null;
-            const [sData, cData, uData] = await Promise.all([
+            const [pData, sData, cData, uData] = await Promise.all([
+                apiGet('people').catch(() => null),
                 apiGet('settings').catch(() => null),
                 apiGet('system/inviteCode').catch(() => null),
                 apiGet('users').catch(() => null)
             ]);
 
-            people = [];
+            people = safeList(pData).filter(p => !p.isDeleted);
             donations = [];
             expenses = [];
             requests = [];
@@ -2140,15 +2179,6 @@ async function loadData(silent = false) {
             const codeDisplay = document.getElementById('admin-invite-code-display');
             if(codeDisplay) codeDisplay.textContent = code;
 
-            // Fetch AI enabled state
-            fetchWithAuth(`${config.apiBaseUrl}/admin/ai-status`).then(r => {
-                if (r.ok) return r.json();
-            }).then(data => {
-                if (data) {
-                    aiEnabled = !!data.enabled;
-                    updateAiNavVisibility();
-                }
-            }).catch(() => {});
         }
 
         // Populate User View basic info for all users
@@ -2159,6 +2189,18 @@ async function loadData(silent = false) {
         const userEmailDisplay = document.getElementById('user-email-display');
         if (userEmailDisplay) {
             userEmailDisplay.innerText = currentUser.email || '';
+        }
+
+        // Fetch AI enabled state for anyone who has AI access
+        if (canAccessAi()) {
+            fetchWithAuth(`${config.apiBaseUrl}/admin/ai-status`).then(r => {
+                if (r.ok) return r.json();
+            }).then(data => {
+                if (data) {
+                    aiEnabled = !!data.enabled;
+                    updateAiNavVisibility();
+                }
+            }).catch(() => {});
         }
 
         // Update nav bar visibility based on user privileges
@@ -2388,7 +2430,7 @@ function renderUnlinkedUsers() {
     const unlinked = users.filter(u => !linkedUids.has(u.uid));
     const availablePeople = people.filter(p => !p.uid);
 
-    if (unlinked.length === 0) {
+    if (unlinked.length === 0 || !canManageFinances()) {
         target.innerHTML = '';
         return;
     }
@@ -2896,6 +2938,7 @@ window.editRecordedPayment = async (personId, paymentId, paymentIndex, personNam
 };
 
 window.editRecordedPaymentByIndex = function(index) {
+    if (!canManageFinances()) return;
     if (!cachedTransactions || !cachedTransactions[index]) {
         console.error("editRecordedPaymentByIndex: Transaction not found at index", index);
         return;
@@ -3642,7 +3685,8 @@ function generatePersonHTML(p, preCalcData = null) {
 
                     ${soListHtml}
 
-                    <div class="details-actions" style="${!canManageFinances() ? 'display:none' : ''}">
+                    ${canManageFinances() ? `
+                    <div class="details-actions">
                         <button class="btn btn-primary" data-id="${escapeHtml(p.id)}" onclick="openPaymentModal(this.dataset.id)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12"></path><path d="M4 14h9"></path><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"></path></svg>
                             ${t('record_payment_btn', 'Zahlung erfassen')}
@@ -3658,6 +3702,7 @@ function generatePersonHTML(p, preCalcData = null) {
                             </button>
                         </div>
                     </div>
+                    ` : ''}
 
                     <div class="history-header">${t('history_label', 'Verlauf')}</div>
                     <div id="timeline-${p.id}">
@@ -4617,6 +4662,7 @@ let editingSoId = null;
 let editingPersonId = null;
 
 window.openEndStandingOrderModal = (personId, soId) => {
+    if (!canManageFinances()) return;
     editingPersonId = personId;
     editingSoId = soId;
 
@@ -4749,6 +4795,7 @@ window.deleteStandingOrder = async (personId, soId) => {
 // --- STATUS CHANGE HANDLERS ---
 
 window.openPaymentModal = (id) => {
+    if (!canManageFinances()) return;
     currentPersonId = id;
     openModal('add-payment-modal');
 };
@@ -4812,6 +4859,7 @@ function applyStatusChangeToHistory(person, newStatus, changeDateStr) {
 }
 
 window.openChangeStatusModal = (id) => {
+    if (!canManageFinances()) return;
     currentPersonId = id;
     const person = people.find(p => String(p.id) === String(id));
     if (person) {
@@ -5086,7 +5134,7 @@ window.saveAiConfig = async () => {
 };
 
 function updateAiNavVisibility() {
-    const show = aiEnabled && (isSystemAdmin() || canViewFinances());
+    const show = aiEnabled && canAccessAi();
     const bottomBtn = document.getElementById('admin-ai-nav-btn-bottom') || document.getElementById('admin-ai-nav-btn');
     const desktopBtn = document.getElementById('admin-ai-nav-btn-desktop');
     const spacer = document.getElementById('admin-nav-spacer');
@@ -5099,13 +5147,14 @@ window.clearAiChat = () => {
     aiMessages = [];
     const messagesEl = document.getElementById('ai-chat-messages');
     if (!messagesEl) return;
+    const canFinances = canViewFinances();
     messagesEl.innerHTML = `
         <div class="ai-chat-welcome">
             <div class="ai-chat-welcome-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
             </div>
             <div class="ai-chat-welcome-text">KI-Assistent bereit</div>
-            <div class="ai-chat-welcome-sub">Stelle Fragen zu deinen Mitgliedern, Finanzen oder Einstellungen.</div>
+            <div class="ai-chat-welcome-sub">${canFinances ? 'Stelle Fragen zu deinen Mitgliedern, Finanzen oder Einstellungen.' : 'Stelle Fragen zur Gemeinde, Mitgliedern oder zur App-Nutzung.'}</div>
         </div>`;
 };
 

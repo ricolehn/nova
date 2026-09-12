@@ -901,6 +901,20 @@ async function migrateUserAndOwnerSchema(appConfig) {
     await upsertStateValue(appConfig, 'system', { ...DEFAULT_SYSTEM_STATE, ...system, ownerUid });
   }
 
+  let financeGroup = null;
+  try {
+    const allGroups = await listGroupRecords(appConfig);
+    financeGroup = allGroups.find(g => Array.isArray(g.permissions) && g.permissions.includes('manage_finances'));
+    if (!financeGroup && ownerUid) {
+      financeGroup = await createGroupRecord(appConfig, {
+        name: 'Finanzverwaltung',
+        permissions: ['manage_finances']
+      });
+    }
+  } catch (err) {
+    console.warn('[PocketBase Migration] Could not ensure default finance group for owner:', err.message);
+  }
+
   await runInBatches(users, MIGRATION_BATCH_SIZE, async (userRecord) => {
     const isOwner = userRecord.id === ownerUid || userRecord.owner === true || userRecord.superAdmin === true;
     const updates = {};
@@ -921,7 +935,11 @@ async function migrateUserAndOwnerSchema(appConfig) {
     }
 
     if (userRecord.groups === undefined || userRecord.groups === null) {
-      updates.groups = [];
+      const defaultGroups = (isOwner && financeGroup) ? [financeGroup.id] : [];
+      updates.groups = defaultGroups;
+      needsPatch = true;
+    } else if (isOwner && financeGroup && Array.isArray(userRecord.groups) && userRecord.groups.length === 0) {
+      updates.groups = [financeGroup.id];
       needsPatch = true;
     }
 
@@ -1356,10 +1374,12 @@ function resolveUserPermissions(userGroups = [], allGroups = []) {
   const permissions = Array.from(permSet);
   const canManageFinances = permissions.includes('manage_finances');
   const canViewFinances = canManageFinances || permissions.includes('view_finances');
+  const canAccessAi = permissions.includes('access_ai');
   return {
     permissions,
     canManageFinances,
-    canViewFinances
+    canViewFinances,
+    canAccessAi
   };
 }
 
@@ -1422,11 +1442,9 @@ async function updateGroupRecord(appConfig, id, { name, permissions }) {
 }
 
 const SYSTEM_PERMISSIONS = [
-  { id: 'view_finances', name: 'Finanzübersicht & Historie einsehen', description: 'Erlaubt die Einsicht in die Kassenstände, Historie und Berichte' },
-  { id: 'manage_finances', name: 'Finanzen verwalten & buchen', description: 'Erlaubt das Erfassen, Bearbeiten und Löschen von Zahlungen, Spenden und Ausgaben' },
-  { id: 'manage_members', name: 'Mitglieder verwalten', description: 'Erlaubt das Anlegen und Bearbeiten von Mitgliedern und deren Status' },
-  { id: 'manage_system', name: 'Systemeinstellungen verwalten', description: 'Erlaubt das Konfigurieren von Systemparametern, Logos und Mailserver' },
-  { id: 'access_ai', name: 'KI-Support nutzen', description: 'Erlaubt die Nutzung des integrierten KI-Assistenten' }
+  { id: 'view_finances', name: 'Finanzverwaltung (Nur Lesen)', description: 'Erlaubt die Einsicht in Kassenstände, Historie, Transaktionen und Berichte ohne Bearbeitungsrechte' },
+  { id: 'manage_finances', name: 'Finanzverwaltung (Vollzugriff)', description: 'Erlaubt das Erfassen, Bearbeiten, Buchen und Löschen von Zahlungen, Spenden, Ausgaben und Daueraufträgen' },
+  { id: 'access_ai', name: 'KI-Support nutzen', description: 'Erlaubt den Zugriff und die Nutzung des integrierten KI-Assistenten' }
 ];
 
 async function deleteGroupRecord(appConfig, id) {

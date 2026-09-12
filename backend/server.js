@@ -415,8 +415,9 @@ async function verifyToken(req, res, next) {
     } catch { /* ignore */ }
     const groupPerms = resolveUserPermissions(user.groups, allGroups);
     user.permissions = groupPerms.permissions;
-    user.canManageFinances = user.admin === true || user.owner === true || groupPerms.canManageFinances;
-    user.canViewFinances = user.admin === true || user.owner === true || groupPerms.canViewFinances;
+    user.canManageFinances = groupPerms.canManageFinances;
+    user.canViewFinances = groupPerms.canViewFinances;
+    user.canAccessAi = groupPerms.canAccessAi;
     req.user = user;
     req.authToken = token;
     next();
@@ -443,6 +444,11 @@ function verifyManageFinances(req, res, next) {
 function verifyViewFinances(req, res, next) {
   if (req.user?.canViewFinances === true) return next();
   return res.status(403).json({ error: 'Finanzzugriffsrechte erforderlich' });
+}
+
+function verifyAiAccess(req, res, next) {
+  if (req.user?.canAccessAi === true || (Array.isArray(req.user?.permissions) && req.user.permissions.includes('access_ai'))) return next();
+  return res.status(403).json({ error: 'KI-Berechtigung erforderlich' });
 }
 
 const verifySuperAdmin = verifyAdmin;
@@ -541,10 +547,26 @@ app.post('/api/setup', setupRateLimit, async (req, res) => {
       pays: true
     }, newConfig);
 
+    // Create default finance group and assign owner
+    let financeGroup = null;
+    try {
+      const existingGroups = await listGroupRecords(newConfig);
+      financeGroup = existingGroups.find(g => Array.isArray(g.permissions) && g.permissions.includes('manage_finances'));
+      if (!financeGroup) {
+        financeGroup = await createGroupRecord(newConfig, {
+          name: 'Finanzverwaltung',
+          permissions: ['manage_finances']
+        });
+      }
+    } catch (gErr) {
+      console.warn('Could not create default finance group in setup:', gErr.message);
+    }
+
     // Instantly promote user to owner and save their UID
     const system = await getStateValue(newConfig, 'system', DEFAULT_SYSTEM_STATE);
     await upsertStateValue(newConfig, 'system', { ...system, ownerUid: auth.user.id, superAdminUid: auth.user.id });
-    await updateUserRecord(newConfig, auth.user.id, { admin: true, owner: true, superAdmin: true, pays: true });
+    const ownerGroups = financeGroup ? [financeGroup.id] : [];
+    await updateUserRecord(newConfig, auth.user.id, { admin: true, owner: true, superAdmin: true, pays: true, groups: ownerGroups });
 
     // Create linked person record in people collection for owner profile
     const personKey = auth.user.id;
@@ -807,6 +829,11 @@ async function readLogicalPath(targetPath, query, user) {
   }
 
   if (root === 'users') {
+    let allGroups = [];
+    try {
+      allGroups = await listGroupRecords(appConfig);
+    } catch { /* ignore */ }
+
     if (id) {
       if (!user.admin && id !== user.uid) {
         const error = new Error('Forbidden');
@@ -814,20 +841,20 @@ async function readLogicalPath(targetPath, query, user) {
         throw error;
       }
       const record = await getUserRecord(appConfig, id);
-      return { value: record ? toUserValue(record) : null, version: record?.updated || null };
+      return { value: record ? toUserValue(record, allGroups) : null, version: record?.updated || null };
     }
 
     if (!user.admin) {
       const record = await getUserRecord(appConfig, user.uid);
       return {
-        value: record ? { [user.uid]: toUserValue(record) } : {},
+        value: record ? { [user.uid]: toUserValue(record, allGroups) } : {},
         version: record?.updated || null
       };
     }
 
     const records = await listUserRecords(appConfig);
     return {
-      value: objectFromRecords(records, 'id', toUserValue),
+      value: objectFromRecords(records, 'id', (record) => toUserValue(record, allGroups)),
       version: null
     };
   }
@@ -889,13 +916,15 @@ function toUserValue(record, allGroups = null) {
   const rawGroups = Array.isArray(record.groups) ? record.groups : (record.groups ? [String(record.groups)] : []);
 
   let permissions = [];
-  let canManageFinances = isAdminUser;
-  let canViewFinances = isAdminUser;
+  let canManageFinances = false;
+  let canViewFinances = false;
+  let canAccessAi = false;
   if (Array.isArray(allGroups)) {
     const res = resolveUserPermissions(rawGroups, allGroups);
     permissions = res.permissions;
-    canManageFinances = isAdminUser || res.canManageFinances;
-    canViewFinances = isAdminUser || res.canViewFinances;
+    canManageFinances = res.canManageFinances;
+    canViewFinances = res.canViewFinances;
+    canAccessAi = res.canAccessAi;
   }
 
   return {
@@ -912,6 +941,7 @@ function toUserValue(record, allGroups = null) {
     permissions,
     canManageFinances,
     canViewFinances,
+    canAccessAi,
     emailNotifications: record.emailNotifications !== false,
     isClaimed,
     uid: record.id
@@ -1028,14 +1058,15 @@ async function writeLogicalPath(targetPath, value, user, method = 'set') {
     if (!value.userId) {
       value.userId = user.uid;
     }
-    if (!user.admin) {
+    const canManageRequests = user.canManageFinances === true;
+    if (!canManageRequests) {
       if (method !== 'set' || String(value.userId) !== String(user.uid)) {
-        throw Object.assign(new Error('Forbidden'), { status: 403 });
+        throw Object.assign(new Error('Finanzverwaltungsrechte erforderlich'), { status: 403 });
       }
     }
     const existing = await getRequestRecord(appConfig, id);
-    if (existing && existing.data && !user.admin && String(existing.data.userId || existing.userId) !== String(user.uid)) {
-      throw Object.assign(new Error('Forbidden'), { status: 403 });
+    if (existing && existing.data && !canManageRequests && String(existing.data.userId || existing.userId) !== String(user.uid)) {
+      throw Object.assign(new Error('Finanzverwaltungsrechte erforderlich'), { status: 403 });
     }
     const nextValue = method === 'patch' && existing?.data && value && typeof value === 'object'
       ? { ...existing.data, ...value }
@@ -1043,8 +1074,8 @@ async function writeLogicalPath(targetPath, value, user, method = 'set') {
     if (!nextValue.userId) {
       nextValue.userId = user.uid;
     }
-    if (!user.admin && String(nextValue.userId) !== String(user.uid)) {
-      throw Object.assign(new Error('Forbidden'), { status: 403 });
+    if (!canManageRequests && String(nextValue.userId) !== String(user.uid)) {
+      throw Object.assign(new Error('Finanzverwaltungsrechte erforderlich'), { status: 403 });
     }
     await upsertRequestRecord(appConfig, id, nextValue);
     return;
@@ -1076,8 +1107,9 @@ async function verifyOptionalUser(req) {
     } catch { /* ignore */ }
     const groupPerms = resolveUserPermissions(user.groups, allGroups);
     user.permissions = groupPerms.permissions;
-    user.canManageFinances = user.admin === true || user.owner === true || groupPerms.canManageFinances;
-    user.canViewFinances = user.admin === true || user.owner === true || groupPerms.canViewFinances;
+    user.canManageFinances = groupPerms.canManageFinances;
+    user.canViewFinances = groupPerms.canViewFinances;
+    user.canAccessAi = groupPerms.canAccessAi;
     return { user, token };
   } catch {
     return null;
@@ -1339,8 +1371,9 @@ app.get('/api/admin/users', verifyToken, verifyAdmin, async (req, res) => {
         groups: userGroupIds,
         groupObjects: userGroupObjects,
         permissions: resolved.permissions,
-        canManageFinances: u.admin === true || isOwner || resolved.canManageFinances,
-        canViewFinances: u.admin === true || isOwner || resolved.canViewFinances,
+        canManageFinances: resolved.canManageFinances,
+        canViewFinances: resolved.canViewFinances,
+        canAccessAi: resolved.canAccessAi,
         emailNotifications: u.emailNotifications !== false,
         isClaimed,
         memberSince,
@@ -1902,8 +1935,8 @@ app.get('/api/admin/ai-config', verifyToken, verifySuperAdmin, async (req, res) 
   }
 });
 
-// Lightweight endpoint for all admins – returns only the enabled flag
-app.get('/api/admin/ai-status', verifyToken, verifyAdmin, async (req, res) => {
+// Lightweight endpoint for users with AI permission – returns only the enabled flag
+app.get('/api/admin/ai-status', verifyToken, verifyAiAccess, async (req, res) => {
   try {
     const aiSettings = await getAiSettings(appConfig);
     res.json({ enabled: !!aiSettings.enabled });
@@ -1923,7 +1956,7 @@ app.put('/api/admin/ai-config', verifyToken, verifySuperAdmin, async (req, res) 
   }
 });
 
-app.post('/api/ai/chat', aiChatRateLimit, verifyToken, verifyAdmin, async (req, res) => {
+app.post('/api/ai/chat', aiChatRateLimit, verifyToken, verifyAiAccess, async (req, res) => {
   try {
     const aiSettings = await getAiSettings(appConfig);
     if (!aiSettings.enabled) {
@@ -1944,8 +1977,9 @@ app.post('/api/ai/chat', aiChatRateLimit, verifyToken, verifyAdmin, async (req, 
     const apiKey = aiSettings.apiKey || '';
     const model = aiSettings.model || 'gpt-4o-mini';
 
-    const dbSnapshot = await buildDatabaseSnapshot(appConfig);
-    const systemContent = buildSystemPrompt(appConfig.appName, dbSnapshot);
+    const canViewFinances = req.user?.canViewFinances === true || req.user?.canManageFinances === true;
+    const dbSnapshot = await buildDatabaseSnapshot(appConfig, { canViewFinances, user: req.user });
+    const systemContent = buildSystemPrompt(appConfig.appName, dbSnapshot, { canViewFinances });
 
     const aiRes = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
