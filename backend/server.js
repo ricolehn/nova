@@ -61,7 +61,20 @@ const {
   listRequestRecords,
   getRequestRecord,
   upsertRequestRecord,
-  SYSTEM_PERMISSIONS
+  SYSTEM_PERMISSIONS,
+  listMentorRecords,
+  getMentorRecord,
+  getMentorByUserId,
+  createMentorRecord,
+  updateMentorRecord,
+  deleteMentorRecord,
+  listMentoringThreadsForUser,
+  getMentoringThread,
+  createMentoringThread,
+  updateMentoringThread,
+  listMentoringMessages,
+  createMentoringMessage,
+  markMentoringMessagesRead
 } = require('./pocketbase');
 
 const app = express();
@@ -418,6 +431,16 @@ async function verifyToken(req, res, next) {
     user.canManageFinances = groupPerms.canManageFinances;
     user.canViewFinances = groupPerms.canViewFinances;
     user.canAccessAi = groupPerms.canAccessAi;
+    user.canParticipateMentoring = groupPerms.canParticipateMentoring;
+    user.canManageMentoring = groupPerms.canManageMentoring;
+    try {
+      const mentorRec = await getMentorByUserId(appConfig, user.id);
+      user.mentorStatus = mentorRec?.status || null;
+      user.isApprovedMentor = mentorRec?.status === 'approved';
+    } catch {
+      user.mentorStatus = null;
+      user.isApprovedMentor = false;
+    }
     req.user = user;
     req.authToken = token;
     next();
@@ -449,6 +472,16 @@ function verifyViewFinances(req, res, next) {
 function verifyAiAccess(req, res, next) {
   if (req.user?.canAccessAi === true || (Array.isArray(req.user?.permissions) && req.user.permissions.includes('access_ai'))) return next();
   return res.status(403).json({ error: 'KI-Berechtigung erforderlich' });
+}
+
+function verifyMentoringParticipate(req, res, next) {
+  if (req.user?.canParticipateMentoring === true || (Array.isArray(req.user?.permissions) && (req.user.permissions.includes('mentoring_participate') || req.user.permissions.includes('manage_mentoring')))) return next();
+  return res.status(403).json({ error: 'Mentoring-Teilnahmeberechtigung erforderlich' });
+}
+
+function verifyManageMentoring(req, res, next) {
+  if (req.user?.canManageMentoring === true || (Array.isArray(req.user?.permissions) && req.user.permissions.includes('manage_mentoring'))) return next();
+  return res.status(403).json({ error: 'Mentoren-Verwaltungsrechte erforderlich' });
 }
 
 const verifySuperAdmin = verifyAdmin;
@@ -919,12 +952,16 @@ function toUserValue(record, allGroups = null) {
   let canManageFinances = false;
   let canViewFinances = false;
   let canAccessAi = false;
+  let canParticipateMentoring = false;
+  let canManageMentoring = false;
   if (Array.isArray(allGroups)) {
     const res = resolveUserPermissions(rawGroups, allGroups);
     permissions = res.permissions;
     canManageFinances = res.canManageFinances;
     canViewFinances = res.canViewFinances;
     canAccessAi = res.canAccessAi;
+    canParticipateMentoring = res.canParticipateMentoring;
+    canManageMentoring = res.canManageMentoring;
   }
 
   return {
@@ -942,6 +979,8 @@ function toUserValue(record, allGroups = null) {
     canManageFinances,
     canViewFinances,
     canAccessAi,
+    canParticipateMentoring,
+    canManageMentoring,
     emailNotifications: record.emailNotifications !== false,
     isClaimed,
     uid: record.id
@@ -1110,6 +1149,8 @@ async function verifyOptionalUser(req) {
     user.canManageFinances = groupPerms.canManageFinances;
     user.canViewFinances = groupPerms.canViewFinances;
     user.canAccessAi = groupPerms.canAccessAi;
+    user.canParticipateMentoring = groupPerms.canParticipateMentoring;
+    user.canManageMentoring = groupPerms.canManageMentoring;
     return { user, token };
   } catch {
     return null;
@@ -1339,6 +1380,8 @@ app.get('/api/admin/users', verifyToken, verifyAdmin, async (req, res) => {
     const users = await listUserRecords(appConfig);
     const people = await listPeopleRecords(appConfig);
     const groups = await listGroupRecords(appConfig);
+    const approvedMentors = await listMentorRecords(appConfig, 'status = "approved"').catch(() => []);
+    const approvedMentorUserIds = new Set(approvedMentors.map(m => m.user));
     const system = await getStateValue(appConfig, 'system', DEFAULT_SYSTEM_STATE);
     const ownerUid = system?.ownerUid || system?.superAdminUid || null;
 
@@ -1374,6 +1417,9 @@ app.get('/api/admin/users', verifyToken, verifyAdmin, async (req, res) => {
         canManageFinances: resolved.canManageFinances,
         canViewFinances: resolved.canViewFinances,
         canAccessAi: resolved.canAccessAi,
+        canParticipateMentoring: resolved.canParticipateMentoring,
+        canManageMentoring: resolved.canManageMentoring,
+        isApprovedMentor: approvedMentorUserIds.has(u.id),
         emailNotifications: u.emailNotifications !== false,
         isClaimed,
         memberSince,
@@ -2058,6 +2104,637 @@ app.post('/api/ai/chat', aiChatRateLimit, verifyToken, verifyAiAccess, async (re
     } else {
       res.end();
     }
+  }
+});
+
+// --- Mentoring Routes ---
+
+// 1. List mentors
+app.get('/api/mentoring/mentors', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const isManager = req.user?.canManageMentoring === true || (Array.isArray(req.user?.permissions) && req.user.permissions.includes('manage_mentoring'));
+    
+    let filter = 'status = "approved"';
+    if (isManager && req.query.status) {
+      if (req.query.status === 'all') {
+        filter = '';
+      } else {
+        filter = `status = "${req.query.status}"`;
+      }
+    } else if (isManager && req.query.all === 'true') {
+      filter = '';
+    }
+
+    const mentors = await listMentorRecords(appConfig, filter);
+    const users = await listUserRecords(appConfig);
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    // Fetch active thread counts per mentor to show availability
+    let activeThreadCounts = new Map();
+    try {
+      const allThreads = await listMentoringThreadsForUser(appConfig, '');
+      for (const t of allThreads) {
+        if (t.mentor && t.status !== 'closed') {
+          activeThreadCounts.set(t.mentor, (activeThreadCounts.get(t.mentor) || 0) + 1);
+        }
+      }
+    } catch { /* ignore */ }
+
+    const formatted = mentors.map(m => {
+      const u = userMap.get(m.user);
+      const activeMenteesCount = activeThreadCounts.get(m.user) || 0;
+      const maxMentees = typeof m.max_mentees === 'number' ? m.max_mentees : 3;
+      const isFull = activeMenteesCount >= maxMentees;
+      const mentorName = u ? (u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Mentor') : 'Mentor';
+
+      const item = {
+        id: m.id,
+        user: m.user,
+        user_id: m.user,
+        name: mentorName,
+        mentorName,
+        mentorFirstName: u?.firstName || '',
+        status: m.status,
+        bio: m.bio || '',
+        maxMentees,
+        max_mentees: maxMentees,
+        isAccepting: m.is_accepting !== false,
+        activeMentees: activeMenteesCount,
+        activeMenteesCount,
+        isFull: isFull || m.is_accepting === false,
+        created: m.created
+      };
+
+      if (isManager || req.query.all === 'true') {
+        item.email = u?.email || '';
+        item.userEmail = u?.email || '';
+        item.userName = mentorName;
+      }
+
+      return item;
+    });
+
+    res.json(formatted);
+  } catch (err) {
+    console.error('Failed to list mentors:', err);
+    res.status(500).json({ error: 'Failed to list mentors' });
+  }
+});
+
+// 2. Get my mentor profile
+app.get('/api/mentoring/my-profile', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const mentor = await getMentorByUserId(appConfig, req.user.uid);
+    if (!mentor) {
+      return res.json({ exists: false, mentor: null });
+    }
+    const profile = {
+      id: mentor.id,
+      status: mentor.status,
+      bio: mentor.bio || '',
+      maxMentees: typeof mentor.max_mentees === 'number' ? mentor.max_mentees : 3,
+      max_mentees: typeof mentor.max_mentees === 'number' ? mentor.max_mentees : 3,
+      isAccepting: mentor.is_accepting !== false
+    };
+    res.json({
+      exists: true,
+      mentor: profile,
+      ...profile
+    });
+  } catch (err) {
+    console.error('Failed to get mentor profile:', err);
+    res.status(500).json({ error: 'Failed to get mentor profile' });
+  }
+});
+
+// 3. Apply as mentor
+app.post('/api/mentoring/apply', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const { bio, maxMentees, max_mentees } = req.body || {};
+    const parsedMax = Number(max_mentees || maxMentees) > 0 ? Number(max_mentees || maxMentees) : 3;
+
+    const existing = await getMentorByUserId(appConfig, req.user.uid);
+    if (existing) {
+      const updated = await updateMentorRecord(appConfig, existing.id, {
+        status: 'pending',
+        bio: String(bio || '').trim(),
+        max_mentees: parsedMax,
+        is_accepting: true
+      });
+      broadcastDataUpdate();
+      return res.json({ success: true, mentor: updated });
+    }
+
+    const created = await createMentorRecord(appConfig, {
+      user: req.user.uid,
+      status: 'pending',
+      bio: String(bio || '').trim(),
+      max_mentees: parsedMax,
+      is_accepting: true
+    });
+    broadcastDataUpdate();
+    res.json({ success: true, mentor: created });
+  } catch (err) {
+    console.error('Failed to apply as mentor:', err);
+    res.status(500).json({ error: 'Failed to apply as mentor' });
+  }
+});
+
+// 4. Update my mentor profile settings (cannot change status)
+app.put('/api/mentoring/my-profile', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const existing = await getMentorByUserId(appConfig, req.user.uid);
+    if (!existing) {
+      return res.status(404).json({ error: 'Mentor profile not found' });
+    }
+    const { bio, maxMentees, max_mentees, isAccepting } = req.body || {};
+    const updates = {};
+    if (typeof bio === 'string') updates.bio = bio.trim();
+    if (Number(max_mentees || maxMentees) > 0) updates.max_mentees = Number(max_mentees || maxMentees);
+    if (typeof isAccepting === 'boolean') updates.is_accepting = isAccepting;
+
+    const reader = aiRes.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete last line
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const data = trimmed.slice(5).trim();
+          if (data === '[DONE]') {
+            res.write('data: [DONE]\n\n');
+          } else {
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              const reasoning = parsed.choices?.[0]?.delta?.reasoning_content;
+              if (typeof content === 'string') {
+                res.write(`data: ${JSON.stringify({ content })}\n\n`);
+              }
+              if (typeof reasoning === 'string') {
+                res.write(`data: ${JSON.stringify({ reasoning })}\n\n`);
+              }
+            } catch { /* skip malformed chunks */ }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    res.end();
+  } catch (err) {
+    console.error('AI chat error:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'AI chat request failed' });
+    } else {
+      res.end();
+    }
+  }
+});
+
+// --- Mentoring Routes ---
+
+// 1. List mentors
+app.get('/api/mentoring/mentors', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const isManager = req.user?.canManageMentoring === true || (Array.isArray(req.user?.permissions) && req.user.permissions.includes('manage_mentoring'));
+    
+    let filter = 'status = "approved"';
+    if (isManager && req.query.status) {
+      if (req.query.status === 'all') {
+        filter = '';
+      } else {
+        filter = `status = "${req.query.status}"`;
+      }
+    } else if (isManager && req.query.all === 'true') {
+      filter = '';
+    }
+
+    const mentors = await listMentorRecords(appConfig, filter);
+    const users = await listUserRecords(appConfig);
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    // Fetch active thread counts per mentor to show availability
+    let activeThreadCounts = new Map();
+    try {
+      const allThreads = await listMentoringThreadsForUser(appConfig, '');
+      for (const t of allThreads) {
+        if (t.mentor && t.status !== 'closed') {
+          activeThreadCounts.set(t.mentor, (activeThreadCounts.get(t.mentor) || 0) + 1);
+        }
+      }
+    } catch { /* ignore */ }
+
+    const formatted = mentors.map(m => {
+      const u = userMap.get(m.user);
+      const activeMenteesCount = activeThreadCounts.get(m.user) || 0;
+      const maxMentees = typeof m.max_mentees === 'number' ? m.max_mentees : 3;
+      const isFull = activeMenteesCount >= maxMentees;
+      const mentorName = u ? (u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Mentor') : 'Mentor';
+
+      const item = {
+        id: m.id,
+        user: m.user,
+        user_id: m.user,
+        name: mentorName,
+        mentorName,
+        mentorFirstName: u?.firstName || '',
+        status: m.status,
+        bio: m.bio || '',
+        maxMentees,
+        max_mentees: maxMentees,
+        isAccepting: m.is_accepting !== false,
+        activeMentees: activeMenteesCount,
+        activeMenteesCount,
+        isFull: isFull || m.is_accepting === false,
+        created: m.created
+      };
+
+      if (isManager || req.query.all === 'true') {
+        item.email = u?.email || '';
+        item.userEmail = u?.email || '';
+        item.userName = mentorName;
+      }
+
+      return item;
+    });
+
+    res.json(formatted);
+  } catch (err) {
+    console.error('Failed to list mentors:', err);
+    res.status(500).json({ error: 'Failed to list mentors' });
+  }
+});
+
+// 2. Get my mentor profile
+app.get('/api/mentoring/my-profile', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const mentor = await getMentorByUserId(appConfig, req.user.uid);
+    if (!mentor) {
+      return res.json({ exists: false, mentor: null });
+    }
+    const profile = {
+      id: mentor.id,
+      status: mentor.status,
+      bio: mentor.bio || '',
+      maxMentees: typeof mentor.max_mentees === 'number' ? mentor.max_mentees : 3,
+      max_mentees: typeof mentor.max_mentees === 'number' ? mentor.max_mentees : 3,
+      isAccepting: mentor.is_accepting !== false
+    };
+    res.json({
+      exists: true,
+      mentor: profile,
+      ...profile
+    });
+  } catch (err) {
+    console.error('Failed to get mentor profile:', err);
+    res.status(500).json({ error: 'Failed to get mentor profile' });
+  }
+});
+
+// 3. Apply as mentor
+app.post('/api/mentoring/apply', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const { bio, maxMentees, max_mentees } = req.body || {};
+    const parsedMax = Number(max_mentees || maxMentees) > 0 ? Number(max_mentees || maxMentees) : 3;
+
+    const existing = await getMentorByUserId(appConfig, req.user.uid);
+    if (existing) {
+      const updated = await updateMentorRecord(appConfig, existing.id, {
+        status: 'pending',
+        bio: String(bio || '').trim(),
+        max_mentees: parsedMax,
+        is_accepting: true
+      });
+      broadcastDataUpdate();
+      return res.json({ success: true, mentor: updated });
+    }
+
+    const created = await createMentorRecord(appConfig, {
+      user: req.user.uid,
+      status: 'pending',
+      bio: String(bio || '').trim(),
+      max_mentees: parsedMax,
+      is_accepting: true
+    });
+    broadcastDataUpdate();
+    res.json({ success: true, mentor: created });
+  } catch (err) {
+    console.error('Failed to apply as mentor:', err);
+    res.status(500).json({ error: 'Failed to apply as mentor' });
+  }
+});
+
+// 4. Update my mentor profile settings (cannot change status)
+app.put('/api/mentoring/my-profile', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const existing = await getMentorByUserId(appConfig, req.user.uid);
+    if (!existing) {
+      return res.status(404).json({ error: 'Mentor profile not found' });
+    }
+    const { bio, maxMentees, max_mentees, isAccepting } = req.body || {};
+    const updates = {};
+    if (typeof bio === 'string') updates.bio = bio.trim();
+    if (Number(max_mentees || maxMentees) > 0) updates.max_mentees = Number(max_mentees || maxMentees);
+    if (typeof isAccepting === 'boolean') updates.is_accepting = isAccepting;
+
+    const updated = await updateMentorRecord(appConfig, existing.id, updates);
+    broadcastDataUpdate();
+    res.json({ success: true, mentor: updated });
+  } catch (err) {
+    console.error('Failed to update mentor profile:', err);
+    res.status(500).json({ error: 'Failed to update mentor profile' });
+  }
+});
+
+// 5. Manage mentor application status (Leader only)
+app.post('/api/mentoring/manage/:id/status', verifyToken, verifyManageMentoring, async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    if (status !== 'approved' && status !== 'rejected' && status !== 'pending') {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    const mentor = await getMentorRecord(appConfig, req.params.id);
+    if (!mentor) {
+      return res.status(404).json({ error: 'Mentor not found' });
+    }
+    await updateMentorRecord(appConfig, mentor.id, { status });
+    broadcastDataUpdate();
+    res.json({ success: true, status });
+  } catch (err) {
+    console.error('Failed to update mentor status:', err);
+    res.status(500).json({ error: 'Failed to update mentor status' });
+  }
+});
+
+// 6. List my mentoring threads (AIR-GAP ENFORCED: only mentor and mentee)
+app.get('/api/mentoring/threads', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const currentUid = req.user.uid || req.user.id;
+    const threads = await listMentoringThreadsForUser(appConfig, currentUid);
+    const users = await listUserRecords(appConfig);
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    const formatted = await Promise.all(threads.map(async (t) => {
+      const isMentor = t.mentor === currentUid;
+      const isMentee = t.mentee === currentUid;
+      if (!isMentor && !isMentee) return null; // Air-gap: skip if not a party
+
+      const messages = await listMentoringMessages(appConfig, t.id);
+      const lastMessage = messages[messages.length - 1] || null;
+      const otherRole = isMentor ? 'mentee' : 'mentor';
+      const unreadCount = messages.filter(m => m.sender_role === otherRole && !m.read).length;
+
+      const mentorUser = userMap.get(t.mentor);
+      const mentorName = mentorUser ? (mentorUser.name || `${mentorUser.firstName || ''} ${mentorUser.lastName || ''}`.trim() || 'Mentor') : 'Mentor';
+
+      const threadData = {
+        id: t.id,
+        mentor: t.mentor,
+        mentee: isMentor ? null : t.mentee, // STRICT PRIVACY: mentor never sees mentee UID
+        status: t.status || 'active',
+        created: t.created,
+        updated: t.updated || t.created,
+        unreadCount,
+        unread_count: unreadCount,
+        last_message: lastMessage ? lastMessage.text.slice(0, 80) : (t.last_message || ''),
+        lastMessage: lastMessage ? {
+          text: lastMessage.text.slice(0, 80),
+          created: lastMessage.created,
+          senderRole: lastMessage.sender_role
+        } : null,
+        myRole: isMentor ? 'mentor' : 'mentee',
+        mentor_name: mentorName,
+        mentorName,
+        mentee_alias: t.mentee_alias,
+        menteeAlias: t.mentee_alias,
+        title: isMentor ? (t.mentee_alias || 'Anonymer Suchender') : mentorName
+      };
+
+      return threadData;
+    }));
+
+    res.json(formatted.filter(Boolean));
+  } catch (err) {
+    console.error('Failed to list mentoring threads:', err);
+    res.status(500).json({ error: 'Failed to list mentoring threads' });
+  }
+});
+
+// 7. Start an anonymous thread with a mentor
+app.post('/api/mentoring/threads', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const currentUid = req.user.uid || req.user.id;
+    const mentorId = req.body?.mentorId || req.body?.mentor;
+    const initialMessage = req.body?.initialMessage || req.body?.message;
+    if (!mentorId) {
+      return res.status(400).json({ error: 'mentorId is required' });
+    }
+
+    let mentorRec = await getMentorByUserId(appConfig, mentorId);
+    if (!mentorRec) {
+      mentorRec = await getMentorRecord(appConfig, mentorId).catch(() => null);
+    }
+
+    if (!mentorRec || mentorRec.status !== 'approved') {
+      return res.status(400).json({ error: 'Mentor ist derzeit nicht verfügbar' });
+    }
+    if (mentorRec.user === currentUid) {
+      return res.status(400).json({ error: 'Du kannst dich nicht selbst begleiten' });
+    }
+
+    // Check if user already has an existing thread with this mentor
+    const userThreads = await listMentoringThreadsForUser(appConfig, currentUid);
+    const existingThread = userThreads.find(t =>
+      (t.mentor === mentorRec.user || t.mentor === mentorRec.id || t.mentor === mentorId) &&
+      t.mentee === currentUid
+    );
+
+    if (existingThread) {
+      if (existingThread.status === 'closed') {
+        return res.status(400).json({
+          error: 'Du hast bereits ein früheres Gespräch mit diesem Mentor. Du kannst es unter "Meine Begleitungen" wiedereröffnen.',
+          threadId: existingThread.id,
+          status: 'closed'
+        });
+      }
+      return res.status(400).json({
+        error: 'Du stehst bereits in aktiver Begleitung mit diesem Mentor.',
+        threadId: existingThread.id,
+        status: 'active'
+      });
+    }
+
+    // Generate random pseudonym alias
+    const randomSuffix = crypto.randomInt(100, 1000);
+    const menteeAlias = `Suchender #${randomSuffix}`;
+
+    const thread = await createMentoringThread(appConfig, {
+      mentor: mentorRec.user,
+      mentee: currentUid,
+      mentee_alias: menteeAlias,
+      status: 'active',
+      last_message: initialMessage ? String(initialMessage).trim().slice(0, 80) : ''
+    });
+
+    if (initialMessage && String(initialMessage).trim()) {
+      await createMentoringMessage(appConfig, {
+        thread: thread.id,
+        sender_role: 'mentee',
+        text: String(initialMessage).trim(),
+        read: false
+      });
+    }
+
+    broadcastDataUpdate();
+    res.json({ success: true, thread, threadId: thread.id, menteeAlias });
+  } catch (err) {
+    console.error('Failed to create mentoring thread:', err);
+    res.status(500).json({ error: 'Failed to create mentoring thread' });
+  }
+});
+
+// 8. Get messages of a thread (AIR-GAP: strictly mentor or mentee only)
+app.get('/api/mentoring/threads/:id/messages', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const currentUid = req.user.uid || req.user.id;
+    const thread = await getMentoringThread(appConfig, req.params.id);
+    if (!thread) {
+      return res.status(404).json({ error: 'Thread nicht gefunden' });
+    }
+
+    const isMentor = thread.mentor === currentUid;
+    const isMentee = thread.mentee === currentUid;
+    if (!isMentor && !isMentee) {
+      // STRICT AIR-GAP: Admins, leaders, owners who are not participants get 403!
+      return res.status(403).json({ error: 'Vertrauliche Seelsorge-Verbindung: Zugriff verweigert' });
+    }
+
+    const currentRole = isMentor ? 'mentor' : 'mentee';
+    await markMentoringMessagesRead(appConfig, thread.id, currentRole).catch(() => {});
+
+    const messages = await listMentoringMessages(appConfig, thread.id);
+    const users = await listUserRecords(appConfig);
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    const mentorUser = userMap.get(thread.mentor);
+    const mentorName = mentorUser ? (mentorUser.name || `${mentorUser.firstName || ''} ${mentorUser.lastName || ''}`.trim() || 'Mentor') : 'Mentor';
+
+    const formattedMessages = messages.map(m => {
+      const isSenderMe = (m.sender_role === 'mentor' && isMentor) || (m.sender_role === 'mentee' && isMentee);
+      return {
+        id: m.id,
+        thread: m.thread,
+        senderRole: m.sender_role,
+        sender_role: m.sender_role,
+        sender: isSenderMe ? currentUid : 'partner',
+        sender_name: isSenderMe ? 'Du' : (isMentor ? (thread.mentee_alias || 'Suchender') : mentorName),
+        text: m.text,
+        message: m.text,
+        read: !!m.read,
+        created: m.created
+      };
+    });
+
+    res.json(formattedMessages);
+  } catch (err) {
+    console.error('Failed to get thread messages:', err);
+    res.status(500).json({ error: 'Failed to get thread messages' });
+  }
+});
+
+// 9. Send message in a thread
+app.post('/api/mentoring/threads/:id/messages', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const currentUid = req.user.uid || req.user.id;
+    const text = req.body?.text || req.body?.message;
+    if (!text || !String(text).trim()) {
+      return res.status(400).json({ error: 'Nachrichtentext ist erforderlich' });
+    }
+
+    const thread = await getMentoringThread(appConfig, req.params.id);
+    if (!thread) {
+      return res.status(404).json({ error: 'Thread nicht gefunden' });
+    }
+
+    const isMentor = thread.mentor === currentUid;
+    const isMentee = thread.mentee === currentUid;
+    if (!isMentor && !isMentee) {
+      return res.status(403).json({ error: 'Vertrauliche Seelsorge-Verbindung: Zugriff verweigert' });
+    }
+
+    if (thread.status === 'closed') {
+      return res.status(400).json({ error: 'Gespräch ist beendet' });
+    }
+
+    const senderRole = isMentor ? 'mentor' : 'mentee';
+    const message = await createMentoringMessage(appConfig, {
+      thread: thread.id,
+      sender_role: senderRole,
+      text: String(text).trim(),
+      read: false
+    });
+
+    try {
+      await updateMentoringThread(appConfig, thread.id, {
+        last_message: String(text).trim().slice(0, 80)
+      });
+    } catch (updateErr) {
+      console.warn('Could not update thread last_message (non-fatal):', updateErr?.message);
+    }
+
+    broadcastDataUpdate();
+    res.json({
+      success: true,
+      message: {
+        id: message.id,
+        thread: message.thread,
+        senderRole,
+        text: message.text,
+        message: message.text,
+        created: message.created
+      }
+    });
+  } catch (err) {
+    console.error('Failed to send mentoring message:', err);
+    res.status(500).json({ error: 'Nachricht konnte nicht gesendet werden' });
+  }
+});
+
+// 10. Change thread status (close/reopen)
+app.patch('/api/mentoring/threads/:id/status', verifyToken, verifyMentoringParticipate, async (req, res) => {
+  try {
+    const currentUid = req.user.uid || req.user.id;
+    const { status } = req.body || {};
+    if (status !== 'open' && status !== 'active' && status !== 'closed') {
+      return res.status(400).json({ error: 'Ungültiger Status' });
+    }
+
+    const thread = await getMentoringThread(appConfig, req.params.id);
+    if (!thread) {
+      return res.status(404).json({ error: 'Thread nicht gefunden' });
+    }
+
+    if (thread.mentor !== currentUid && thread.mentee !== currentUid) {
+      return res.status(403).json({ error: 'Zugriff verweigert' });
+    }
+
+    const updated = await updateMentoringThread(appConfig, thread.id, { status });
+    broadcastDataUpdate();
+    res.json({ success: true, thread: updated });
+  } catch (err) {
+    console.error('Failed to update thread status:', err);
+    res.status(500).json({ error: 'Status konnte nicht geändert werden' });
   }
 });
 

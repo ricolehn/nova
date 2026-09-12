@@ -392,6 +392,31 @@ function canAccessAi() {
     return !!(currentUser && (currentUser.canAccessAi || (Array.isArray(currentUser.permissions) && currentUser.permissions.includes('access_ai'))));
 }
 
+function canParticipateMentoring() {
+    return !!(currentUser && (currentUser.canParticipateMentoring || (Array.isArray(currentUser.permissions) && currentUser.permissions.includes('mentoring_participate'))));
+}
+
+function canManageMentoring() {
+    return !!(currentUser && (currentUser.canManageMentoring || (Array.isArray(currentUser.permissions) && currentUser.permissions.includes('manage_mentoring'))));
+}
+
+function isApprovedMentor() {
+    return !!(currentUser && (currentUser.isApprovedMentor || currentUser.mentorStatus === 'approved'));
+}
+
+function getAvatarRingClass(user) {
+    if (!user) return 'avatar-ring-standard';
+    const canManage = user.canManageMentoring || (Array.isArray(user.permissions) && user.permissions.includes('manage_mentoring'));
+    if (canManage) {
+        return 'avatar-ring-manager';
+    }
+    const isMentor = user.isApprovedMentor || user.mentorStatus === 'approved';
+    if (isMentor) {
+        return 'avatar-ring-mentor';
+    }
+    return 'avatar-ring-standard';
+}
+
 function isSystemAdmin() {
     return isSuperAdminUser();
 }
@@ -414,7 +439,9 @@ async function loadSystemPermissions() {
         systemPermissions = [
             { id: 'view_finances', name: 'Finanzverwaltung (Nur Lesen)', description: 'Erlaubt die Einsicht in Kassenstände, Historie, Transaktionen und Berichte ohne Bearbeitungsrechte' },
             { id: 'manage_finances', name: 'Finanzverwaltung (Vollzugriff)', description: 'Erlaubt das Erfassen, Bearbeiten, Buchen und Löschen von Zahlungen, Spenden, Ausgaben und Daueraufträgen' },
-            { id: 'access_ai', name: 'KI-Support nutzen', description: 'Erlaubt den Zugriff und die Nutzung des integrierten KI-Assistenten' }
+            { id: 'access_ai', name: 'KI-Support nutzen', description: 'Erlaubt den Zugriff und die Nutzung des integrierten KI-Assistenten' },
+            { id: 'mentoring_participate', name: 'Mentorteilnahme', description: 'Berechtigt dazu, sich als Mentor zu bewerben oder freigegebene Mentoren vertraulich zu kontaktieren' },
+            { id: 'manage_mentoring', name: 'Mentoring-Verwaltung', description: 'Berechtigt Leiter dazu, Mentorenbewerbungen zu prüfen, genehmigen oder abzulehnen (kein Zugriff auf private Chats)' }
         ];
     }
 }
@@ -741,6 +768,14 @@ async function refreshCurrentUser() {
     }
 }
 
+function updateHeaderAvatarRing() {
+    const profileBtn = document.querySelector('.profile-btn');
+    if (!profileBtn) return;
+    profileBtn.classList.remove('avatar-ring-manager', 'avatar-ring-mentor', 'avatar-ring-standard');
+    const ringClass = getAvatarRingClass(currentUser);
+    profileBtn.classList.add(ringClass);
+}
+
 function updateNavVisibility() {
     const hasFinances = canViewFinances() || canManageFinances();
     const isSysAdmin = isSystemAdmin();
@@ -758,12 +793,22 @@ function updateNavVisibility() {
     if (userFinancesDesktop) userFinancesDesktop.style.display = hasFinances ? 'none' : '';
     if (userFinancesBottom) userFinancesBottom.style.display = hasFinances ? 'none' : '';
 
+    // Mentoring tab (Users with mentoring_participate or manage_mentoring)
+    const hasMentoring = canParticipateMentoring() || canManageMentoring();
+    const mentoringDesktop = document.getElementById('mentoring-nav-btn-desktop');
+    const mentoringBottom = document.getElementById('mentoring-nav-btn-bottom');
+    if (mentoringDesktop) mentoringDesktop.style.display = hasMentoring ? '' : 'none';
+    if (mentoringBottom) mentoringBottom.style.display = hasMentoring ? '' : 'none';
+
     // AI tab
     if (typeof updateAiNavVisibility === 'function') updateAiNavVisibility();
 
     // System Settings button
     const sysSettingsBtn = document.getElementById('profile-sys-settings-btn');
     if (sysSettingsBtn) sysSettingsBtn.style.display = isSysAdmin ? '' : 'none';
+
+    // Avatar ring
+    updateHeaderAvatarRing();
 
     // FAB / quick actions (Only visible on finances tab for users who can manage finances)
     updateFabVisibility();
@@ -984,6 +1029,8 @@ window.switchTab = function(tabName, btn) {
         tabName = 'user-overview';
     } else if (tabName === 'ai-chat' && (!canAccessAi() || !aiEnabled)) {
         tabName = 'user-overview';
+    } else if (tabName === 'mentoring' && !canParticipateMentoring() && !canManageMentoring()) {
+        tabName = 'user-overview';
     }
 
     currentActiveTab = tabName;
@@ -1064,6 +1111,10 @@ window.switchTab = function(tabName, btn) {
         }
         if (typeof loadSystemGroups === 'function') {
             loadSystemGroups();
+        }
+    } else if (tabName === 'mentoring') {
+        if (typeof window.loadMentoringData === 'function') {
+            window.loadMentoringData();
         }
     }
 };
@@ -2597,7 +2648,7 @@ function renderAccountsTab() {
             <tr data-uid="${escapeHtml(u.uid)}">
                 <td>
                     <div class="nc-user-cell">
-                        <div class="nc-avatar" style="position: relative; overflow: hidden;">
+                        <div class="nc-avatar ${getAvatarRingClass(u)}" style="position: relative; overflow: hidden;">
                             <span style="user-select: none;">${escapeHtml(initials)}</span>
                             <img src="${profilePicUrl}" alt="${escapeHtml(fullName)}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">
                         </div>
@@ -7404,3 +7455,774 @@ window.showToast = (msg, type='success') => {
     const translatedMsg = translations[key] || msg;
     originalShowToast(translatedMsg, type);
 };
+
+/* ==========================================================================
+   MENTORING - Anonymes Mentoring & Vertrauliche 1-on-1 Begleitung
+   ========================================================================== */
+
+let mentoringMentors = [];
+let mentoringThreads = [];
+let activeMentoringThreadId = null;
+let currentMentoringSubTab = 'find';
+let mentoringChatPollTimer = null;
+let myMentorProfile = null;
+
+window.switchMentoringSubTab = function(subTab) {
+    currentMentoringSubTab = subTab;
+    const findTabBtn = document.getElementById('mentoring-tab-find');
+    const chatsTabBtn = document.getElementById('mentoring-tab-chats');
+    const reviewTabBtn = document.getElementById('mentoring-tab-review');
+
+    const findView = document.getElementById('mentoring-subview-find');
+    const chatsView = document.getElementById('mentoring-subview-chats');
+    const reviewView = document.getElementById('mentoring-subview-review');
+
+    if (findTabBtn) findTabBtn.classList.toggle('active', subTab === 'find');
+    if (chatsTabBtn) chatsTabBtn.classList.toggle('active', subTab === 'chats');
+    if (reviewTabBtn) reviewTabBtn.classList.toggle('active', subTab === 'review');
+
+    if (findView) findView.style.display = subTab === 'find' ? '' : 'none';
+    if (chatsView) chatsView.style.display = subTab === 'chats' ? '' : 'none';
+    if (reviewView) reviewView.style.display = subTab === 'review' ? '' : 'none';
+
+    if (subTab === 'find') {
+        window.loadMentorsList();
+    } else if (subTab === 'chats') {
+        window.loadMentoringThreads();
+    } else if (subTab === 'review') {
+        window.loadMentoringReviewList();
+    }
+};
+
+window.loadMentoringData = async function() {
+    if (!canParticipateMentoring() && !canManageMentoring()) return;
+
+    // Check manager status to show/hide review pill
+    const reviewTabBtn = document.getElementById('mentoring-tab-review');
+    const isManager = canManageMentoring();
+    if (reviewTabBtn) {
+        reviewTabBtn.style.display = isManager ? 'inline-flex' : 'none';
+    }
+
+    // Load user's own mentor profile
+    try {
+        const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/my-profile`);
+        if (res.ok) {
+            const data = await res.json();
+            myMentorProfile = data.mentor || null;
+            const applyBtn = document.getElementById('mentor-apply-btn');
+            if (applyBtn) {
+                if (myMentorProfile) {
+                    if (myMentorProfile.status === 'approved') {
+                        applyBtn.innerHTML = '💜 Mein Mentoren-Profil';
+                    } else if (myMentorProfile.status === 'pending') {
+                        applyBtn.innerHTML = '⏳ Bewerbung in Prüfung';
+                    } else {
+                        applyBtn.innerHTML = 'Als Mentor bewerben';
+                    }
+                } else {
+                    applyBtn.innerHTML = 'Als Mentor bewerben';
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('Failed to load my mentor profile:', err);
+    }
+
+    // If manager, check pending applications count for red badge
+    if (isManager) {
+        try {
+            const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/mentors?status=pending`);
+            if (res.ok) {
+                const list = await res.json();
+                const count = Array.isArray(list) ? list.length : 0;
+                const badge = document.getElementById('mentoring-pending-badge');
+                if (badge) {
+                    badge.innerText = String(count);
+                    badge.style.display = count > 0 ? 'inline-block' : 'none';
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to load pending mentors count:', err);
+        }
+    }
+
+    // Load threads to update unread badge
+    window.loadMentoringThreads(false);
+
+    // Render current active subtab
+    window.switchMentoringSubTab(currentMentoringSubTab);
+};
+
+window.loadMentorsList = async function() {
+    const grid = document.getElementById('mentors-grid');
+    if (!grid) return;
+    try {
+        const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/mentors?status=approved`);
+        if (res.ok) {
+            mentoringMentors = await res.json();
+            window.renderMentorsGrid();
+        } else {
+            grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--text-secondary);">Mentoren konnten nicht geladen werden.</div>`;
+        }
+    } catch (err) {
+        console.warn('Failed to load mentors:', err);
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--danger);">Netzwerkfehler beim Laden der Mentoren.</div>`;
+    }
+};
+
+window.renderMentorsGrid = function() {
+    const grid = document.getElementById('mentors-grid');
+    if (!grid) return;
+
+    if (!Array.isArray(mentoringMentors) || mentoringMentors.length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">👥</div>
+                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 6px;">Derzeit keine Mentoren verfügbar</div>
+                <div style="font-size: 0.9rem;">Sobald Bewerbungen freigegeben wurden, erscheinen die Mentoren hier.</div>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = mentoringMentors.map(m => {
+        const name = escapeHtml(m.name || m.mentorName || 'Mentor');
+        const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        const avatarUrl = m.avatar_url || (m.user_id ? `${config.apiBaseUrl}/profile/picture/${encodeURIComponent(m.user_id)}` : '');
+        const isSelf = currentUser && (m.user_id === currentUser.uid || m.user_id === currentUser.id);
+
+        const bioHtml = escapeHtml(m.bio || 'Keine Beschreibung vorhanden.');
+        const maxMentees = m.max_mentees || 3;
+        const activeMentees = m.active_mentees || m.activeMentees || 0;
+        const isFull = activeMentees >= maxMentees;
+
+        return `
+            <div class="mentor-card">
+                <div class="mentor-card-header">
+                    <div class="mentor-card-avatar avatar-ring-mentor">
+                        <span>${escapeHtml(initials)}</span>
+                        ${avatarUrl ? `<img src="${avatarUrl}" alt="${name}" onerror="this.style.display='none'">` : ''}
+                    </div>
+                    <div class="mentor-card-title">
+                        <h3>${name}</h3>
+                        <span class="mentor-role-badge">💜 Geprüfter Mentor</span>
+                    </div>
+                </div>
+
+                <div class="mentor-card-bio">${bioHtml}</div>
+
+                <div class="mentor-card-footer">
+                    <div class="mentor-capacity" title="Kapazität: Begleitungen">
+                        <span>👥 ${activeMentees} / ${maxMentees} aktiv</span>
+                    </div>
+                    ${(() => {
+                        const currentUid = currentUser?.uid || currentUser?.id;
+                        const mentorUserId = m.user || m.user_id || m.id;
+                        const existingThread = Array.isArray(mentoringThreads)
+                            ? mentoringThreads.find(t => (t.mentor === mentorUserId || t.mentor === m.user || t.mentor === m.id) && t.mentee === currentUid)
+                            : null;
+
+                        if (isSelf) {
+                            return `<button type="button" class="btn btn-secondary btn-small" onclick="window.openMentorApplicationModal()">Profil bearbeiten</button>`;
+                        } else if (existingThread) {
+                            return `
+                                <button type="button" class="btn btn-secondary btn-small" onclick="openMentoringSubTab('chats'); openMentoringThread('${escapeHtml(existingThread.id)}')" title="${existingThread.status === 'closed' ? 'Abgeschlossenes Gespräch anzeigen' : 'Laufendes Gespräch öffnen'}">
+                                    ${existingThread.status === 'closed' ? '📁 Zum Gespräch' : '💬 Zum Gespräch'}
+                                </button>
+                            `;
+                        } else {
+                            return `
+                                <button type="button" class="btn btn-mentor-primary btn-small" ${isFull ? 'disabled' : ''} onclick="window.openMentorContactModal('${escapeHtml(mentorUserId)}', '${escapeHtml(name)}')">
+                                    ${isFull ? 'Voll belegt' : 'Anonym kontaktieren'}
+                                </button>
+                            `;
+                        }
+                    })()}
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+window.openMentorContactModal = function(userId, mentorName) {
+    const currentUid = currentUser?.uid || currentUser?.id;
+    const existingThread = Array.isArray(mentoringThreads)
+        ? mentoringThreads.find(t => (t.mentor === userId) && t.mentee === currentUid)
+        : null;
+
+    if (existingThread) {
+        if (typeof showToast === 'function') {
+            showToast(existingThread.status === 'closed'
+                ? 'Du hast bereits ein früheres Gespräch mit diesem Mentor.'
+                : 'Du hast bereits eine aktive Begleitung mit diesem Mentor.', 'info');
+        } else {
+            alert('Du hast bereits ein Gespräch mit diesem Mentor.');
+        }
+        window.openMentoringSubTab('chats');
+        window.openMentoringThread(existingThread.id);
+        return;
+    }
+
+    const uidInput = document.getElementById('mentor-contact-user-id');
+    const targetTitle = document.getElementById('mentor-contact-target-name');
+    const msgInput = document.getElementById('mentor-contact-message');
+
+    if (uidInput) uidInput.value = userId;
+    if (targetTitle) targetTitle.innerText = `Anfrage an ${mentorName}`;
+    if (msgInput) msgInput.value = '';
+
+    openModal('mentor-contact-modal');
+    setTimeout(() => { if (msgInput) msgInput.focus(); }, 150);
+};
+
+window.submitMentorContact = async function() {
+    const uidInput = document.getElementById('mentor-contact-user-id');
+    const msgInput = document.getElementById('mentor-contact-message');
+    const mentorId = uidInput ? uidInput.value : '';
+    const message = msgInput ? msgInput.value.trim() : '';
+
+    if (!mentorId) {
+        alert('Kein Mentor ausgewählt.');
+        return;
+    }
+    if (!message) {
+        alert('Bitte gib eine Erstnachricht für den Mentor ein.');
+        return;
+    }
+
+    try {
+        const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/threads`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mentor: mentorId, mentorId: mentorId, message, initialMessage: message })
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            if (err.threadId) {
+                closeModal('mentor-contact-modal');
+                if (typeof showToast === 'function') {
+                    showToast(err.error || 'Bestehendes Gespräch geöffnet.', 'info');
+                }
+                window.openMentoringSubTab('chats');
+                window.openMentoringThread(err.threadId);
+                return;
+            }
+            throw new Error(err.error || err.message || 'Fehler beim Erstellen der Anfrage.');
+        }
+
+        const data = await res.json();
+        closeModal('mentor-contact-modal');
+        if (typeof showToast === 'function') {
+            showToast('Vertrauliche Anfrage erfolgreich gesendet!', 'success');
+        }
+
+        window.switchMentoringSubTab('chats');
+        const newThreadId = data.threadId || (data.thread && data.thread.id);
+        if (newThreadId) {
+            await window.loadMentoringThreads(true, newThreadId);
+            window.openMentoringThread(newThreadId);
+        } else {
+            window.loadMentoringThreads(true);
+        }
+    } catch (err) {
+        alert(err.message || 'Fehler beim Senden der Anfrage.');
+    }
+};
+
+window.loadMentoringThreads = async function(shouldSelect = false, selectThreadId = null) {
+    const listEl = document.getElementById('mentoring-threads-list');
+    if (!listEl) return;
+
+    try {
+        const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/threads`);
+        if (!res.ok) return;
+
+        mentoringThreads = await res.json();
+
+        // Calculate unread
+        let totalUnread = 0;
+        mentoringThreads.forEach(t => {
+            if (t.unread_count > 0) totalUnread += t.unread_count;
+        });
+        const unreadBadge = document.getElementById('mentoring-unread-badge');
+        if (unreadBadge) {
+            unreadBadge.innerText = String(totalUnread);
+            unreadBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+        }
+
+        if (mentoringThreads.length === 0) {
+            listEl.innerHTML = `
+                <div style="text-align:center; padding: 40px 16px; color: var(--text-secondary); font-size: 0.9rem;">
+                    <div style="font-size: 2rem; margin-bottom: 8px;">💬</div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">Keine aktiven Begleitungen</div>
+                    <div style="font-size: 0.8rem; margin-bottom: 12px;">Kontaktiere einen Mentor, um ein vertrauliches Gespräch zu beginnen.</div>
+                    <button class="btn btn-secondary btn-small" onclick="window.switchMentoringSubTab('find')">Mentoren finden</button>
+                </div>
+            `;
+            return;
+        }
+
+        listEl.innerHTML = mentoringThreads.map(t => {
+            const isActive = activeMentoringThreadId === t.id;
+            const isMentor = currentUser && (t.mentor === currentUser.uid || t.mentor === currentUser.id);
+
+            // Anonymity / Pseudonym display
+            const partnerName = isMentor
+                ? (t.mentee_alias || 'Anonymer Suchender')
+                : (t.mentor_name || 'Mentor');
+
+            const partnerRole = isMentor ? 'Suchender (anonym)' : 'Dein Mentor';
+            const unreadCount = t.unread_count || 0;
+            const lastMsg = t.last_message || (t.status === 'closed' ? 'Gespräch beendet' : 'Noch keine Nachrichten');
+            const dateStr = t.updated ? new Date(t.updated).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+
+            return `
+                <div class="mentoring-thread-item ${isActive ? 'active' : ''}" onclick="window.openMentoringThread('${escapeHtml(t.id)}')">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:3px;">
+                        <div class="mentoring-thread-name">${escapeHtml(partnerName)}</div>
+                        <div style="font-size:0.72rem; color:var(--text-secondary);">${escapeHtml(dateStr)}</div>
+                    </div>
+                    <div style="font-size:0.75rem; color:#a855f7; margin-bottom:4px; font-weight:700;">${escapeHtml(partnerRole)}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div class="mentoring-thread-snippet">${escapeHtml(lastMsg)}</div>
+                        ${unreadCount > 0 ? `<span class="mentoring-badge-count" style="margin-left:6px;">${unreadCount}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const isDesktop = !window.matchMedia('(max-width: 768px)').matches;
+        if (shouldSelect || (isDesktop && !activeMentoringThreadId && mentoringThreads.length > 0)) {
+            const idToOpen = selectThreadId || (mentoringThreads[0] ? mentoringThreads[0].id : null);
+            if (idToOpen) window.openMentoringThread(idToOpen);
+        }
+    } catch (err) {
+        console.warn('Failed to load mentoring threads:', err);
+    }
+};
+
+window.autoResizeMentoringInput = function(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+};
+
+window.openMentoringThread = async function(threadId) {
+    activeMentoringThreadId = threadId;
+
+    const layout = document.getElementById('mentoring-threads-layout');
+    if (layout) layout.classList.add('in-chat');
+
+    const chatPane = document.getElementById('mentoring-chat-pane');
+    if (chatPane) chatPane.classList.add('mobile-open');
+
+    const items = document.querySelectorAll('.mentoring-thread-item');
+    items.forEach(el => el.classList.remove('active'));
+
+    const thread = mentoringThreads.find(t => t.id === threadId);
+    if (!thread) return;
+
+    const isMentor = currentUser && (thread.mentor === currentUser.uid || thread.mentor === currentUser.id);
+    const partnerName = isMentor
+        ? (thread.mentee_alias || 'Anonymer Suchender')
+        : (thread.mentor_name || 'Mentor');
+
+    const titleEl = document.getElementById('mentoring-chat-title');
+    const subEl = document.getElementById('mentoring-chat-subtitle');
+    if (titleEl) titleEl.innerText = partnerName;
+    if (subEl) {
+        subEl.innerText = thread.status === 'closed'
+            ? 'Gespräch beendet'
+            : (isMentor ? 'Vertraulich & Anonym' : 'Dein vertraulicher Mentor');
+    }
+
+    const actionsEl = document.getElementById('mentoring-chat-actions');
+    const inputContainer = document.getElementById('mentoring-chat-input-container');
+    const closedBar = document.getElementById('mentoring-chat-closed-bar');
+    const menuDropdown = document.getElementById('mentoring-chat-menu-dropdown');
+    if (menuDropdown) menuDropdown.style.display = 'none';
+
+    const isClosed = thread.status === 'closed';
+
+    if (actionsEl) {
+        actionsEl.style.display = 'flex';
+        const menuBtn = document.getElementById('mentoring-chat-menu-btn');
+        if (menuBtn) {
+            menuBtn.style.display = isClosed ? 'none' : 'inline-flex';
+        }
+    }
+
+    if (inputContainer) {
+        inputContainer.style.display = isClosed ? 'none' : 'block';
+    }
+    if (closedBar) {
+        closedBar.style.display = isClosed ? 'flex' : 'none';
+    }
+
+    await window.loadMentoringMessages(threadId);
+
+    const input = document.getElementById('mentoring-chat-input');
+    if (input) {
+        window.autoResizeMentoringInput(input);
+        if (!window.matchMedia('(max-width: 768px)').matches) {
+            input.focus();
+        }
+    }
+
+    if (mentoringChatPollTimer) clearInterval(mentoringChatPollTimer);
+    mentoringChatPollTimer = setInterval(() => {
+        if (activeMentoringThreadId === threadId && currentActiveTab === 'mentoring' && currentMentoringSubTab === 'chats') {
+            window.loadMentoringMessages(threadId, true);
+        }
+    }, 3500);
+};
+
+window.closeMentoringChatMobile = function() {
+    const layout = document.getElementById('mentoring-threads-layout');
+    if (layout) layout.classList.remove('in-chat');
+    const chatPane = document.getElementById('mentoring-chat-pane');
+    if (chatPane) chatPane.classList.remove('mobile-open');
+};
+window.backToMentoringThreadList = window.closeMentoringChatMobile;
+
+window.loadMentoringMessages = async function(threadId, isPoll = false) {
+    const messagesEl = document.getElementById('mentoring-chat-messages');
+    if (!messagesEl) return;
+
+    try {
+        const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/threads/${threadId}/messages`);
+        if (!res.ok) {
+            if (res.status === 403) {
+                messagesEl.innerHTML = `<div style="text-align:center; color:var(--danger); margin:auto; padding:20px;">Zugriff verweigert (Geschützte Verbindung).</div>`;
+            }
+            return;
+        }
+
+        let messages = await res.json();
+        if (messages && Array.isArray(messages.messages)) {
+            messages = messages.messages;
+        }
+        if (!Array.isArray(messages)) return;
+
+        const isScrolledToBottom = messagesEl.scrollHeight - messagesEl.scrollTop <= messagesEl.clientHeight + 120;
+
+        if (messages.length === 0) {
+            messagesEl.innerHTML = `
+                <div class="mentoring-chat-empty-notice">
+                    <div style="font-size:2rem; margin-bottom:8px;">✨</div>
+                    <div style="font-weight:600; margin-bottom:4px;">Noch keine Nachrichten</div>
+                    <div style="font-size:0.85rem; color:var(--text-secondary);">Beginne das Gespräch! Alles was du schreibst, ist absolut vertraulich.</div>
+                </div>
+            `;
+            return;
+        }
+
+        messagesEl.innerHTML = messages.map(m => {
+            const isMe = currentUser && (m.sender === currentUser.uid || m.sender === currentUser.id);
+            const timeStr = m.created ? new Date(m.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            return `
+                <div class="mentoring-message ${isMe ? 'outgoing msg-mine' : 'incoming msg-other'}">
+                    ${!isMe ? `<div class="mentoring-message-sender">${escapeHtml(m.sender_name || 'Gesprächspartner')}</div>` : ''}
+                    <div class="mentoring-message-bubble">${escapeHtml(m.message || m.text || '')}</div>
+                    <div class="mentoring-message-time">${escapeHtml(timeStr)}</div>
+                </div>
+            `;
+        }).join('');
+
+        if (!isPoll || isScrolledToBottom) {
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+    } catch (err) {
+        console.warn('Failed to load messages:', err);
+    }
+};
+
+window.sendMentoringMessage = async function() {
+    if (!activeMentoringThreadId) return;
+    const input = document.getElementById('mentoring-chat-input');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    // Optimistic message append
+    const messagesEl = document.getElementById('mentoring-chat-messages');
+    const tempId = 'msg-' + Date.now();
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Clear empty placeholder notice if present
+    const emptyNotice = messagesEl.querySelector('.mentoring-chat-empty-notice');
+    if (emptyNotice) emptyNotice.remove();
+
+    const optimisticNode = document.createElement('div');
+    optimisticNode.id = tempId;
+    optimisticNode.className = 'mentoring-message outgoing msg-mine';
+    optimisticNode.innerHTML = `
+        <div class="mentoring-message-bubble">${escapeHtml(text)}</div>
+        <div class="mentoring-message-time">${escapeHtml(timeStr)} • Wird gesendet…</div>
+    `;
+    messagesEl.appendChild(optimisticNode);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    input.value = '';
+    window.autoResizeMentoringInput(input);
+
+    try {
+        const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/threads/${activeMentoringThreadId}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, text })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || err.error || 'Fehler beim Senden.');
+        }
+
+        await window.loadMentoringMessages(activeMentoringThreadId);
+        window.loadMentoringThreads(false);
+    } catch (err) {
+        const pendingEl = document.getElementById(tempId);
+        if (pendingEl) {
+            const timeEl = pendingEl.querySelector('.mentoring-message-time');
+            if (timeEl) timeEl.innerHTML = `<span style="color:#ef4444;">⚠️ Fehler beim Senden</span>`;
+        }
+        alert(err.message || 'Nachricht konnte nicht gesendet werden.');
+    }
+};
+
+window.handleMentoringChatKey = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        window.sendMentoringMessage();
+    }
+};
+
+window.toggleMentoringChatMenu = function(e) {
+    if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    const dropdown = document.getElementById('mentoring-chat-menu-dropdown');
+    if (!dropdown) return;
+    const isVisible = dropdown.style.display === 'block';
+    dropdown.style.display = isVisible ? 'none' : 'block';
+};
+
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('mentoring-chat-menu-dropdown');
+    if (dropdown && dropdown.style.display === 'block') {
+        const menuBtn = document.getElementById('mentoring-chat-menu-btn');
+        if (menuBtn && !menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    }
+});
+
+window.toggleCloseCurrentThread = async function(forcedStatus) {
+    if (!activeMentoringThreadId) return;
+    const thread = mentoringThreads.find(t => t.id === activeMentoringThreadId);
+    if (!thread) return;
+
+    const menuDropdown = document.getElementById('mentoring-chat-menu-dropdown');
+    if (menuDropdown) menuDropdown.style.display = 'none';
+
+    const newStatus = forcedStatus || (thread.status === 'closed' ? 'active' : 'closed');
+    const confirmMsg = newStatus === 'closed'
+        ? 'Möchtest du diese Begleitung wirklich abschließen? Beide Seiten können keine neuen Nachrichten mehr schreiben, bis sie wiedereröffnet wird.'
+        : 'Möchtest du diese Begleitung wiedereröffnen?';
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/threads/${activeMentoringThreadId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Fehler beim Ändern des Status.');
+        }
+
+        thread.status = newStatus;
+        window.openMentoringThread(activeMentoringThreadId);
+        window.loadMentoringThreads();
+        if (typeof showToast === 'function') {
+            showToast(newStatus === 'closed' ? 'Gespräch beendet.' : 'Gespräch wiedereröffnet.', 'info');
+        }
+    } catch (err) {
+        alert(err.message || 'Fehler beim Aktualisieren.');
+    }
+};
+
+window.openMentorApplicationModal = async function() {
+    const bioEl = document.getElementById('mentor-app-bio');
+    const maxEl = document.getElementById('mentor-app-max');
+    const submitBtn = document.getElementById('btn-submit-mentor-app');
+
+    if (myMentorProfile) {
+        if (bioEl) bioEl.value = myMentorProfile.bio || '';
+        if (maxEl) maxEl.value = myMentorProfile.max_mentees || 3;
+        if (submitBtn) submitBtn.innerText = 'Profil aktualisieren';
+    } else {
+        if (bioEl) bioEl.value = '';
+        if (maxEl) maxEl.value = 3;
+        if (submitBtn) submitBtn.innerText = 'Bewerbung absenden';
+    }
+
+    openModal('mentor-application-modal');
+};
+
+window.submitMentorApplication = async function() {
+    const bioEl = document.getElementById('mentor-app-bio');
+    const maxEl = document.getElementById('mentor-app-max');
+
+    const bio = bioEl ? bioEl.value.trim() : '';
+    const max_mentees = maxEl ? parseInt(maxEl.value, 10) : 3;
+
+    if (!bio) {
+        alert('Bitte gib eine persönliche Vorstellung ein, was du über dich sagst und dich beschreibt.');
+        return;
+    }
+
+    try {
+        const isUpdate = !!myMentorProfile;
+        const endpoint = isUpdate ? `${config.apiBaseUrl}/mentoring/my-profile` : `${config.apiBaseUrl}/mentoring/apply`;
+        const method = isUpdate ? 'PUT' : 'POST';
+
+        const res = await fetchWithAuth(endpoint, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bio, max_mentees })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Fehler beim Einreichen der Bewerbung.');
+        }
+
+        const data = await res.json();
+        myMentorProfile = data.mentor || myMentorProfile;
+
+        closeModal('mentor-application-modal');
+        if (typeof showToast === 'function') {
+            showToast(isUpdate ? 'Mentoren-Profil aktualisiert!' : 'Bewerbung erfolgreich eingereicht! Die Leitung wird sie prüfen.', 'success');
+        }
+
+        window.loadMentoringData();
+    } catch (err) {
+        alert(err.message || 'Fehler bei der Bewerbung.');
+    }
+};
+
+window.loadMentoringReviewList = async function() {
+    if (!canManageMentoring()) return;
+    const listEl = document.getElementById('mentoring-review-list');
+    const filterEl = document.getElementById('mentor-review-filter');
+    const statusFilter = filterEl ? filterEl.value : 'pending';
+
+    if (!listEl) return;
+    listEl.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Lade Bewerbungen...</div>';
+
+    try {
+        const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/mentors?status=${encodeURIComponent(statusFilter)}`);
+        if (!res.ok) {
+            listEl.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger);">Fehler beim Laden der Bewerbungen.</div>';
+            return;
+        }
+
+        const mentors = await res.json();
+        if (!Array.isArray(mentors) || mentors.length === 0) {
+            listEl.innerHTML = `
+                <div style="text-align:center; padding:30px; color:var(--text-secondary);">
+                    Keine Bewerbungen mit Status "${escapeHtml(statusFilter)}" vorhanden.
+                </div>
+            `;
+            return;
+        }
+
+        listEl.innerHTML = mentors.map(m => {
+            const name = escapeHtml(m.name || m.mentorName || 'Bewerber');
+            const email = escapeHtml(m.email || m.userEmail || '');
+            const bio = escapeHtml(m.bio || 'Keine Personenbeschreibung hinterlegt.');
+            const maxMentees = m.max_mentees || 3;
+            const status = m.status || 'pending';
+            const dateStr = m.created ? new Date(m.created).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+
+            const statusColors = {
+                pending: { bg: 'rgba(234, 179, 8, 0.15)', text: '#eab308', label: 'Ausstehend' },
+                approved: { bg: 'rgba(16, 185, 129, 0.15)', text: '#10b981', label: 'Freigegeben' },
+                rejected: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444', label: 'Abgelehnt' }
+            };
+            const sMeta = statusColors[status] || statusColors.pending;
+
+            return `
+                <div class="card" style="margin-bottom:12px; border:1px solid var(--border); padding:16px; border-radius:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                        <div>
+                            <div style="font-weight:700; font-size:1.05rem; display:flex; align-items:center; gap:8px;">
+                                <span>${name}</span>
+                                <span style="font-size:0.75rem; padding:2px 8px; border-radius:999px; background:${sMeta.bg}; color:${sMeta.text}; font-weight:700;">
+                                    ${sMeta.label}
+                                </span>
+                            </div>
+                            <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px;">
+                                ${email ? `${email} • ` : ''}Eingereicht: ${dateStr} • Kapazität: max. ${maxMentees} Mentees
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            ${status !== 'approved' ? `
+                                <button type="button" class="btn btn-primary btn-small" onclick="window.setMentorStatus('${escapeHtml(m.id)}', 'approved')">
+                                    ✓ Genehmigen
+                                </button>
+                            ` : ''}
+                            ${status !== 'rejected' ? `
+                                <button type="button" class="btn btn-secondary btn-small" style="color:var(--danger);" onclick="window.setMentorStatus('${escapeHtml(m.id)}', 'rejected')">
+                                    ✗ Ablehnen
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div style="background:var(--surface-alt); padding:12px 14px; border-radius:8px; font-size:0.92rem; line-height:1.5;">
+                        <div style="font-weight: 600; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Über sich / Selbstbeschreibung:</div>
+                        ${bio}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        console.warn('Failed to load review list:', err);
+    }
+};
+
+window.setMentorStatus = async function(mentorId, status) {
+    const actionLabel = status === 'approved' ? 'genehmigen' : 'ablehnen';
+    if (!confirm(`Möchtest du diese Bewerbung wirklich ${actionLabel}?`)) return;
+
+    try {
+        const res = await fetchWithAuth(`${config.apiBaseUrl}/mentoring/manage/${mentorId}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Status konnte nicht geändert werden.');
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(`Bewerbung erfolgreich ${status === 'approved' ? 'freigegeben' : 'abgelehnt'}!`, 'success');
+        }
+
+        window.loadMentoringReviewList();
+        window.loadMentoringData();
+    } catch (err) {
+        alert(err.message || 'Fehler beim Aktualisieren.');
+    }
+};
+

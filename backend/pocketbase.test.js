@@ -308,13 +308,15 @@ test('admin user and group helper functions are exported correctly', () => {
   assert.equal(typeof resolveUserPermissions, 'function');
 });
 
-test('resolveUserPermissions merges permissions and determines finance and AI access', () => {
+test('resolveUserPermissions merges permissions and determines finance, AI, and mentoring access', () => {
   const { resolveUserPermissions } = require('./pocketbase');
   const allGroups = [
     { id: 'g1', name: 'Finance Team', permissions: ['view_finances'] },
     { id: 'g2', name: 'Treasury', permissions: ['manage_finances'] },
     { id: 'g3', name: 'Regular', permissions: [] },
-    { id: 'g4', name: 'AI Users', permissions: ['access_ai'] }
+    { id: 'g4', name: 'AI Users', permissions: ['access_ai'] },
+    { id: 'g5', name: 'Mentoring Participants', permissions: ['mentoring_participate'] },
+    { id: 'g6', name: 'Mentoring Leaders', permissions: ['manage_mentoring'] }
   ];
 
   const resEmpty = resolveUserPermissions([], allGroups);
@@ -322,6 +324,8 @@ test('resolveUserPermissions merges permissions and determines finance and AI ac
   assert.equal(resEmpty.canManageFinances, false);
   assert.equal(resEmpty.canViewFinances, false);
   assert.equal(resEmpty.canAccessAi, false);
+  assert.equal(resEmpty.canParticipateMentoring, false);
+  assert.equal(resEmpty.canManageMentoring, false);
 
   const resView = resolveUserPermissions(['g1'], allGroups);
   assert.deepEqual(resView.permissions, ['view_finances']);
@@ -341,20 +345,33 @@ test('resolveUserPermissions merges permissions and determines finance and AI ac
   assert.equal(resAi.canViewFinances, false);
   assert.equal(resAi.canAccessAi, true);
 
-  const resCombined = resolveUserPermissions(['g1', 'g4'], allGroups);
+  const resMentee = resolveUserPermissions(['g5'], allGroups);
+  assert.deepEqual(resMentee.permissions, ['mentoring_participate']);
+  assert.equal(resMentee.canParticipateMentoring, true);
+  assert.equal(resMentee.canManageMentoring, false);
+
+  const resLeader = resolveUserPermissions(['g6'], allGroups);
+  assert.deepEqual(resLeader.permissions, ['manage_mentoring']);
+  assert.equal(resLeader.canParticipateMentoring, true);
+  assert.equal(resLeader.canManageMentoring, true);
+
+  const resCombined = resolveUserPermissions(['g1', 'g4', 'g5'], allGroups);
   assert.ok(resCombined.permissions.includes('view_finances'));
   assert.ok(resCombined.permissions.includes('access_ai'));
+  assert.ok(resCombined.permissions.includes('mentoring_participate'));
   assert.equal(resCombined.canViewFinances, true);
   assert.equal(resCombined.canManageFinances, false);
   assert.equal(resCombined.canAccessAi, true);
+  assert.equal(resCombined.canParticipateMentoring, true);
+  assert.equal(resCombined.canManageMentoring, false);
 });
 
 test('SYSTEM_PERMISSIONS provides valid permission definitions', () => {
   const { SYSTEM_PERMISSIONS } = require('./pocketbase');
   assert.ok(Array.isArray(SYSTEM_PERMISSIONS));
-  assert.equal(SYSTEM_PERMISSIONS.length, 3);
+  assert.equal(SYSTEM_PERMISSIONS.length, 5);
   const ids = SYSTEM_PERMISSIONS.map(p => p.id);
-  assert.deepEqual(ids, ['view_finances', 'manage_finances', 'access_ai']);
+  assert.deepEqual(ids, ['view_finances', 'manage_finances', 'access_ai', 'mentoring_participate', 'manage_mentoring']);
 });
 
 
